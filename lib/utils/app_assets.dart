@@ -2,8 +2,6 @@ class AppAssets {
   static const String splashLogo = "assets/png/app_icon.png";
   static const String cameraCaptureButton =
       "assets/icons/camera_capture_button.svg";
-  static const String imagePlaceholder = "assets/icons/image_placeholder.svg";
-  static const String proIcon = "assets/icons/pro_icon.svg";
   static const String documents = "assets/icons/documents.svg";
   static const String idCard = "assets/icons/id_card.svg";
   static const String barCode = "assets/icons/bar_code.svg";
@@ -14,19 +12,14 @@ class AppAssets {
   static const String settingOutline = "assets/icons/setting_outline.svg";
   static const String floatingCamera = "assets/icons/floating_camera.svg";
   static const String languageIcon = "assets/icons/language_icon.svg";
-  static const String batchScan = "assets/icons/batch_scan.svg";
   static const String beep = "assets/icons/beep.svg";
-  static const String history = "assets/icons/history.svg";
   static const String vibration = "assets/icons/vibration.svg";
   static const String shareWithFriend = "assets/icons/share_with_friend.svg";
   static const String rateUs = "assets/icons/rate_us.svg";
   static const String moreApps = "assets/icons/more_apps.svg";
   static const String privacyPolicy = "assets/icons/privacy_policy.svg";
   static const String termsCondition = "assets/icons/terms_condition.svg";
-  static const String upgradePlan = "assets/icons/upgrade_plan.svg";
   static const String premiumPlan = "assets/icons/premium_plan.svg";
-  static const String forwardCircularArrow =
-      "assets/icons/forward_circular_arrow.svg";
   static const String retake = "assets/icons/retake.svg";
   static const String rotate = "assets/icons/rotate.svg";
   static const String reFrame = "assets/icons/re_frame.svg";
@@ -35,17 +28,13 @@ class AppAssets {
   static const String ocr = "assets/icons/ocr.svg";
   static const String sign = "assets/icons/sign.svg";
   static const String scan = "assets/icons/scan.svg";
-  static const String addPage = "assets/icons/add_page.svg";
-  static const String editFile = "assets/icons/edit_file.svg";
   static const String crop = "assets/icons/crop.svg";
   static const String filter = "assets/icons/filter.svg";
   static const String size = "assets/icons/size.svg";
   static const String undo = "assets/icons/undo.svg";
-  static const String redo = "assets/icons/redo.svg";
   static const String move = "assets/icons/move.svg";
   static const String merge = "assets/icons/merge.svg";
   static const String pdf = "assets/icons/pdf.svg";
-  static const String camera = "assets/icons/camera.svg";
   static const String gallery = "assets/icons/gallery.svg";
   static const String size_preview = "assets/icons/size_preview.svg";
   static const String search_not_found = "assets/icons/search_not_found.svg";
@@ -55,5 +44,4 @@ class AppAssets {
   static const String delete = "assets/icons/delete.svg";
   static const String txt = "assets/icons/txt.svg";
   static const String rename = "assets/icons/rename.svg";
-  static const String scanning = "assets/audio/scanning.json";
 }
