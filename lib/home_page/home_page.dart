@@ -229,6 +229,11 @@ class _HomePageState extends State<HomePage> {
         builder: (context, interstitialReady, _) {
           return Scaffold(
             appBar: AppBar(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              scrolledUnderElevation: 0,
+              elevation: 0,
               title: Text(translation(context).docScanner),
               titleTextStyle: const TextStyle(
                 fontSize: 28,

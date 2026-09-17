@@ -42,7 +42,8 @@
         </activity>
         <meta-data
            android:name="com.google.android.gms.ads.APPLICATION_ID"
-           android:value="ca-app-pub-9877635475483541~7425713774"/>
+           android:value="@string/admob_app_id"
+           tools:replace="android:value"/>
         <meta-data
             android:name="com.facebook.sdk.ApplicationId"
             android:value="@string/facebook_app_id"/>

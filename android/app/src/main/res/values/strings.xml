@@ -4,4 +4,6 @@
     <string name="facebook_client_token">713e981696d52fc2945779bca5f12823</string>
     <string name="fb_login_protocol_scheme">fb969488689485352</string>
     <string name="app_name">Doc Scan</string>
+    <!-- AdMob App ID (not an ad unit id) -->
+    <string name="admob_app_id">ca-app-pub-9877635475483541~7425713774</string>
 </resources>
