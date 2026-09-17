@@ -561,4 +561,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get duplicate => '重複';
+
+  @override
+  String get deleteFile => 'ファイルを削除';
+
+  @override
+  String get downloadFile => 'ファイルをダウンロード';
 }

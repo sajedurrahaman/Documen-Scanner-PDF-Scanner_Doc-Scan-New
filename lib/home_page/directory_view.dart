@@ -8,6 +8,7 @@ import 'package:doc_scanner/home_page/provider/home_page_provider.dart';
 import 'package:doc_scanner/localaization/language_constant.dart';
 import 'package:doc_scanner/utils/app_assets.dart';
 import 'package:doc_scanner/utils/app_color.dart';
+import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/helper.dart';
 import 'package:doc_scanner/utils/pdf_view_screen.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,48 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
   String subFilePath = "";
   BannerAd? myBanner;
   bool _isBannerLoaded = false;
+
+  void _toggleItemSelection(String filePath) {
+    setState(() {
+      if (_selectedItems.contains(filePath)) {
+        _selectedItems.remove(filePath);
+      } else {
+        _selectedItems.add(filePath);
+      }
+    });
+  }
+
+  void _enterSelectionMode(String filePath) {
+    setState(() {
+      _isLongPressed = true;
+      _selectedItems.add(filePath);
+    });
+  }
+
+  Future<void> _deleteSingleFile(String filePath) async {
+    final homePageProvider = context.read<HomePageProvider>();
+    try {
+      final file = File(filePath);
+      if (filePath.split("/").contains("Document")) {
+        homePageProvider.removeDocumentImage(filePath);
+      } else if (filePath.split("/").contains("ID Card")) {
+        homePageProvider.removeIdCardImage(filePath);
+      } else if (filePath.split("/").contains("QR Code")) {
+        homePageProvider.removeQrCode(filePath);
+      } else if (filePath.split("/").contains("Bar Code")) {
+        homePageProvider.removeBarCode(filePath);
+      }
+      if (file.existsSync()) {
+        file.deleteSync();
+      }
+      setState(() {
+        allFiles = homePageProvider.getFileList(widget.directoryPath);
+      });
+    } catch (e) {
+      log(e.toString());
+    }
+  }
+
   void _openBrowserWithSearch(String query) async {
     // Encode the query to make it URL-safe
     final encodedQuery = Uri.encodeComponent(query);
@@ -613,6 +656,10 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                         if (Directory(filePath).existsSync()) {
                                           return GestureDetector(
                                             onTap: () {
+                                              if (_isLongPressed) {
+                                                _toggleItemSelection(filePath);
+                                                return;
+                                              }
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
@@ -623,6 +670,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                 ),
                                               );
                                             },
+                                            onLongPress: () =>
+                                                _enterSelectionMode(filePath),
                                             child: Stack(
                                               alignment: Alignment.topRight,
                                               children: [
@@ -942,11 +991,17 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                 .endsWith('.png')) {
                                           return GestureDetector(
                                             onTap: () async {
+                                              if (_isLongPressed) {
+                                                _toggleItemSelection(filePath);
+                                                return;
+                                              }
                                               await flutterGenralDialogue(
                                                 context: context,
                                                 imageFile: File(filePath),
                                               );
                                             },
+                                            onLongPress: () =>
+                                                _enterSelectionMode(filePath),
                                             child: Stack(
                                               alignment: Alignment.topRight,
                                               children: [
@@ -1320,6 +1375,10 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                             .endsWith('.txt')) {
                                           return GestureDetector(
                                             onTap: () async {
+                                              if (_isLongPressed) {
+                                                _toggleItemSelection(filePath);
+                                                return;
+                                              }
                                               var urlLink =
                                                   await homePageProvider
                                                       .readTxtFile(filePath);
@@ -1386,6 +1445,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                             urlLink);
                                                   });
                                             },
+                                            onLongPress: () =>
+                                                _enterSelectionMode(filePath),
                                             child: Stack(
                                               alignment: Alignment.topRight,
                                               children: [
@@ -1684,6 +1745,10 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                             .endsWith('.pdf')) {
                                           return GestureDetector(
                                             onTap: () async {
+                                              if (_isLongPressed) {
+                                                _toggleItemSelection(filePath);
+                                                return;
+                                              }
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
@@ -1697,6 +1762,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                 ),
                                               );
                                             },
+                                            onLongPress: () =>
+                                                _enterSelectionMode(filePath),
                                             child: Stack(
                                               alignment: Alignment.topRight,
                                               children: [
@@ -1791,7 +1858,7 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                 height: MediaQuery.sizeOf(
                                                                             context)
                                                                         .height *
-                                                                    0.25,
+                                                                    0.32,
                                                                 width: MediaQuery
                                                                         .sizeOf(
                                                                             context)
@@ -2006,55 +2073,19 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                             () async {
                                                                           Navigator.pop(
                                                                               context);
-                                                                          if (Platform
-                                                                              .isIOS) {
-                                                                            try {
-                                                                              Directory directory = await getApplicationDocumentsDirectory();
-
-                                                                              // Ensure the directory exists
-                                                                              if (!directory.existsSync()) {
-                                                                                directory.createSync(recursive: true);
-                                                                              }
-
-                                                                              // Create the new file path
-                                                                              String fileName = path.basenameWithoutExtension(filePath);
-                                                                              String newPath = path.join(directory.path, '$fileName.pdf');
-
-                                                                              // Write the file to the new location
-                                                                              File newFile = File(newPath);
-                                                                              await newFile.writeAsBytes(await File(filePath).readAsBytes());
-
-                                                                              // Show success message
-                                                                              AppHelper.showTopSnackBar(context, "PDF File saved to Documents folder");
-                                                                            } catch (e) {
-                                                                              // Handle any errors
-                                                                              AppHelper.showTopSnackBar(context, "Failed to save file: $e");
-                                                                            }
-                                                                          } else if (Platform
-                                                                              .isAndroid) {
-                                                                            try {
-                                                                              // Access the public Documents directory
-                                                                              Directory directory = Directory('/storage/emulated/0/Documents');
-
-                                                                              // Ensure the directory exists
-                                                                              if (!directory.existsSync()) {
-                                                                                directory.createSync(recursive: true);
-                                                                              }
-
-                                                                              // Create the new file path
-                                                                              String fileName = path.basenameWithoutExtension(filePath);
-                                                                              String newPath = path.join(directory.path, '$fileName.pdf');
-
-                                                                              // Write the file to the new location
-                                                                              File newFile = File(newPath);
-                                                                              await newFile.writeAsBytes(await File(filePath).readAsBytes());
-
-                                                                              // Show success message
-                                                                              AppHelper.showTopSnackBar(context, "PDF File saved to Documents folder");
-                                                                            } catch (e) {
-                                                                              // Handle any errors
-                                                                              AppHelper.showTopSnackBar(context, "Failed to save file: $e");
-                                                                            }
+                                                                          try {
+                                                                            await DownloadHelper
+                                                                                .saveFileToDownloads(
+                                                                                    filePath);
+                                                                            AppHelper.showTopSnackBar(
+                                                                              context,
+                                                                              translation(context).fileSavedDownloadFolder,
+                                                                            );
+                                                                          } catch (e) {
+                                                                            AppHelper.showTopSnackBar(
+                                                                              context,
+                                                                              "Failed to download file: $e",
+                                                                            );
                                                                           }
                                                                         },
                                                                         child:
@@ -2074,7 +2105,79 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                                 width: 20,
                                                                               ),
                                                                               Text(
-                                                                                translation(context).saveAtGallery,
+                                                                                translation(context).downloadFile,
+                                                                                style: const TextStyle(
+                                                                                  color: Colors.black,
+                                                                                  fontSize: 16,
+                                                                                  fontWeight: FontWeight.w400,
+                                                                                ),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                    Divider(
+                                                                      color: Colors
+                                                                              .grey[
+                                                                          200],
+                                                                      thickness:
+                                                                          1,
+                                                                      indent: MediaQuery.sizeOf(context)
+                                                                              .width *
+                                                                          0.15,
+                                                                    ),
+                                                                    Material(
+                                                                      color: Colors
+                                                                          .transparent,
+                                                                      child:
+                                                                          InkWell(
+                                                                        onTap:
+                                                                            () async {
+                                                                          Navigator.pop(
+                                                                              context);
+                                                                          showNormalAlertDialogue(
+                                                                            context:
+                                                                                context,
+                                                                            title:
+                                                                                translation(context).alert,
+                                                                            content:
+                                                                                translation(context).areYouSureYouWantToDeleteTheSelectedItems,
+                                                                            onOkText:
+                                                                                translation(context).ok,
+                                                                            onCancelText:
+                                                                                translation(context).cancel,
+                                                                            onOk:
+                                                                                () async {
+                                                                              Navigator.pop(context);
+                                                                              await _deleteSingleFile(filePath);
+                                                                            },
+                                                                            onCancel:
+                                                                                () {
+                                                                              Navigator.pop(context);
+                                                                            },
+                                                                          );
+                                                                        },
+                                                                        child:
+                                                                            Padding(
+                                                                          padding: const EdgeInsets
+                                                                              .symmetric(
+                                                                              horizontal: 20.0,
+                                                                              vertical: 5),
+                                                                          child:
+                                                                              Row(
+                                                                            children: [
+                                                                              SvgPicture.asset(
+                                                                                AppAssets.delete,
+                                                                                height: 22,
+                                                                                width: 22,
+                                                                                color: Colors.black,
+                                                                              ),
+                                                                              const SizedBox(
+                                                                                width: 20,
+                                                                              ),
+                                                                              Text(
+                                                                                translation(context).deleteFile,
                                                                                 style: const TextStyle(
                                                                                   color: Colors.black,
                                                                                   fontSize: 16,

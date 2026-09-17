@@ -183,5 +183,7 @@
   "fileAlreadyExists": "Файл уже существует",
   "conflictAlert": "Предупреждение о конфликте файлов",
   "fileConflictAlertContent":"Некоторые файлы уже существуют в этом каталоге. Хотите их дублировать?",
-  "duplicate":  "Дубликат"
+  "duplicate":  "Дубликат",
+  "deleteFile": "Удалить файл",
+  "downloadFile": "Скачать файл"
 }

@@ -570,4 +570,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get duplicate => 'ينسخ';
+
+  @override
+  String get deleteFile => 'حذف الملف';
+
+  @override
+  String get downloadFile => 'تنزيل الملف';
 }

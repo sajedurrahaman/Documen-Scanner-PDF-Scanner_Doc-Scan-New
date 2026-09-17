@@ -569,4 +569,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get duplicate => 'Duplicate';
+
+  @override
+  String get deleteFile => 'Delete File';
+
+  @override
+  String get downloadFile => 'Download File';
 }

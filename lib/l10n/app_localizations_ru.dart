@@ -577,4 +577,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get duplicate => 'Дубликат';
+
+  @override
+  String get deleteFile => 'Удалить файл';
+
+  @override
+  String get downloadFile => 'Скачать файл';
 }

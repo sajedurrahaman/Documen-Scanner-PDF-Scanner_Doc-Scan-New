@@ -574,4 +574,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get duplicate => 'Duplikat';
+
+  @override
+  String get deleteFile => 'Hapus File';
+
+  @override
+  String get downloadFile => 'Unduh File';
 }

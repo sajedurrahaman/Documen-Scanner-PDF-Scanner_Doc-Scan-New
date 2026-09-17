@@ -183,5 +183,7 @@
   "fileAlreadyExists": "ファイルはすでに存在します",
   "conflictAlert": "ファイルの競合警告",
   "fileConflictAlertContent":"このディレクトリにはすでにいくつかのファイルがあります。複製しますか?",
-  "duplicate": "重複"
+  "duplicate": "重複",
+  "deleteFile": "ファイルを削除",
+  "downloadFile": "ファイルをダウンロード"
 }

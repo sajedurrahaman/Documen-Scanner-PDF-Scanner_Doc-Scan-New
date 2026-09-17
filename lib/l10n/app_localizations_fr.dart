@@ -581,4 +581,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get duplicate => 'Dupliquer';
+
+  @override
+  String get deleteFile => 'Supprimer le fichier';
+
+  @override
+  String get downloadFile => 'Télécharger le fichier';
 }

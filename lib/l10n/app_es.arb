@@ -183,5 +183,7 @@
   "fileAlreadyExists": "El archivo ya existe",
   "conflictAlert": "Alerta de conflicto",
   "fileConflictAlertContent": "Algunos archivos ya existen en este directorio. ¿Quieres duplicarlos?",
-  "duplicate": "Duplicar"
+  "duplicate": "Duplicar",
+  "deleteFile": "Eliminar archivo",
+  "downloadFile": "Descargar archivo"
 }

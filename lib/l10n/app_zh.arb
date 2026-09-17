@@ -183,6 +183,7 @@
   "fileAlreadyExists": "文件已存在",
   "conflictAlert": "文件冲突警告",
   "fileConflictAlertContent":"該目錄中已經存在一些檔案。您想複製它們嗎？",
-  "duplicate": "重复"
-
+  "duplicate": "重复",
+  "deleteFile": "刪除檔案",
+  "downloadFile": "下載檔案"
 }

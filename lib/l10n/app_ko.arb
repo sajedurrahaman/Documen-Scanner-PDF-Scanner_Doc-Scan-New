@@ -183,5 +183,7 @@
     "fileAlreadyExists": "파일이 이미 있습니다",
   "conflictAlert": "파일 충돌 경고",
   "fileConflictAlertContent":"일부 파일이 이 디렉토리에 이미 존재합니다. 복제하시겠습니까?",
-  "duplicate":"중복"
+  "duplicate":"중복",
+  "deleteFile": "파일 삭제",
+  "downloadFile": "파일 다운로드"
 }

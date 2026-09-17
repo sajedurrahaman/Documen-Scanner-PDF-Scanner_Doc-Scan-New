@@ -183,5 +183,7 @@
   "fileAlreadyExists": "Le fichier existe déjà",
   "conflictAlert": "Alerte de conflit",
   "fileConflictAlertContent":"Certains fichiers existent déjà dans ce répertoire. Voulez-vous les dupliquer?",
-  "duplicate": "Dupliquer"
+  "duplicate": "Dupliquer",
+  "deleteFile": "Supprimer le fichier",
+  "downloadFile": "Télécharger le fichier"
 }

@@ -572,4 +572,10 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get duplicate => 'डुप्लिकेट';
+
+  @override
+  String get deleteFile => 'फ़ाइल हटाएँ';
+
+  @override
+  String get downloadFile => 'फ़ाइल डाउनलोड करें';
 }

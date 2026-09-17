@@ -560,4 +560,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get duplicate => '중복';
+
+  @override
+  String get deleteFile => '파일 삭제';
+
+  @override
+  String get downloadFile => '파일 다운로드';
 }

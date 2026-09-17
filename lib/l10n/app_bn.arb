@@ -183,5 +183,7 @@
   "fileAlreadyExist": "ফাইল ইতিমধ্যে বিদ্যমান",
   "conflictAlert": "সংঘর্ষ সতর্কতা",
   "fileConflictAlertContent": "কিছু ফাইল ইতিমধ্যেই এই ডিরেক্টরিতে বিদ্যমান। আপনি কি তাদের নকল করতে চান?",
-  "duplicate": "নকল"
+  "duplicate": "নকল",
+  "deleteFile": "ফাইল মুছুন",
+  "downloadFile": "ফাইল ডাউনলোড"
 }

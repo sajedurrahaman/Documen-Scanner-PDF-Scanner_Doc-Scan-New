@@ -181,5 +181,7 @@
   "fileAlreadyExists": "File Already Exists",
   "conflictAlert": "Conflict Alert!",
   "fileConflictAlertContent": "Some files already exist in this directory. Do you want to duplicate them?",
-  "duplicate": "Duplicate"
+  "duplicate": "Duplicate",
+  "deleteFile": "Delete File",
+  "downloadFile": "Download File"
 }
