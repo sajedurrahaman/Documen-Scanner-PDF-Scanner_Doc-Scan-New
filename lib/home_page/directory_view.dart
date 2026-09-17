@@ -64,30 +64,6 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
     });
   }
 
-  Future<void> _deleteSingleFile(String filePath) async {
-    final homePageProvider = context.read<HomePageProvider>();
-    try {
-      final file = File(filePath);
-      if (filePath.split("/").contains("Document")) {
-        homePageProvider.removeDocumentImage(filePath);
-      } else if (filePath.split("/").contains("ID Card")) {
-        homePageProvider.removeIdCardImage(filePath);
-      } else if (filePath.split("/").contains("QR Code")) {
-        homePageProvider.removeQrCode(filePath);
-      } else if (filePath.split("/").contains("Bar Code")) {
-        homePageProvider.removeBarCode(filePath);
-      }
-      if (file.existsSync()) {
-        file.deleteSync();
-      }
-      setState(() {
-        allFiles = homePageProvider.getFileList(widget.directoryPath);
-      });
-    } catch (e) {
-      log(e.toString());
-    }
-  }
-
   void _openBrowserWithSearch(String query) async {
     // Encode the query to make it URL-safe
     final encodedQuery = Uri.encodeComponent(query);
@@ -1858,7 +1834,7 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                 height: MediaQuery.sizeOf(
                                                                             context)
                                                                         .height *
-                                                                    0.32,
+                                                                    0.25,
                                                                 width: MediaQuery
                                                                         .sizeOf(
                                                                             context)
@@ -2106,78 +2082,6 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                               ),
                                                                               Text(
                                                                                 translation(context).downloadFile,
-                                                                                style: const TextStyle(
-                                                                                  color: Colors.black,
-                                                                                  fontSize: 16,
-                                                                                  fontWeight: FontWeight.w400,
-                                                                                ),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                    Divider(
-                                                                      color: Colors
-                                                                              .grey[
-                                                                          200],
-                                                                      thickness:
-                                                                          1,
-                                                                      indent: MediaQuery.sizeOf(context)
-                                                                              .width *
-                                                                          0.15,
-                                                                    ),
-                                                                    Material(
-                                                                      color: Colors
-                                                                          .transparent,
-                                                                      child:
-                                                                          InkWell(
-                                                                        onTap:
-                                                                            () async {
-                                                                          Navigator.pop(
-                                                                              context);
-                                                                          showNormalAlertDialogue(
-                                                                            context:
-                                                                                context,
-                                                                            title:
-                                                                                translation(context).alert,
-                                                                            content:
-                                                                                translation(context).areYouSureYouWantToDeleteTheSelectedItems,
-                                                                            onOkText:
-                                                                                translation(context).ok,
-                                                                            onCancelText:
-                                                                                translation(context).cancel,
-                                                                            onOk:
-                                                                                () async {
-                                                                              Navigator.pop(context);
-                                                                              await _deleteSingleFile(filePath);
-                                                                            },
-                                                                            onCancel:
-                                                                                () {
-                                                                              Navigator.pop(context);
-                                                                            },
-                                                                          );
-                                                                        },
-                                                                        child:
-                                                                            Padding(
-                                                                          padding: const EdgeInsets
-                                                                              .symmetric(
-                                                                              horizontal: 20.0,
-                                                                              vertical: 5),
-                                                                          child:
-                                                                              Row(
-                                                                            children: [
-                                                                              SvgPicture.asset(
-                                                                                AppAssets.delete,
-                                                                                height: 22,
-                                                                                width: 22,
-                                                                                color: Colors.black,
-                                                                              ),
-                                                                              const SizedBox(
-                                                                                width: 20,
-                                                                              ),
-                                                                              Text(
-                                                                                translation(context).deleteFile,
                                                                                 style: const TextStyle(
                                                                                   color: Colors.black,
                                                                                   fontSize: 16,
