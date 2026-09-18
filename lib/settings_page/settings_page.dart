@@ -266,8 +266,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       onTap: () async {
                         try {
                           if (Platform.isIOS) {
+                            // Opens App Store write-review sheet for this app.
+                            // Review is tied to the user's Apple ID storefront country.
                             final url = Uri.parse(
-                              "https://apps.apple.com/app/id6472610820",
+                              "https://apps.apple.com/app/id6472610820?action=write-review",
                             );
                             await launchUrl(
                               url,
@@ -282,21 +284,6 @@ class _SettingsPageState extends State<SettingsPage> {
                               mode: LaunchMode.externalApplication,
                             );
                           }
-
-                          // if (Platform.isAndroid || Platform.isIOS) {
-                          //   final appId = Platform.isAndroid
-                          //       ? ''
-                          //       : 'com.documentscannerpdfscanner';
-                          //   final url = Uri.parse(
-                          //     Platform.isAndroid
-                          //         ? "market://details?id=$appId"
-                          //         : "https://apps.apple.com/app/id6472610820",
-                          //   );
-                          //   await launchUrl(
-                          //     url,
-                          //     mode: LaunchMode.externalApplication,
-                          //   );
-                          // }
                         } catch (e) {
                           developer.log(e.toString());
                         }
