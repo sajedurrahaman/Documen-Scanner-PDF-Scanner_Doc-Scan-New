@@ -222,6 +222,14 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        foregroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.black),
+        actionsIconTheme: const IconThemeData(color: Colors.black),
         title: Text(translation(context).docScanner),
         titleTextStyle: const TextStyle(
           fontSize: 28,

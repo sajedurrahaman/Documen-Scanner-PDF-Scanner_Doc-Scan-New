@@ -75,6 +75,16 @@ class _MyAppState extends State<MyApp> {
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
               useMaterial3: true,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                surfaceTintColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                scrolledUnderElevation: 0,
+                elevation: 0,
+                iconTheme: IconThemeData(color: Colors.black),
+                actionsIconTheme: IconThemeData(color: Colors.black),
+              ),
               textButtonTheme: TextButtonThemeData(
                 style: TextButton.styleFrom(
                     foregroundColor: AppColor.primaryColor),
