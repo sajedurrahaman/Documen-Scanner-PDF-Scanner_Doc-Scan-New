@@ -575,4 +575,7 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get moreApps => 'আরো অ্যাপস';
+
+  @override
+  String get downloadFile => 'ফাইল ডাউনলোড';
 }

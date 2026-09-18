@@ -577,4 +577,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get moreApps => 'Другие приложения';
+
+  @override
+  String get downloadFile => 'Скачать файл';
 }

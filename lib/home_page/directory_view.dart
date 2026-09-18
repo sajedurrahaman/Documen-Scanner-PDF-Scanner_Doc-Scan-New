@@ -9,6 +9,7 @@ import 'package:doc_scanner/utils/addHelper.dart';
 import 'package:doc_scanner/utils/app_assets.dart';
 import 'package:doc_scanner/utils/app_color.dart';
 import 'package:doc_scanner/utils/banner_ad_widget.dart';
+import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -43,6 +44,24 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
 
   late Directory rootDirectory;
   String subFilePath = "";
+
+  void _enterSelectionWithItem(String filePath) {
+    setState(() {
+      _isLongPressed = true;
+      _selectedItems.add(filePath);
+    });
+  }
+
+  void _toggleItemSelection(String filePath) {
+    setState(() {
+      if (_selectedItems.contains(filePath)) {
+        _selectedItems.remove(filePath);
+      } else {
+        _selectedItems.add(filePath);
+      }
+    });
+  }
+
   void _openBrowserWithSearch(String query) async {
     // Encode the query to make it URL-safe
     final encodedQuery = Uri.encodeComponent(query);
@@ -631,6 +650,10 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                     if (Directory(filePath).existsSync()) {
                                       return GestureDetector(
                                         onTap: () {
+                                          if (_isLongPressed) {
+                                            _toggleItemSelection(filePath);
+                                            return;
+                                          }
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
@@ -641,6 +664,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                             ),
                                           );
                                         },
+                                        onLongPress: () =>
+                                            _enterSelectionWithItem(filePath),
                                         child: Stack(
                                           alignment: Alignment.topRight,
                                           children: [
@@ -977,11 +1002,17 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                             .endsWith('.png')) {
                                       return GestureDetector(
                                         onTap: () async {
+                                          if (_isLongPressed) {
+                                            _toggleItemSelection(filePath);
+                                            return;
+                                          }
                                           await flutterGenralDialogue(
                                             context: context,
                                             imageFile: File(filePath),
                                           );
                                         },
+                                        onLongPress: () =>
+                                            _enterSelectionWithItem(filePath),
                                         child: Stack(
                                           alignment: Alignment.topRight,
                                           children: [
@@ -1386,6 +1417,10 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                         .endsWith('.txt')) {
                                       return GestureDetector(
                                         onTap: () async {
+                                          if (_isLongPressed) {
+                                            _toggleItemSelection(filePath);
+                                            return;
+                                          }
                                           var urlLink = await homePageProvider
                                               .readTxtFile(filePath);
                                           showQrAndBarCodeViewDialogue(
@@ -1446,6 +1481,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                         urlLink);
                                               });
                                         },
+                                        onLongPress: () =>
+                                            _enterSelectionWithItem(filePath),
                                         child: Stack(
                                           alignment: Alignment.topRight,
                                           children: [
@@ -1781,8 +1818,14 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                         .endsWith('.pdf')) {
                                       return GestureDetector(
                                         onTap: () async {
+                                          if (_isLongPressed) {
+                                            _toggleItemSelection(filePath);
+                                            return;
+                                          }
                                           await OpenFilex.open(filePath);
                                         },
+                                        onLongPress: () =>
+                                            _enterSelectionWithItem(filePath),
                                         child: Stack(
                                           alignment: Alignment.topRight,
                                           children: [
@@ -1866,7 +1909,14 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                         pageBuilder: (context, animation, secondaryAnimation) {
                                                           return Align(
                                                             alignment: Alignment.bottomCenter,
-                                                            child: Container(
+                                                            child: Material(
+                                                              color: Colors.white,
+                                                              borderRadius: const BorderRadius.only(
+                                                                topLeft: Radius.circular(20),
+                                                                topRight: Radius.circular(20),
+                                                              ),
+                                                              clipBehavior: Clip.antiAlias,
+                                                              child: Container(
                                                               height: MediaQuery
                                                                           .sizeOf(
                                                                               context)
@@ -1917,6 +1967,7 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                               .documentFiles,
                                                                           style:
                                                                               const TextStyle(
+                                                                            decoration: TextDecoration.none,
                                                                             color:
                                                                                 Colors.black,
                                                                             fontSize:
@@ -2105,10 +2156,6 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                             .grey[
                                                                         200],
                                                                     thickness: 1,
-                                                                    indent: MediaQuery.sizeOf(
-                                                                                context)
-                                                                            .width *
-                                                                        0.15,
                                                                   ),
                                                                   Material(
                                                                     color: Colors
@@ -2119,86 +2166,19 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                           () async {
                                                                         Navigator.pop(
                                                                             context);
-                                                                        if (Platform
-                                                                            .isIOS) {
-                                                                          try {
-                                                                            Directory
-                                                                                directory =
-                                                                                await getApplicationDocumentsDirectory();
-
-                                                                            // Ensure the directory exists
-                                                                            if (!directory
-                                                                                .existsSync()) {
-                                                                              directory.createSync(recursive: true);
-                                                                            }
-
-                                                                            // Create the new file path
-                                                                            String
-                                                                                fileName =
-                                                                                path.basenameWithoutExtension(filePath);
-                                                                            String
-                                                                                newPath =
-                                                                                path.join(directory.path, '$fileName.pdf');
-
-                                                                            // Write the file to the new location
-                                                                            File
-                                                                                newFile =
-                                                                                File(newPath);
-                                                                            await newFile
-                                                                                .writeAsBytes(await File(filePath).readAsBytes());
-
-                                                                            // Show success message
-                                                                            AppHelper.showTopSnackBar(
-                                                                                context,
-                                                                                "PDF File saved to Documents folder");
-
-                                                                            print(
-                                                                                "Holl print");
-                                                                          } catch (e) {
-                                                                            // Handle any errors
-                                                                            AppHelper.showTopSnackBar(
-                                                                                context,
-                                                                                "Failed to save file: $e");
-                                                                          }
-                                                                        } else if (Platform
-                                                                            .isAndroid) {
-                                                                          try {
-                                                                            // Access the public Documents directory
-                                                                            Directory
-                                                                                directory =
-                                                                                Directory('/storage/emulated/0/Documents');
-
-                                                                            // Ensure the directory exists
-                                                                            if (!directory
-                                                                                .existsSync()) {
-                                                                              directory.createSync(recursive: true);
-                                                                            }
-
-                                                                            // Create the new file path
-                                                                            String
-                                                                                fileName =
-                                                                                path.basenameWithoutExtension(filePath);
-                                                                            String
-                                                                                newPath =
-                                                                                path.join(directory.path, '$fileName.pdf');
-
-                                                                            // Write the file to the new location
-                                                                            File
-                                                                                newFile =
-                                                                                File(newPath);
-                                                                            await newFile
-                                                                                .writeAsBytes(await File(filePath).readAsBytes());
-
-                                                                            // Show success message
-                                                                            AppHelper.showTopSnackBar(
-                                                                                context,
-                                                                                "PDF File saved to Documents folder");
-                                                                          } catch (e) {
-                                                                            // Handle any errors
-                                                                            AppHelper.showTopSnackBar(
-                                                                                context,
-                                                                                "Failed to save file: $e");
-                                                                          }
+                                                                        try {
+                                                                          await DownloadHelper
+                                                                              .saveFileToDownloads(
+                                                                                  filePath);
+                                                                          AppHelper.showTopSnackBar(
+                                                                            context,
+                                                                            translation(context).fileSavedDownloadFolder,
+                                                                          );
+                                                                        } catch (e) {
+                                                                          AppHelper.showTopSnackBar(
+                                                                            context,
+                                                                            "Failed to download file: $e",
+                                                                          );
                                                                         }
                                                                       },
                                                                       child:
@@ -2222,9 +2202,10 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                                   20,
                                                                             ),
                                                                             Text(
-                                                                              translation(context).saveAtGallery,
+                                                                              translation(context).downloadFile,
                                                                               style:
                                                                                   const TextStyle(
+                                                                                decoration: TextDecoration.none,
                                                                                 color: Colors.black,
                                                                                 fontSize: 16,
                                                                                 fontWeight: FontWeight.w400,
@@ -2237,6 +2218,7 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                   ),
                                                                 ],
                                                               ),
+                                                            ),
                                                             ),
                                                           );
                                                         },

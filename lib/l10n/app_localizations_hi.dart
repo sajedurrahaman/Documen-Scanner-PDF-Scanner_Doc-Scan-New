@@ -572,4 +572,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get moreApps => 'और ऐप्स';
+
+  @override
+  String get downloadFile => 'फ़ाइल डाउनलोड करें';
 }

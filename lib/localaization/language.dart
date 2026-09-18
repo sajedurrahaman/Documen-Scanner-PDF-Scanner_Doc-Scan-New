@@ -7,17 +7,18 @@ class Language{
 
   static List<Language> languageList() {
     return <Language>[
-      Language(1, 'English', 'en'),
-      Language(2, 'Chinese', 'zh'),
-      Language(3, 'Korean', 'ko'),
-      Language(4, 'Japanese', 'ja'),
-      Language(5, 'Russian', 'ru'),
+      Language(1, 'Arabic', 'ar'),
+      Language(2, 'Bengali', 'bn'),
+      Language(3, 'Chinese', 'zh'),
+      Language(4, 'English', 'en'),
+      Language(5, 'French', 'fr'),
       Language(6, 'Hindi', 'hi'),
-      Language(7, 'Spanish', 'es'),
-      Language(8, 'French', 'fr'),
-      Language(9, 'Bengali', 'bn'),
-      Language(10, 'Indonesian', 'id'),
-      Language(11, 'Arabic', 'ar'),
+      Language(7, 'Indonesian', 'id'),
+      Language(8, 'Japanese', 'ja'),
+      Language(9, 'Korean', 'ko'),
+      Language(10, 'Russian', 'ru'),
+      Language(11, 'Spanish', 'es'),
+      Language(12, 'Turkiye', 'tr'),
     ];
   }
 

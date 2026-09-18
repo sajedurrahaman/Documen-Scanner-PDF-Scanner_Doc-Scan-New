@@ -559,4 +559,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get moreApps => '更多應用';
+
+  @override
+  String get downloadFile => '下載檔案';
 }

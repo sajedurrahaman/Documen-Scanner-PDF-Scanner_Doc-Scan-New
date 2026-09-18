@@ -561,4 +561,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get moreApps => 'その他のアプリ';
+
+  @override
+  String get downloadFile => 'ファイルをダウンロード';
 }

@@ -183,5 +183,6 @@
   "conflictAlert": "Alerta de conflicto",
   "fileConflictAlertContent": "Algunos archivos ya existen en este directorio. ¿Quieres duplicarlos?",
   "duplicate": "Duplicar",
-  "moreApps": "Más aplicaciones"
+  "moreApps": "Más aplicaciones",
+  "downloadFile": "Descargar archivo"
 }

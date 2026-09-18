@@ -26,7 +26,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   bool vibration = true;
   bool beep = true;
-  Language _selectedLanguage = Language(1, 'English', 'en');
+  Language _selectedLanguage = Language(4, 'English', 'en');
 
   @override
   void initState() {

@@ -183,6 +183,7 @@
   "conflictAlert": "Peringatan Konflik",
   "fileConflictAlertContent":"Beberapa berkas sudah ada di direktori ini. Apakah Anda ingin menduplikasinya?",
   "duplicate": "Duplikat",
-  "moreApps": "Aplikasi Lainnya"
+  "moreApps": "Aplikasi Lainnya",
+  "downloadFile": "Unduh File"
 
 }

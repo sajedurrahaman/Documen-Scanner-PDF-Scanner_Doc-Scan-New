@@ -632,27 +632,38 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                     ? []
                                                     : [
                                                         TextButton(
-                                                          onPressed: () {
+                                                          onPressed: () async {
                                                             if (renameController
                                                                 .text
-                                                                .isNotEmpty) {
-                                                              setState(() {
-                                                                isSaving =
-                                                                    true; // Show progress indicator
-                                                              });
-                                                              cameProvider
+                                                                .isEmpty) {
+                                                              return;
+                                                            }
+                                                            setState(() {
+                                                              isSaving = true;
+                                                            });
+                                                            try {
+                                                              await cameProvider
                                                                   .createPDFFromByte(
-                                                                      context:
-                                                                          context,
-                                                                      fileName:
-                                                                          renameController
-                                                                              .text)
-                                                                  .then((value) {
-                                                                cameraProvider
-                                                                    .clearImageList();
-                                                                Navigator.pushAndRemoveUntil(
+                                                                context:
                                                                     context,
-                                                                    MaterialPageRoute(
+                                                                fileName:
+                                                                    renameController
+                                                                        .text,
+                                                              );
+                                                              if (!context
+                                                                  .mounted) {
+                                                                return;
+                                                              }
+                                                              cameraProvider
+                                                                  .clearImageList();
+                                                              showTopSnackbar(
+                                                                context,
+                                                                "PDF save sasuccessfully in Document Folder",
+                                                              );
+                                                              Navigator
+                                                                  .pushAndRemoveUntil(
+                                                                context,
+                                                                MaterialPageRoute(
                                                                   builder:
                                                                       (context) {
                                                                     return const BottomBar(
@@ -661,19 +672,17 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                                     );
                                                                   },
                                                                 ),
-                                                                    (route) =>
-                                                                        false).then(
-                                                                  (value) {
-                                                                    setState(() {
-                                                                      isSaving =
-                                                                          false; // Hide progress indicator
-                                                                    });
-                                                                  },
-                                                                );
-                                                                showTopSnackbar(
-                                                                    context,
-                                                                    "PDF save sasuccessfully in Document Folder");
-                                                              });
+                                                                (route) =>
+                                                                    false,
+                                                              );
+                                                            } catch (_) {
+                                                              if (context
+                                                                  .mounted) {
+                                                                setState(() {
+                                                                  isSaving =
+                                                                      false;
+                                                                });
+                                                              }
                                                             }
                                                           },
                                                           style:

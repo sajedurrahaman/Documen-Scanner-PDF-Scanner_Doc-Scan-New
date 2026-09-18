@@ -575,4 +575,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get moreApps => 'Aplikasi Lainnya';
+
+  @override
+  String get downloadFile => 'Unduh File';
 }

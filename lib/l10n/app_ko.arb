@@ -183,5 +183,6 @@
   "conflictAlert": "파일 충돌 경고",
   "fileConflictAlertContent":"일부 파일이 이 디렉토리에 이미 존재합니다. 복제하시겠습니까?",
   "duplicate":"중복",
-  "moreApps": "더 많은 앱"
+  "moreApps": "더 많은 앱",
+  "downloadFile": "파일 다운로드"
 }

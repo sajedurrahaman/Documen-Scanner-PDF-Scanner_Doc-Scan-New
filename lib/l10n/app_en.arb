@@ -181,5 +181,6 @@
   "conflictAlert": "Conflict Alert!",
   "fileConflictAlertContent": "Some files already exist in this directory. Do you want to duplicate them?",
   "duplicate": "Duplicate",
-  "moreApps": "More Apps"
+  "moreApps": "More Apps",
+  "downloadFile": "Download File"
 }

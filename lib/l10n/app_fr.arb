@@ -183,5 +183,6 @@
   "conflictAlert": "Alerte de conflit",
   "fileConflictAlertContent":"Certains fichiers existent déjà dans ce répertoire. Voulez-vous les dupliquer?",
   "duplicate": "Dupliquer",
-  "moreApps": "Plus d'applications"
+  "moreApps": "Plus d'applications",
+  "downloadFile": "Télécharger le fichier"
 }

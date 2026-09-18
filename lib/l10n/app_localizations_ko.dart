@@ -560,4 +560,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get moreApps => '더 많은 앱';
+
+  @override
+  String get downloadFile => '파일 다운로드';
 }

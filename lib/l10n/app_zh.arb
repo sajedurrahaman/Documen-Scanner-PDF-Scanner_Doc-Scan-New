@@ -183,6 +183,7 @@
   "conflictAlert": "文件冲突警告",
   "fileConflictAlertContent":"該目錄中已經存在一些檔案。您想複製它們嗎？",
   "duplicate": "重复",
-  "moreApps": "更多應用"
+  "moreApps": "更多應用",
+  "downloadFile": "下載檔案"
 
 }

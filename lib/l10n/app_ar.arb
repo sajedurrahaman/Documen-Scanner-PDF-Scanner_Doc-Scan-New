@@ -183,5 +183,6 @@
   "conflictAlert": "تنبيه الصراع",
   "fileConflictAlertContent": "توجد بعض الملفات بالفعل في هذا الدليل. هل تريد تكرارها؟",
   "duplicate": "ينسخ",
-  "moreApps": "المزيد من التطبيقات"
+  "moreApps": "المزيد من التطبيقات",
+  "downloadFile": "تنزيل الملف"
 }

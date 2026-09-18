@@ -581,4 +581,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get moreApps => 'Plus d\'applications';
+
+  @override
+  String get downloadFile => 'Télécharger le fichier';
 }

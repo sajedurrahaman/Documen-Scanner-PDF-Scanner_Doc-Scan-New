@@ -183,5 +183,6 @@
   "conflictAlert": "সংঘর্ষ সতর্কতা",
   "fileConflictAlertContent": "কিছু ফাইল ইতিমধ্যেই এই ডিরেক্টরিতে বিদ্যমান। আপনি কি তাদের নকল করতে চান?",
   "duplicate": "নকল",
-  "moreApps": "আরো অ্যাপস"
+  "moreApps": "আরো অ্যাপস",
+  "downloadFile": "ফাইল ডাউনলোড"
 }

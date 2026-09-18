@@ -570,4 +570,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get moreApps => 'المزيد من التطبيقات';
+
+  @override
+  String get downloadFile => 'تنزيل الملف';
 }
