@@ -57,6 +57,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> checkForUpdate(BuildContext context) async {
+    // Soft update for both stores is handled by ForceUpdateWrapper (upgrader).
+    // Keep this Play Store HTML check only as an Android fallback.
+    if (!Platform.isAndroid) return;
+
     print("objects: checkForUpdate called");
     final PackageInfo info = await PackageInfo.fromPlatform();
     final String currentVersion = info.version;
