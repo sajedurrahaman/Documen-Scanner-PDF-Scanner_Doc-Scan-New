@@ -13,6 +13,7 @@ import 'package:doc_scanner/image_edit/image_edit_preview.dart';
 import 'package:doc_scanner/main.dart';
 import 'package:doc_scanner/utils/Common.dart';
 import 'package:doc_scanner/utils/app_assets.dart';
+import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/helper.dart';
 import 'package:doc_scanner/utils/pdf_view_screen.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as path;
 import 'package:url_launcher/url_launcher.dart';
@@ -143,6 +145,19 @@ class _HomePageState extends State<HomePage> {
 
   String? _recentKey;
   Future<List<_HomeRecentFile>>? _recentFuture;
+  bool _homeRouteVisible = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final visible = ModalRoute.of(context)?.isCurrent ?? true;
+    if (visible && !_homeRouteVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _refreshRecentFiles();
+      });
+    }
+    _homeRouteVisible = visible;
+  }
 
   Future<void> _onCameraItemTap(CameraItem cameraItem) async {
     if (cameraItem.name == "Document") {
@@ -406,6 +421,161 @@ class _HomePageState extends State<HomePage> {
     return _openStoredFile(File(file.path));
   }
 
+  Future<void> _refreshRecentFiles() async {
+    final provider = context.read<HomePageProvider>();
+    provider.clearDocumentImageFiles();
+    provider.clearIdCardImageFiles();
+    provider.clearQRCodeFiles();
+    provider.clearBarCodeFiles();
+    await provider.loadDocumentImage();
+    await provider.loadIdCardImage();
+    await provider.loadQRCode();
+    await provider.loadBarCode();
+    _recentKey = null;
+    _recentFuture = null;
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _renameRecent(_HomeRecentFile file) async {
+    final controller = TextEditingController(
+      text: path.basenameWithoutExtension(file.path),
+    );
+    final formKey = GlobalKey<FormState>();
+    var errorMessage = '';
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: Text(
+                translation(dialogContext).renameFile,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              content: Form(
+                key: formKey,
+                child: TextFormField(
+                  controller: controller,
+                  autofocus: true,
+                  textInputAction: TextInputAction.done,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return translation(dialogContext).pleaseEnterFileName;
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    hintText: translation(dialogContext).enterFileName,
+                    errorText: errorMessage.isEmpty ? null : errorMessage,
+                    border: const OutlineInputBorder(),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(translation(dialogContext).cancel),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    final parent = File(file.path).parent.path;
+                    final extension = path.extension(file.path);
+                    final newPath = path.join(
+                      parent,
+                      '${controller.text.trim()}$extension',
+                    );
+                    if (newPath == file.path) {
+                      Navigator.pop(dialogContext);
+                      return;
+                    }
+                    if (await File(newPath).exists()) {
+                      setDialogState(() {
+                        errorMessage =
+                            translation(dialogContext).fileAlreadyExists;
+                      });
+                      return;
+                    }
+                    await File(file.path).rename(newPath);
+                    if (!dialogContext.mounted) return;
+                    Navigator.pop(dialogContext);
+                    if (!mounted) return;
+                    await _refreshRecentFiles();
+                  },
+                  child: Text(translation(dialogContext).save),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    controller.dispose();
+  }
+
+  Future<void> _downloadRecent(_HomeRecentFile file) async {
+    try {
+      await DownloadHelper.saveFileToDownloads(file.path);
+      if (!mounted) return;
+      AppHelper.showTopSnackBar(
+        context,
+        translation(context).fileSavedDownloadFolder,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      AppHelper.showTopSnackBar(context, 'Failed to download file: $e');
+    }
+  }
+
+  Future<void> _shareRecent(_HomeRecentFile file) async {
+    if (file.path.toLowerCase().endsWith('.txt')) {
+      final text = await File(file.path).readAsString();
+      if (!mounted) return;
+      await Share.share(text);
+      return;
+    }
+    await Share.shareXFiles([XFile(file.path)]);
+  }
+
+  Future<void> _deleteRecent(_HomeRecentFile file) {
+    return showNormalAlertDialogue(
+      context: context,
+      title: translation(context).deleteFile,
+      content: translation(context).areYouSureYouWantToDeleteTheSelectedItems,
+      onOkText: translation(context).ok,
+      onCancelText: translation(context).cancel,
+      onOk: () async {
+        Navigator.pop(context);
+        await File(file.path).delete();
+        if (!mounted) return;
+        await _refreshRecentFiles();
+      },
+      onCancel: () => Navigator.pop(context),
+    );
+  }
+
+  Future<void> _onRecentMenu(
+    _HomeRecentFile file,
+    _RecentMenuAction action,
+  ) {
+    switch (action) {
+      case _RecentMenuAction.rename:
+        return _renameRecent(file);
+      case _RecentMenuAction.download:
+        return _downloadRecent(file);
+      case _RecentMenuAction.share:
+        return _shareRecent(file);
+      case _RecentMenuAction.delete:
+        return _deleteRecent(file);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final homePageProvider = Provider.of<HomePageProvider>(context);
@@ -515,6 +685,7 @@ class _HomePageState extends State<HomePage> {
                                       timeAgo: _timeAgo,
                                       sizeLabel: _formatBytes,
                                       onOpen: _openRecent,
+                                      onMenu: _onRecentMenu,
                                       onSeeAll: () {
                                         Navigator.push(
                                           context,
@@ -810,6 +981,8 @@ class _RecentFilesCard extends StatelessWidget {
   final String Function(DateTime time) timeAgo;
   final String Function(int bytes) sizeLabel;
   final Future<void> Function(_HomeRecentFile file) onOpen;
+  final Future<void> Function(_HomeRecentFile file, _RecentMenuAction action)
+      onMenu;
   final VoidCallback onSeeAll;
 
   const _RecentFilesCard({
@@ -818,6 +991,7 @@ class _RecentFilesCard extends StatelessWidget {
     required this.timeAgo,
     required this.sizeLabel,
     required this.onOpen,
+    required this.onMenu,
     required this.onSeeAll,
   });
 
@@ -889,6 +1063,7 @@ class _RecentFilesCard extends StatelessWidget {
                         timeAgo: timeAgo,
                         sizeLabel: sizeLabel,
                         onOpen: onOpen,
+                        onMenu: onMenu,
                       ),
                       if (i != visible.length - 1)
                         const Divider(
@@ -911,12 +1086,15 @@ class _RecentFileTile extends StatelessWidget {
   final String Function(DateTime time) timeAgo;
   final String Function(int bytes) sizeLabel;
   final Future<void> Function(_HomeRecentFile file) onOpen;
+  final Future<void> Function(_HomeRecentFile file, _RecentMenuAction action)
+      onMenu;
 
   const _RecentFileTile({
     required this.file,
     required this.timeAgo,
     required this.sizeLabel,
     required this.onOpen,
+    required this.onMenu,
   });
 
   @override
@@ -985,12 +1163,39 @@ class _RecentFileTile extends StatelessWidget {
                 ],
               ),
             ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Color(0xFF9AA3B2)),
-              onSelected: (_) => onOpen(file),
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'open', child: Text('Open')),
+            PopupMenuButton<_RecentMenuAction>(
+              padding: EdgeInsets.zero,
+              color: Colors.white,
+              elevation: 8,
+              position: PopupMenuPosition.under,
+              constraints: const BoxConstraints(minWidth: 150, maxWidth: 168),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onSelected: (action) => onMenu(file, action),
+              itemBuilder: (context) => [
+                _recentMenuItem(
+                  _RecentMenuAction.rename,
+                  AppAssets.recentMenuRename,
+                  'Rename',
+                ),
+                _recentMenuItem(
+                  _RecentMenuAction.download,
+                  AppAssets.recentMenuDownload,
+                  'Download',
+                ),
+                _recentMenuItem(
+                  _RecentMenuAction.share,
+                  AppAssets.recentMenuShare,
+                  'Share',
+                ),
+                _recentMenuItem(
+                  _RecentMenuAction.delete,
+                  AppAssets.recentMenuDelete,
+                  'Delete',
+                ),
               ],
+              icon: const Icon(Icons.more_vert, color: Color(0xFF9AA3B2)),
             ),
           ],
         ),
@@ -1000,6 +1205,34 @@ class _RecentFileTile extends StatelessWidget {
 }
 
 enum _RecentKind { document, idCard, qr, barcode }
+
+enum _RecentMenuAction { rename, download, share, delete }
+
+PopupMenuItem<_RecentMenuAction> _recentMenuItem(
+  _RecentMenuAction value,
+  String icon,
+  String label,
+) {
+  return PopupMenuItem<_RecentMenuAction>(
+    value: value,
+    height: 36,
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    child: Row(
+      children: [
+        SvgPicture.asset(icon, width: 18, height: 18),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
 class _HomeRecentFile {
   final String path;

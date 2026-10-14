@@ -60,4 +60,12 @@ class AppAssets {
   static const String homePdfThumb = "assets/home_assets/pdf_thamnil_icon.svg";
   static const String homeQrBarThumb =
       "assets/home_assets/bar_and_qr_code_thamnil_icon.svg";
+  static const String recentMenuRename =
+      "assets/home_assets/recent_menu_rename.svg";
+  static const String recentMenuDownload =
+      "assets/home_assets/recent_menu_download.svg";
+  static const String recentMenuShare =
+      "assets/home_assets/recent_menu_share.svg";
+  static const String recentMenuDelete =
+      "assets/home_assets/recent_menu_delete.svg";
 }
