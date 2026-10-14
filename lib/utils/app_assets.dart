@@ -44,4 +44,19 @@ class AppAssets {
   static const String delete = "assets/icons/delete.svg";
   static const String txt = "assets/icons/txt.svg";
   static const String rename = "assets/icons/rename.svg";
+  static const String homeAppBarIcon = "assets/home_assets/app_bar_app_icon.svg";
+  static const String homeDocumentIcon =
+      "assets/home_assets/home_document_icon.svg";
+  static const String homeIdCardIcon = "assets/home_assets/home_id_card_icon.svg";
+  static const String homeQrCodeIcon = "assets/home_assets/home_qr_code_icon.svg";
+  static const String homeBarCodeIcon =
+      "assets/home_assets/home_bar_code_icon.svg";
+  static const String homeDocumentFolder =
+      "assets/home_assets/home_document_folder_icon.svg";
+  static const String homeIdCardFolder =
+      "assets/home_assets/home_id_card_folder_icon.svg";
+  static const String homeQrCodeFolder =
+      "assets/home_assets/home_qr_code_folder_icon.svg";
+  static const String homeBarCodeFolder =
+      "assets/home_assets/home_bar_code_folder_icon.svg";
 }
