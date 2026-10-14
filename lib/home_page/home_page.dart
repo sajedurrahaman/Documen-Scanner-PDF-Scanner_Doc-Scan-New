@@ -7,6 +7,7 @@ import 'package:doc_scanner/camera_screen/bar_code_camera_screen.dart';
 import 'package:doc_scanner/camera_screen/model/image_model.dart';
 import 'package:doc_scanner/camera_screen/qr_code_camera_screen.dart';
 import 'package:doc_scanner/home_page/provider/home_page_provider.dart';
+import 'package:doc_scanner/home_page/provider/recent_files_provider.dart';
 import 'package:doc_scanner/home_page/search_page.dart';
 import 'package:doc_scanner/image_edit/id_card_image_view.dart';
 import 'package:doc_scanner/image_edit/image_edit_preview.dart';
@@ -52,6 +53,7 @@ class _HomePageState extends State<HomePage> {
       context.read<HomePageProvider>().loadQRCode();
       context.read<HomePageProvider>().loadBarCode();
       context.read<HomePageProvider>().getDirectoriesForCreate();
+      context.read<RecentFilesProvider>().load();
 
       showInterstitialAd(context);
     });
@@ -143,8 +145,6 @@ class _HomePageState extends State<HomePage> {
   static const Color _titleColor = Color(0xFF1B2437);
   static const Color _mutedColor = Color(0xFF8B95A7);
 
-  String? _recentKey;
-  Future<List<_HomeRecentFile>>? _recentFuture;
   bool _homeRouteVisible = true;
 
   @override
@@ -297,49 +297,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<List<_HomeRecentFile>> _recentFiles(HomePageProvider provider) {
-    final paths = <String>[
-      ...provider.documentImageFiles.map((file) => file.path),
-      ...provider.idCardImageFiles.map((file) => file.path),
-      ...provider.qrCodeFiles,
-      ...provider.barCodeFiles,
-    ];
-    final key = paths.join('\n');
-    if (_recentKey != key || _recentFuture == null) {
-      _recentKey = key;
-      _recentFuture = _loadRecentFiles(provider);
-    }
-    return _recentFuture!;
-  }
-
-  Future<List<_HomeRecentFile>> _loadRecentFiles(
-      HomePageProvider provider) async {
-    final items = <_HomeRecentFile>[];
-
-    Future<void> add(String filePath, _RecentKind kind) async {
-      try {
-        final stat = await File(filePath).stat();
-        items.add(_HomeRecentFile(
-          path: filePath,
-          kind: kind,
-          modified: stat.modified,
-          size: stat.size,
-        ));
-      } catch (_) {}
-    }
-
-    await Future.wait([
-      for (final file in provider.documentImageFiles)
-        add(file.path, _RecentKind.document),
-      for (final file in provider.idCardImageFiles)
-        add(file.path, _RecentKind.idCard),
-      for (final file in provider.qrCodeFiles) add(file, _RecentKind.qr),
-      for (final file in provider.barCodeFiles) add(file, _RecentKind.barcode),
-    ]);
-    items.sort((a, b) => b.modified.compareTo(a.modified));
-    return items;
-  }
-
   String _scanIcon(String name) {
     switch (name) {
       case "ID Card":
@@ -414,29 +371,27 @@ class _HomePageState extends State<HomePage> {
     return '${diff.inDays} days ago';
   }
 
-  Future<void> _openRecent(_HomeRecentFile file) {
-    if (file.kind == _RecentKind.qr || file.kind == _RecentKind.barcode) {
+  Future<void> _openRecent(RecentFile file) {
+    if (file.kind == RecentKind.qr || file.kind == RecentKind.barcode) {
       return _openCodeFile(file.path);
     }
     return _openStoredFile(File(file.path));
   }
 
-  Future<void> _refreshRecentFiles() async {
+  Future<void> _refreshRecentFiles() {
     final provider = context.read<HomePageProvider>();
     provider.clearDocumentImageFiles();
     provider.clearIdCardImageFiles();
     provider.clearQRCodeFiles();
     provider.clearBarCodeFiles();
-    await provider.loadDocumentImage();
-    await provider.loadIdCardImage();
-    await provider.loadQRCode();
-    await provider.loadBarCode();
-    _recentKey = null;
-    _recentFuture = null;
-    if (mounted) setState(() {});
+    provider.loadDocumentImage();
+    provider.loadIdCardImage();
+    provider.loadQRCode();
+    provider.loadBarCode();
+    return context.read<RecentFilesProvider>().load();
   }
 
-  Future<void> _renameRecent(_HomeRecentFile file) async {
+  Future<void> _renameRecent(RecentFile file) async {
     final controller = TextEditingController(
       text: path.basenameWithoutExtension(file.path),
     );
@@ -519,7 +474,7 @@ class _HomePageState extends State<HomePage> {
     controller.dispose();
   }
 
-  Future<void> _downloadRecent(_HomeRecentFile file) async {
+  Future<void> _downloadRecent(RecentFile file) async {
     try {
       await DownloadHelper.saveFileToDownloads(file.path);
       if (!mounted) return;
@@ -533,7 +488,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _shareRecent(_HomeRecentFile file) async {
+  Future<void> _shareRecent(RecentFile file) async {
     if (file.path.toLowerCase().endsWith('.txt')) {
       final text = await File(file.path).readAsString();
       if (!mounted) return;
@@ -543,7 +498,7 @@ class _HomePageState extends State<HomePage> {
     await Share.shareXFiles([XFile(file.path)]);
   }
 
-  Future<void> _deleteRecent(_HomeRecentFile file) {
+  Future<void> _deleteRecent(RecentFile file) {
     return showNormalAlertDialogue(
       context: context,
       title: translation(context).deleteFile,
@@ -561,7 +516,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _onRecentMenu(
-    _HomeRecentFile file,
+    RecentFile file,
     _RecentMenuAction action,
   ) {
     switch (action) {
@@ -678,10 +633,7 @@ class _HomePageState extends State<HomePage> {
                                 offset: const Offset(0, -74),
                                 child: Column(
                                   children: [
-                                    _RecentFilesCard(
-                                      loading:
-                                          homePageProvider.isHistoryLoading,
-                                      files: _recentFiles(homePageProvider),
+                                    _RecentFilesSection(
                                       timeAgo: _timeAgo,
                                       sizeLabel: _formatBytes,
                                       onOpen: _openRecent,
@@ -975,14 +927,43 @@ class _FolderTile extends StatelessWidget {
   }
 }
 
-class _RecentFilesCard extends StatelessWidget {
-  final bool loading;
-  final Future<List<_HomeRecentFile>> files;
+class _RecentFilesSection extends StatelessWidget {
   final String Function(DateTime time) timeAgo;
   final String Function(int bytes) sizeLabel;
-  final Future<void> Function(_HomeRecentFile file) onOpen;
-  final Future<void> Function(_HomeRecentFile file, _RecentMenuAction action)
-      onMenu;
+  final Future<void> Function(RecentFile file) onOpen;
+  final Future<void> Function(RecentFile file, _RecentMenuAction action) onMenu;
+  final VoidCallback onSeeAll;
+
+  const _RecentFilesSection({
+    required this.timeAgo,
+    required this.sizeLabel,
+    required this.onOpen,
+    required this.onMenu,
+    required this.onSeeAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final recent = context.watch<RecentFilesProvider>();
+    return _RecentFilesCard(
+      loading: recent.loading,
+      files: recent.files,
+      timeAgo: timeAgo,
+      sizeLabel: sizeLabel,
+      onOpen: onOpen,
+      onMenu: onMenu,
+      onSeeAll: onSeeAll,
+    );
+  }
+}
+
+class _RecentFilesCard extends StatelessWidget {
+  final bool loading;
+  final List<RecentFile> files;
+  final String Function(DateTime time) timeAgo;
+  final String Function(int bytes) sizeLabel;
+  final Future<void> Function(RecentFile file) onOpen;
+  final Future<void> Function(RecentFile file, _RecentMenuAction action) onMenu;
   final VoidCallback onSeeAll;
 
   const _RecentFilesCard({
@@ -1019,24 +1000,17 @@ class _RecentFilesCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                FutureBuilder<List<_HomeRecentFile>>(
-                  future: files,
-                  builder: (context, snapshot) {
-                    final hasFiles =
-                        (snapshot.data ?? const <_HomeRecentFile>[]).isNotEmpty;
-                    if (!hasFiles) return const SizedBox.shrink();
-                    return TextButton(
-                      onPressed: onSeeAll,
-                      child: const Text(
-                        'See all',
-                        style: TextStyle(
-                          color: Color(0xFF2F6FE4),
-                          fontWeight: FontWeight.w600,
-                        ),
+                if (files.isNotEmpty)
+                  TextButton(
+                    onPressed: onSeeAll,
+                    child: const Text(
+                      'See all',
+                      style: TextStyle(
+                        color: Color(0xFF2F6FE4),
+                        fontWeight: FontWeight.w600,
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1045,46 +1019,43 @@ class _RecentFilesCard extends StatelessWidget {
               padding: EdgeInsets.all(24),
               child: CircularProgressIndicator(),
             )
-          else
-            FutureBuilder<List<_HomeRecentFile>>(
-              future: files,
-              builder: (context, snapshot) {
-                final items = snapshot.data ?? const <_HomeRecentFile>[];
-                if (items.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.fromLTRB(24, 8, 32, 36),
-                    child: Column(
-                      children: [
-                        Image(
-                          image: AssetImage(AppAssets.homeEmptyState),
-                          width: 104,
-                          height: 104,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'No files here yet',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: _HomePageState._titleColor,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Tap the camera button below to scan\nyour first document.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: _HomePageState._mutedColor,
-                            fontSize: 14,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
+          else if (files.isEmpty)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(24, 8, 32, 36),
+              child: Column(
+                children: [
+                  Image(
+                    image: AssetImage(AppAssets.homeEmptyState),
+                    width: 104,
+                    height: 104,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'No files here yet',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _HomePageState._titleColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
                     ),
-                  );
-                }
-                final visible = items.take(6).toList();
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Tap the camera button below to scan\nyour first document.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _HomePageState._mutedColor,
+                      fontSize: 14,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Builder(
+              builder: (context) {
+                final visible = files.take(6).toList();
                 return Column(
                   children: [
                     for (var i = 0; i < visible.length; i++) ...[
@@ -1112,12 +1083,11 @@ class _RecentFilesCard extends StatelessWidget {
 }
 
 class _RecentFileTile extends StatelessWidget {
-  final _HomeRecentFile file;
+  final RecentFile file;
   final String Function(DateTime time) timeAgo;
   final String Function(int bytes) sizeLabel;
-  final Future<void> Function(_HomeRecentFile file) onOpen;
-  final Future<void> Function(_HomeRecentFile file, _RecentMenuAction action)
-      onMenu;
+  final Future<void> Function(RecentFile file) onOpen;
+  final Future<void> Function(RecentFile file, _RecentMenuAction action) onMenu;
 
   const _RecentFileTile({
     required this.file,
@@ -1132,7 +1102,7 @@ class _RecentFileTile extends StatelessWidget {
     final lower = file.path.toLowerCase();
     final isPdf = lower.endsWith('.pdf');
     final isCode =
-        file.kind == _RecentKind.qr || file.kind == _RecentKind.barcode;
+        file.kind == RecentKind.qr || file.kind == RecentKind.barcode;
     final extension =
         path.extension(file.path).replaceFirst('.', '').toUpperCase();
     final thumbAsset = isPdf
@@ -1234,8 +1204,6 @@ class _RecentFileTile extends StatelessWidget {
   }
 }
 
-enum _RecentKind { document, idCard, qr, barcode }
-
 enum _RecentMenuAction { rename, download, share, delete }
 
 PopupMenuItem<_RecentMenuAction> _recentMenuItem(
@@ -1262,18 +1230,4 @@ PopupMenuItem<_RecentMenuAction> _recentMenuItem(
       ],
     ),
   );
-}
-
-class _HomeRecentFile {
-  final String path;
-  final _RecentKind kind;
-  final DateTime modified;
-  final int size;
-
-  const _HomeRecentFile({
-    required this.path,
-    required this.kind,
-    required this.modified,
-    required this.size,
-  });
 }

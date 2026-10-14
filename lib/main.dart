@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:doc_scanner/home_page/provider/home_page_provider.dart';
+import 'package:doc_scanner/home_page/provider/recent_files_provider.dart';
 import 'package:doc_scanner/image_edit/provider/image_edit_provider.dart';
 import 'package:doc_scanner/l10n/app_localizations.dart';
 import 'package:doc_scanner/splash_screen/splash_screen.dart';
@@ -57,6 +58,7 @@ class _MyAppState extends State<MyApp> {
       providers: [
         ChangeNotifierProvider(create: (_) => CameraProvider()),
         ChangeNotifierProvider(create: (_) => HomePageProvider()),
+        ChangeNotifierProvider(create: (_) => RecentFilesProvider()),
         ChangeNotifierProvider(create: (_) => ImageEditProvider()),
       ],
       child: Builder(builder: (context) {
