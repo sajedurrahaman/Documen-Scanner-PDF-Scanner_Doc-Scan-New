@@ -629,7 +629,7 @@ class _HomePageState extends State<HomePage> {
                                   padding:
                                       const EdgeInsets.fromLTRB(16, 18, 16, 64),
                                   decoration: const BoxDecoration(
-                                    color: Color(0xFFE3E9F3),
+                                    color: Color(0xFFF6F9FE),
                                     borderRadius: BorderRadius.vertical(
                                       top: Radius.circular(28),
                                     ),
@@ -696,7 +696,7 @@ class _HomePageState extends State<HomePage> {
                                         );
                                       },
                                     ),
-                                    const SizedBox(height: 120),
+                                    const SizedBox(height: 60),
                                   ],
                                 ),
                               ),
@@ -1019,15 +1019,23 @@ class _RecentFilesCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                TextButton(
-                  onPressed: onSeeAll,
-                  child: const Text(
-                    'See all',
-                    style: TextStyle(
-                      color: Color(0xFF2F6FE4),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                FutureBuilder<List<_HomeRecentFile>>(
+                  future: files,
+                  builder: (context, snapshot) {
+                    final hasFiles =
+                        (snapshot.data ?? const <_HomeRecentFile>[]).isNotEmpty;
+                    if (!hasFiles) return const SizedBox.shrink();
+                    return TextButton(
+                      onPressed: onSeeAll,
+                      child: const Text(
+                        'See all',
+                        style: TextStyle(
+                          color: Color(0xFF2F6FE4),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -1044,13 +1052,35 @@ class _RecentFilesCard extends StatelessWidget {
                 final items = snapshot.data ?? const <_HomeRecentFile>[];
                 if (items.isEmpty) {
                   return const Padding(
-                    padding: EdgeInsets.fromLTRB(0, 8, 8, 16),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'No files yet',
-                        style: TextStyle(color: _HomePageState._mutedColor),
-                      ),
+                    padding: EdgeInsets.fromLTRB(24, 8, 32, 36),
+                    child: Column(
+                      children: [
+                        Image(
+                          image: AssetImage(AppAssets.homeEmptyState),
+                          width: 104,
+                          height: 104,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'No files here yet',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _HomePageState._titleColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Tap the camera button below to scan\nyour first document.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _HomePageState._mutedColor,
+                            fontSize: 14,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }
