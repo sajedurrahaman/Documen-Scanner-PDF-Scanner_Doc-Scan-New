@@ -1,6 +1,7 @@
 import 'package:doc_scanner/google_ads_helper/google_ads_helper.dart';
 import 'package:doc_scanner/main.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 // Use the SDK's codec to simulate native callbacks without real ad requests.
@@ -72,5 +73,38 @@ void main() {
     expect(calls.where((call) => call.method == 'loadInterstitialAd'),
         hasLength(1));
     expect(calls.where((call) => call.method == 'disposeAd'), isEmpty);
+
+    // A preloaded ad remains showable when returning to Home, only once.
+    late BuildContext homeContext;
+    await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) {
+      homeContext = context;
+      return const SizedBox();
+    })));
+    showInterstitialAd(homeContext);
+    showInterstitialAd(homeContext);
+    await tester.pump();
+    expect(calls.where((call) => call.method == 'showAdWithoutView'), hasLength(1));
+
+    await messenger.handlePlatformMessage(
+      instanceManager.channel.name,
+      instanceManager.channel.codec.encodeMethodCall(MethodCall('onAdEvent', {
+        'adId': id,
+        'eventName': 'onAdDismissedFullScreenContent',
+      })),
+      (_) {},
+    );
+    await tester.pump();
+    expect(calls.where((call) => call.method == 'loadInterstitialAd'), hasLength(2));
+    final nextId = calls.lastWhere((call) => call.method == 'loadInterstitialAd').arguments['adId'];
+    await messenger.handlePlatformMessage(
+      instanceManager.channel.name,
+      instanceManager.channel.codec.encodeMethodCall(MethodCall('onAdEvent', {
+        'adId': nextId,
+        'eventName': 'onAdLoaded',
+      })),
+      (_) {},
+    );
+    expect(interstitialReady, isTrue);
+
   });
 }
