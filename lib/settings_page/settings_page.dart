@@ -26,24 +26,24 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   bool vibration = true;
   bool beep = true;
-  Language _selectedLanguage = Language(4, 'English', 'en');
 
   @override
   void initState() {
+    super.initState();
     vibration = LocalStorage().getBool(AppConstant.VIBRATION_KEY);
     beep = LocalStorage().getBool(AppConstant.BEEP_KEY);
-
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      Locale locale = await getLocale();
-      _selectedLanguage = Language.languageList()
-          .firstWhere((element) => element.languageCode == locale.languageCode);
-      setState(() {});
-    });
-    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Use the already-loaded app locale on the very first frame of this tab.
+    final languages = Language.languageList();
+    final selectedLanguage = languages.firstWhere(
+      (language) =>
+          language.languageCode == Localizations.localeOf(context).languageCode,
+      orElse: () =>
+          languages.firstWhere((language) => language.languageCode == ENGLISH),
+    );
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -91,19 +91,19 @@ class _SettingsPageState extends State<SettingsPage> {
                       isExpanded: true,
                       isDense: true,
                       icon: const SizedBox.shrink(),
-                      value: _selectedLanguage,
+                      value: selectedLanguage,
                       onChanged: (Language? newValue) async {
-                        setState(() {
-                          _selectedLanguage = newValue!;
-                        });
-                        Locale locale = await setLocale(newValue!.languageCode);
-                        MyApp.setLocale(context, locale);
+                        if (newValue == null) return;
+                        // Update the app immediately, before persistence completes
+                        // or the user navigates away from Settings.
+                        MyApp.setLocale(context, Locale(newValue.languageCode));
+                        await setLocale(newValue.languageCode);
                       },
                       selectedItemBuilder: (BuildContext context) {
-                        return Language.languageList()
+                        return languages
                             .map<Widget>((Language language) {
                           return Text(
-                            _selectedLanguage.name,
+                            selectedLanguage.name,
                             style: const TextStyle(
                               color: Colors.black,
                               fontSize: 14,
@@ -111,14 +111,14 @@ class _SettingsPageState extends State<SettingsPage> {
                           );
                         }).toList();
                       },
-                      items: Language.languageList()
+                      items: languages
                           .map<DropdownMenuItem<Language>>((Language language) {
                         return DropdownMenuItem<Language>(
                           value: language,
                           child: ListTile(
                             title: Text(language.name),
                             titleAlignment: ListTileTitleAlignment.center,
-                            trailing: _selectedLanguage.name == language.name
+                            trailing: selectedLanguage.name == language.name
                                 ? const Icon(Icons.done)
                                 : const SizedBox.shrink(),
                           ),
