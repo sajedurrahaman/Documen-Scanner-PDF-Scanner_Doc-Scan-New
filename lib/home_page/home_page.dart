@@ -927,21 +927,16 @@ class _RecentFileTile extends StatelessWidget {
         file.kind == _RecentKind.qr || file.kind == _RecentKind.barcode;
     final extension =
         path.extension(file.path).replaceFirst('.', '').toUpperCase();
-    final iconBackground = isPdf
+    final thumbAsset = isPdf
+        ? AppAssets.homePdfThumb
+        : isCode
+            ? AppAssets.homeQrBarThumb
+            : AppAssets.homeImageThumb;
+    final thumbBackground = isPdf
         ? const Color(0xFFFFEEF1)
         : isCode
-            ? const Color(0xFFEEF2FF)
+            ? const Color(0xFFE7EAF5)
             : const Color(0xFFF3E9FD);
-    final iconColor = isPdf
-        ? const Color(0xFFE53935)
-        : isCode
-            ? const Color(0xFF3B5BDB)
-            : const Color(0xFF8B4BEA);
-    final icon = isPdf
-        ? Icons.picture_as_pdf_outlined
-        : isCode
-            ? Icons.description_outlined
-            : Icons.image_outlined;
     return InkWell(
       onTap: () => onOpen(file),
       child: Padding(
@@ -951,13 +946,15 @@ class _RecentFileTile extends StatelessWidget {
             Container(
               width: 44,
               height: 44,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: iconBackground,
+                color: thumbBackground,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: iconColor,
+              child: SvgPicture.asset(
+                thumbAsset,
+                width: isPdf || isCode ? 28 : 25,
+                height: isPdf || isCode ? 28 : 25,
               ),
             ),
             const SizedBox(width: 12),

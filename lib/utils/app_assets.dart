@@ -59,4 +59,9 @@ class AppAssets {
       "assets/home_assets/home_qr_code_folder_icon.svg";
   static const String homeBarCodeFolder =
       "assets/home_assets/home_bar_code_folder_icon.svg";
+  static const String homeImageThumb =
+      "assets/home_assets/image_thamnil_icon.svg";
+  static const String homePdfThumb = "assets/home_assets/pdf_thamnil_icon.svg";
+  static const String homeQrBarThumb =
+      "assets/home_assets/bar_and_qr_code_thamnil_icon.svg";
 }
