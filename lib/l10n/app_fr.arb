@@ -185,5 +185,12 @@
   "fileConflictAlertContent":"Certains fichiers existent déjà dans ce répertoire. Voulez-vous les dupliquer?",
   "duplicate": "Dupliquer",
   "deleteFile": "Supprimer le fichier",
-  "downloadFile": "Télécharger le fichier"
+  "downloadFile": "Télécharger le fichier",
+  "documentScanner": "Scanner de documents",
+  "scanSaveShare": "Scanner • Enregistrer • Partager",
+  "scanOptions": "Options de scan",
+  "myDocuments": "Mes documents",
+  "recentFiles": "Fichiers récents",
+  "noFilesHereYet": "Aucun fichier pour le moment",
+  "tapCameraToScanFirstDocument": "Appuyez sur le bouton de l'appareil photo ci-dessous pour scanner votre premier document."
 }

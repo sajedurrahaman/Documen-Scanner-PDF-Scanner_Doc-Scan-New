@@ -185,5 +185,12 @@
   "fileConflictAlertContent":"該目錄中已經存在一些檔案。您想複製它們嗎？",
   "duplicate": "重复",
   "deleteFile": "刪除檔案",
-  "downloadFile": "下載檔案"
+  "downloadFile": "下載檔案",
+  "documentScanner": "文档扫描仪",
+  "scanSaveShare": "扫描 • 保存 • 分享",
+  "scanOptions": "扫描选项",
+  "myDocuments": "我的文档",
+  "recentFiles": "最近文件",
+  "noFilesHereYet": "还没有文件",
+  "tapCameraToScanFirstDocument": "点击下方相机按钮扫描你的第一份文档。"
 }

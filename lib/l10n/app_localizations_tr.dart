@@ -581,4 +581,26 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get downloadFile => 'Dosyayı İndir';
+
+  @override
+  String get documentScanner => 'Belge Tarayıcı';
+
+  @override
+  String get scanSaveShare => 'Tara • Kaydet • Paylaş';
+
+  @override
+  String get scanOptions => 'Tarama Seçenekleri';
+
+  @override
+  String get myDocuments => 'Belgelerim';
+
+  @override
+  String get recentFiles => 'Son Dosyalar';
+
+  @override
+  String get noFilesHereYet => 'Henüz dosya yok';
+
+  @override
+  String get tapCameraToScanFirstDocument =>
+      'İlk belgenizi taramak için aşağıdaki kamera düğmesine dokunun.';
 }

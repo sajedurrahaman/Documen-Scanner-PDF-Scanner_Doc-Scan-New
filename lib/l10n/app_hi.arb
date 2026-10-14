@@ -185,5 +185,12 @@
   "fileConflictAlertContent":"इस निर्देशिका में कुछ फ़ाइलें पहले से मौजूद हैं। क्या आप उन्हें डुप्लिकेट करना चाहते हैं?",
   "duplicate": "डुप्लिकेट",
   "deleteFile": "फ़ाइल हटाएँ",
-  "downloadFile": "फ़ाइल डाउनलोड करें"
+  "downloadFile": "फ़ाइल डाउनलोड करें",
+  "documentScanner": "दस्तावेज़ स्कैनर",
+  "scanSaveShare": "स्कैन • सहेजें • साझा करें",
+  "scanOptions": "स्कैन विकल्प",
+  "myDocuments": "मेरे दस्तावेज़",
+  "recentFiles": "हाल की फ़ाइलें",
+  "noFilesHereYet": "अभी कोई फ़ाइल नहीं",
+  "tapCameraToScanFirstDocument": "अपना पहला दस्तावेज़ स्कैन करने के लिए नीचे कैमरा बटन टैप करें।"
 }

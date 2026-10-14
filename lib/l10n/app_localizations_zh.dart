@@ -565,4 +565,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get downloadFile => '下載檔案';
+
+  @override
+  String get documentScanner => '文档扫描仪';
+
+  @override
+  String get scanSaveShare => '扫描 • 保存 • 分享';
+
+  @override
+  String get scanOptions => '扫描选项';
+
+  @override
+  String get myDocuments => '我的文档';
+
+  @override
+  String get recentFiles => '最近文件';
+
+  @override
+  String get noFilesHereYet => '还没有文件';
+
+  @override
+  String get tapCameraToScanFirstDocument => '点击下方相机按钮扫描你的第一份文档。';
 }

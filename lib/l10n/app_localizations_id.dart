@@ -580,4 +580,26 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get downloadFile => 'Unduh File';
+
+  @override
+  String get documentScanner => 'Pemindai Dokumen';
+
+  @override
+  String get scanSaveShare => 'Pindai • Simpan • Bagikan';
+
+  @override
+  String get scanOptions => 'Opsi Pindai';
+
+  @override
+  String get myDocuments => 'Dokumen Saya';
+
+  @override
+  String get recentFiles => 'File Terbaru';
+
+  @override
+  String get noFilesHereYet => 'Belum ada file';
+
+  @override
+  String get tapCameraToScanFirstDocument =>
+      'Ketuk tombol kamera di bawah untuk memindai dokumen pertama Anda.';
 }
