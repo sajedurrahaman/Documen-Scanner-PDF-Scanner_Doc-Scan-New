@@ -184,5 +184,13 @@
   "fileConflictAlertContent":"このディレクトリにはすでにいくつかのファイルがあります。複製しますか?",
   "duplicate": "重複",
   "moreApps": "その他のアプリ",
-  "downloadFile": "ファイルをダウンロード"
+  "downloadFile": "ファイルをダウンロード",
+  "deleteFile": "ファイルを削除",
+  "documentScanner": "ドキュメントスキャナー",
+  "scanSaveShare": "スキャン • 保存 • 共有",
+  "scanOptions": "スキャンオプション",
+  "myDocuments": "マイドキュメント",
+  "recentFiles": "最近のファイル",
+  "noFilesHereYet": "ファイルはまだありません",
+  "tapCameraToScanFirstDocument": "下のカメラボタンをタップして、最初のドキュメントをスキャンしてください。"
 }

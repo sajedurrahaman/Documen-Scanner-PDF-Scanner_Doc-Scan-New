@@ -182,5 +182,13 @@
   "fileConflictAlertContent": "Bazı dosyalar bu dizinde zaten mevcut. Bunları çoğaltmak istiyor musunuz?",
   "duplicate": "Çoğalt",
   "moreApps": "Diğer Uygulamalar",
-  "downloadFile": "Dosyayı İndir"
+  "downloadFile": "Dosyayı İndir",
+  "deleteFile": "Dosyayı Sil",
+  "documentScanner": "Belge Tarayıcı",
+  "scanSaveShare": "Tara • Kaydet • Paylaş",
+  "scanOptions": "Tarama Seçenekleri",
+  "myDocuments": "Belgelerim",
+  "recentFiles": "Son Dosyalar",
+  "noFilesHereYet": "Henüz dosya yok",
+  "tapCameraToScanFirstDocument": "İlk belgenizi taramak için aşağıdaki kamera düğmesine dokunun."
 }

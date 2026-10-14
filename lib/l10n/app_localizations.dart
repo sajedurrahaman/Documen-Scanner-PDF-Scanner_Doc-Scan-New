@@ -1221,6 +1221,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download File'**
   String get downloadFile;
+
+  /// No description provided for @documentScanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Scanner'**
+  String get documentScanner;
+
+  /// No description provided for @scanSaveShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan • Save • Share'**
+  String get scanSaveShare;
+
+  /// No description provided for @scanOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Options'**
+  String get scanOptions;
+
+  /// No description provided for @myDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'My Documents'**
+  String get myDocuments;
+
+  /// No description provided for @recentFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Files'**
+  String get recentFiles;
+
+  /// No description provided for @noFilesHereYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No files here yet'**
+  String get noFilesHereYet;
+
+  /// No description provided for @tapCameraToScanFirstDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the camera button below to scan your first document.'**
+  String get tapCameraToScanFirstDocument;
 }
 
 class _AppLocalizationsDelegate

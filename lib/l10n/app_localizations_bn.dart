@@ -578,4 +578,26 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get downloadFile => 'ফাইল ডাউনলোড';
+
+  @override
+  String get documentScanner => 'ডকুমেন্ট স্ক্যানার';
+
+  @override
+  String get scanSaveShare => 'স্ক্যান • সেভ • শেয়ার';
+
+  @override
+  String get scanOptions => 'স্ক্যান অপশন';
+
+  @override
+  String get myDocuments => 'আমার ডকুমেন্ট';
+
+  @override
+  String get recentFiles => 'সাম্প্রতিক ফাইল';
+
+  @override
+  String get noFilesHereYet => 'এখনো কোনো ফাইল নেই';
+
+  @override
+  String get tapCameraToScanFirstDocument =>
+      'প্রথম ডকুমেন্ট স্ক্যান করতে নিচের ক্যামেরা বাটনে ট্যাপ করুন।';
 }

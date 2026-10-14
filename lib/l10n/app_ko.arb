@@ -183,6 +183,19 @@
   "conflictAlert": "파일 충돌 경고",
   "fileConflictAlertContent":"일부 파일이 이 디렉토리에 이미 존재합니다. 복제하시겠습니까?",
   "duplicate":"중복",
+<<<<<<< ours
   "moreApps": "더 많은 앱",
   "downloadFile": "파일 다운로드"
 }
+=======
+  "deleteFile": "파일 삭제",
+  "downloadFile": "파일 다운로드",
+  "documentScanner": "문서 스캐너",
+  "scanSaveShare": "스캔 • 저장 • 공유",
+  "scanOptions": "스캔 옵션",
+  "myDocuments": "내 문서",
+  "recentFiles": "최근 파일",
+  "noFilesHereYet": "아직 파일이 없습니다",
+  "tapCameraToScanFirstDocument": "아래 카메라 버튼을 눌러 첫 문서를 스캔하세요."
+}
+>>>>>>> theirs

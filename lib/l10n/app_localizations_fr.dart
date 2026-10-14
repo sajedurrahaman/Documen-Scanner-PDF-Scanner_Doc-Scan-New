@@ -584,4 +584,26 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get downloadFile => 'Télécharger le fichier';
+
+  @override
+  String get documentScanner => 'Scanner de documents';
+
+  @override
+  String get scanSaveShare => 'Scanner • Enregistrer • Partager';
+
+  @override
+  String get scanOptions => 'Options de scan';
+
+  @override
+  String get myDocuments => 'Mes documents';
+
+  @override
+  String get recentFiles => 'Fichiers récents';
+
+  @override
+  String get noFilesHereYet => 'Aucun fichier pour le moment';
+
+  @override
+  String get tapCameraToScanFirstDocument =>
+      'Appuyez sur le bouton de l\'appareil photo ci-dessous pour scanner votre premier document.';
 }

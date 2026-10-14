@@ -581,4 +581,26 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get downloadFile => 'Descargar archivo';
+
+  @override
+  String get documentScanner => 'Escáner de documentos';
+
+  @override
+  String get scanSaveShare => 'Escanear • Guardar • Compartir';
+
+  @override
+  String get scanOptions => 'Opciones de escaneo';
+
+  @override
+  String get myDocuments => 'Mis documentos';
+
+  @override
+  String get recentFiles => 'Archivos recientes';
+
+  @override
+  String get noFilesHereYet => 'Aún no hay archivos';
+
+  @override
+  String get tapCameraToScanFirstDocument =>
+      'Toca el botón de la cámara de abajo para escanear tu primer documento.';
 }

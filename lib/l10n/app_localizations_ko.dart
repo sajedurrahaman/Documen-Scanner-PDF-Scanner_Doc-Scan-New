@@ -563,4 +563,25 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get downloadFile => '파일 다운로드';
+
+  @override
+  String get documentScanner => '문서 스캐너';
+
+  @override
+  String get scanSaveShare => '스캔 • 저장 • 공유';
+
+  @override
+  String get scanOptions => '스캔 옵션';
+
+  @override
+  String get myDocuments => '내 문서';
+
+  @override
+  String get recentFiles => '최근 파일';
+
+  @override
+  String get noFilesHereYet => '아직 파일이 없습니다';
+
+  @override
+  String get tapCameraToScanFirstDocument => '아래 카메라 버튼을 눌러 첫 문서를 스캔하세요.';
 }

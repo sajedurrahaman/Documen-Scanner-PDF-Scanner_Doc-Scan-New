@@ -184,5 +184,13 @@
   "fileConflictAlertContent":"Некоторые файлы уже существуют в этом каталоге. Хотите их дублировать?",
   "duplicate":  "Дубликат",
   "moreApps": "Другие приложения",
-  "downloadFile": "Скачать файл"
+  "downloadFile": "Скачать файл",
+  "deleteFile": "Удалить файл",
+  "documentScanner": "Сканер документов",
+  "scanSaveShare": "Сканировать • Сохранить • Поделиться",
+  "scanOptions": "Параметры сканирования",
+  "myDocuments": "Мои документы",
+  "recentFiles": "Недавние файлы",
+  "noFilesHereYet": "Файлов пока нет",
+  "tapCameraToScanFirstDocument": "Нажмите кнопку камеры ниже, чтобы отсканировать первый документ."
 }

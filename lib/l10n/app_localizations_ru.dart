@@ -580,4 +580,26 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get downloadFile => 'Скачать файл';
+
+  @override
+  String get documentScanner => 'Сканер документов';
+
+  @override
+  String get scanSaveShare => 'Сканировать • Сохранить • Поделиться';
+
+  @override
+  String get scanOptions => 'Параметры сканирования';
+
+  @override
+  String get myDocuments => 'Мои документы';
+
+  @override
+  String get recentFiles => 'Недавние файлы';
+
+  @override
+  String get noFilesHereYet => 'Файлов пока нет';
+
+  @override
+  String get tapCameraToScanFirstDocument =>
+      'Нажмите кнопку камеры ниже, чтобы отсканировать первый документ.';
 }

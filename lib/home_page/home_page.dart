@@ -593,9 +593,9 @@ class _HomePageState extends State<HomePage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      const Text(
-                                        'My Documents',
-                                        style: TextStyle(
+                                      Text(
+                                        translation(context).myDocuments,
+                                        style: const TextStyle(
                                           color: _titleColor,
                                           fontSize: 22,
                                           fontWeight: FontWeight.w700,
@@ -708,12 +708,12 @@ class _HomeHeader extends StatelessWidget {
                 height: 46,
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Document Scanner',
+                      translation(context).documentScanner,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -724,7 +724,7 @@ class _HomeHeader extends StatelessWidget {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Scan • Save • Share',
+                      translation(context).scanSaveShare,
                       style: TextStyle(
                         color: Color(0xD9FFFFFF),
                         fontSize: 14,
@@ -769,9 +769,9 @@ class _ScanOptionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Scan Options',
-            style: TextStyle(
+          Text(
+            translation(context).scanOptions,
+            style: const TextStyle(
               color: _HomePageState._titleColor,
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -994,10 +994,10 @@ class _RecentFilesCard extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Recent Files',
-                    style: TextStyle(
+                    translation(context).recentFiles,
+                    style: const TextStyle(
                       color: _HomePageState._titleColor,
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -1025,30 +1025,30 @@ class _RecentFilesCard extends StatelessWidget {
               child: CircularProgressIndicator(),
             )
           else if (files.isEmpty)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(24, 8, 32, 36),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 32, 36),
               child: Column(
                 children: [
-                  Image(
+                  const Image(
                     image: AssetImage(AppAssets.homeEmptyState),
                     width: 104,
                     height: 104,
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'No files here yet',
+                    translation(context).noFilesHereYet,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: _HomePageState._titleColor,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Tap the camera button below to scan\nyour first document.',
+                    translation(context).tapCameraToScanFirstDocument,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: _HomePageState._mutedColor,
                       fontSize: 14,
                       height: 1.35,

@@ -184,6 +184,13 @@
   "fileConflictAlertContent":"Beberapa berkas sudah ada di direktori ini. Apakah Anda ingin menduplikasinya?",
   "duplicate": "Duplikat",
   "moreApps": "Aplikasi Lainnya",
-  "downloadFile": "Unduh File"
-
+  "downloadFile": "Unduh File",
+  "deleteFile": "Hapus File",
+  "documentScanner": "Pemindai Dokumen",
+  "scanSaveShare": "Pindai • Simpan • Bagikan",
+  "scanOptions": "Opsi Pindai",
+  "myDocuments": "Dokumen Saya",
+  "recentFiles": "File Terbaru",
+  "noFilesHereYet": "Belum ada file",
+  "tapCameraToScanFirstDocument": "Ketuk tombol kamera di bawah untuk memindai dokumen pertama Anda."
 }

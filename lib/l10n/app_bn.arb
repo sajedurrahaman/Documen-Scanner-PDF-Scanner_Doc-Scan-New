@@ -184,5 +184,13 @@
   "fileConflictAlertContent": "কিছু ফাইল ইতিমধ্যেই এই ডিরেক্টরিতে বিদ্যমান। আপনি কি তাদের নকল করতে চান?",
   "duplicate": "নকল",
   "moreApps": "আরো অ্যাপস",
-  "downloadFile": "ফাইল ডাউনলোড"
+  "downloadFile": "ফাইল ডাউনলোড",
+  "deleteFile": "ফাইল মুছুন",
+  "documentScanner": "ডকুমেন্ট স্ক্যানার",
+  "scanSaveShare": "স্ক্যান • সেভ • শেয়ার",
+  "scanOptions": "স্ক্যান অপশন",
+  "myDocuments": "আমার ডকুমেন্ট",
+  "recentFiles": "সাম্প্রতিক ফাইল",
+  "noFilesHereYet": "এখনো কোনো ফাইল নেই",
+  "tapCameraToScanFirstDocument": "প্রথম ডকুমেন্ট স্ক্যান করতে নিচের ক্যামেরা বাটনে ট্যাপ করুন।"
 }

@@ -573,4 +573,26 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get downloadFile => 'تنزيل الملف';
+
+  @override
+  String get documentScanner => 'ماسح المستندات';
+
+  @override
+  String get scanSaveShare => 'مسح • حفظ • مشاركة';
+
+  @override
+  String get scanOptions => 'خيارات المسح';
+
+  @override
+  String get myDocuments => 'مستنداتي';
+
+  @override
+  String get recentFiles => 'الملفات الأخيرة';
+
+  @override
+  String get noFilesHereYet => 'لا توجد ملفات بعد';
+
+  @override
+  String get tapCameraToScanFirstDocument =>
+      'اضغط زر الكاميرا بالأسفل لمسح أول مستند.';
 }

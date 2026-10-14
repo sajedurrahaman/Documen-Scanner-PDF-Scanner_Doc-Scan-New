@@ -182,5 +182,13 @@
   "fileConflictAlertContent": "Some files already exist in this directory. Do you want to duplicate them?",
   "duplicate": "Duplicate",
   "moreApps": "More Apps",
-  "downloadFile": "Download File"
+  "downloadFile": "Download File",
+  "deleteFile": "Delete File",
+  "documentScanner": "Document Scanner",
+  "scanSaveShare": "Scan • Save • Share",
+  "scanOptions": "Scan Options",
+  "myDocuments": "My Documents",
+  "recentFiles": "Recent Files",
+  "noFilesHereYet": "No files here yet",
+  "tapCameraToScanFirstDocument": "Tap the camera button below to scan your first document."
 }
