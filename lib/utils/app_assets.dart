@@ -72,4 +72,5 @@ class AppAssets {
       "assets/home_assets/recent_menu_share.svg";
   static const String recentMenuDelete =
       "assets/home_assets/recent_menu_delete.svg";
+  static const String homeEmptyState = "assets/home_assets/empty-state.png";
 }
