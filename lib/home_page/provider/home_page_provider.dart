@@ -19,8 +19,11 @@ class HomePageProvider extends ChangeNotifier {
     print("getDirectoriesForCreate-> ${appDirectory.path}");
     final Directory pdfConverterDirectory =
         Directory('${appDirectory.path}/Doc Scanner');
-    _directories =
-        pdfConverterDirectory.listSync().whereType<Directory>().toList();
+    _directories = await pdfConverterDirectory
+        .list(followLinks: false)
+        .where((entity) => entity is Directory)
+        .cast<Directory>()
+        .toList();
     directories.sort((a, b) {
       Map<String, int> order = {
         'D': 0,

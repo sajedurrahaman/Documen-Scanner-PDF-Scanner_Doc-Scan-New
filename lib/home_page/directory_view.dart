@@ -16,7 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gal/gal.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:doc_scanner/google_ads_helper/banner_ad_widget.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -44,8 +44,6 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
   bool isShareIng = false;
   late Directory rootDirectory;
   String subFilePath = "";
-  BannerAd? myBanner;
-  bool _isBannerLoaded = false;
 
   void _toggleItemSelection(String filePath) {
     setState(() {
@@ -218,47 +216,6 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
       rootDirectory = await getApplicationDocumentsDirectory();
     });
-    myBanner = buildBannerAd()..load();
-  }
-
-  BannerAd buildBannerAd() {
-    return BannerAd(
-      size: AdSize.banner,
-      request: const AdRequest(),
-      adUnitId: AdHelper.directoryViewBannerAdUnitId,
-      listener: BannerAdListener(
-        onAdLoaded: (Ad ad) {
-          log('${ad.runtimeType} loaded.');
-          myBanner = ad as BannerAd;
-          if (!mounted) return;
-          setState(() {
-            _isBannerLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          log('${ad.runtimeType} failed to load: $error.');
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _isBannerLoaded = false;
-            myBanner = null;
-          });
-        },
-        onAdOpened: (Ad ad) {
-          log('${ad.runtimeType} onAdOpened.');
-        },
-        onAdClosed: (Ad ad) {
-          log('${ad.runtimeType} closed.');
-          ad.dispose();
-        },
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    myBanner?.dispose();
-    super.dispose();
   }
 
   bool isSubfolderOfQRCode(String directoryPath) {
@@ -2114,15 +2071,9 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                   ),
                                   Column(
                                     children: [
-                                      if (_isBannerLoaded && myBanner != null)
-                                        SizedBox(
-                                          height: myBanner!.size.height
-                                              .toDouble(),
-                                          width: double.infinity,
-                                          child: AdWidget(ad: myBanner!),
-                                        )
-                                      else
-                                        const SizedBox.shrink(),
+                                      BannerAdWidget(
+                                        adUnitId: AdHelper.directoryViewBannerAdUnitId,
+                                      ),
                                       Container(
                                         height: size.width >= 600 ? 100 : 70,
                                         color: Colors.white,

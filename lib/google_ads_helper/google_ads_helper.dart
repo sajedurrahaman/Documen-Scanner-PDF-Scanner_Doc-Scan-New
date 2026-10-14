@@ -102,32 +102,40 @@ class AdHelper {
   }
 }
 
+bool _interstitialLoading = false;
+bool _interstitialShowing = false;
+
 Future<void> createInterstitialAd({String? adUnitId}) async {
-  await WidgetsBinding.instance.endOfFrame;
-  try {
-    await AdsInitialization.ensureInitialized();
-  } catch (error) {
-    log('Ads initialization failed: $error');
+  // Several routes request a preload. Retain the existing ad/request instead
+  // of destroying a native ad and starting another load on every navigation.
+  if (_interstitialLoading || _interstitialShowing || myInterstitial != null) {
     return;
   }
-  _disposeInterstitial();
-
-  InterstitialAd.load(
-    adUnitId: adUnitId ?? AdHelper.interstitialAdUnitId,
-    request: const AdRequest(),
-    adLoadCallback: InterstitialAdLoadCallback(
-      onAdLoaded: (InterstitialAd ad) {
-        log('${ad.runtimeType} loaded.');
-        interstitialReady = true;
-        interstitialReadyNotifier.value = true;
-        myInterstitial = ad;
-      },
-      onAdFailedToLoad: (LoadAdError error) {
-        log('InterstitialAd failed to load: $error.');
-        _disposeInterstitial();
-      },
-    ),
-  );
+  _interstitialLoading = true;
+  try {
+    await WidgetsBinding.instance.endOfFrame;
+    await AdsInitialization.ensureInitialized();
+    await InterstitialAd.load(
+      adUnitId: adUnitId ?? AdHelper.interstitialAdUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (InterstitialAd ad) {
+          _interstitialLoading = false;
+          myInterstitial = ad;
+          interstitialReady = true;
+          interstitialReadyNotifier.value = true;
+        },
+        onAdFailedToLoad: (LoadAdError error) {
+          _interstitialLoading = false;
+          log('InterstitialAd failed to load: $error.');
+          _disposeInterstitial();
+        },
+      ),
+    );
+  } catch (error) {
+    _interstitialLoading = false;
+    log('Interstitial initialization/load failed: $error');
+  }
 }
 
 void finish(BuildContext context, [Object? result]) {
@@ -135,7 +143,7 @@ void finish(BuildContext context, [Object? result]) {
 }
 
 void showInterstitialAd(BuildContext context) {
-  if (myInterstitial == null || !interstitialReady) {
+  if (_interstitialShowing || myInterstitial == null || !interstitialReady) {
     log('attempt to show interstitial before loaded.');
     // Optional: just return instead of popping
     // finish(context);
@@ -150,11 +158,13 @@ void showInterstitialAd(BuildContext context) {
       interstitialReadyNotifier.value = false;
     },
     onAdDismissedFullScreenContent: (InterstitialAd ad) {
+      _interstitialShowing = false;
       log('$ad onAdDismissedFullScreenContent.');
       _disposeInterstitial();
       createInterstitialAd(); // preload next
     },
     onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+      _interstitialShowing = false;
       log('$ad onAdFailedToShowFullScreenContent: $error');
       _disposeInterstitial();
       createInterstitialAd(); // preload next
@@ -163,5 +173,6 @@ void showInterstitialAd(BuildContext context) {
 
   interstitialReady = false;
   interstitialReadyNotifier.value = false;
+  _interstitialShowing = true;
   myInterstitial!.show();
 }

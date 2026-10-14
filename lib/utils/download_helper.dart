@@ -18,14 +18,13 @@ class DownloadHelper {
     }
 
     final fileName = sourceFilePath.split(Platform.pathSeparator).last;
-    final bytes = await source.readAsBytes();
     final mimeType = _mimeTypeFor(fileName);
 
     if (Platform.isAndroid) {
       await _ensureAndroidStoragePermission();
       final result = await _channel.invokeMethod<String>('saveToDownloads', {
         'fileName': fileName,
-        'bytes': bytes,
+        'sourcePath': source.path,
         'mimeType': mimeType,
       });
       if (result == null || result.isEmpty) {
@@ -37,8 +36,23 @@ class DownloadHelper {
     // iOS has no public Downloads folder — save under app Documents.
     final docs = await getApplicationDocumentsDirectory();
     final outFile = File('${docs.path}/$fileName');
-    await outFile.writeAsBytes(bytes, flush: true);
+    // absolute paths can differ (/var vs /private/var) for one file.
+    // Copying a file onto itself truncates it.
+    if (!await _isSameFile(source, outFile)) {
+      await source.copy(outFile.path);
+    }
     return outFile.path;
+  }
+
+  static Future<bool> _isSameFile(File source, File destination) async {
+    if (source.absolute.path == destination.absolute.path) return true;
+    if (!await destination.exists()) return false;
+    try {
+      return await source.resolveSymbolicLinks() ==
+          await destination.resolveSymbolicLinks();
+    } catch (_) {
+      return false;
+    }
   }
 
   static Future<void> _ensureAndroidStoragePermission() async {
