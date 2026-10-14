@@ -221,19 +221,22 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
                     await AppHelper.handlePermissions().then((_) async {
                       await CunningDocumentScanner.getPictures(
                               isGalleryImportAllowed: true, noOfPages: 1)
-                          .then((pictures) {
+                          .then((pictures) async {
                         if (pictures!.isNotEmpty) {
-                          pictures.forEach((element) async {
+                          for (final element in pictures) {
+                            if (!mounted) return;
                             String imageName = DateFormat('yyyyMMdd_SSSS')
                                 .format(DateTime.now());
                             cameraProvider.updateImage(
                                 image: ImageModel(
                                     docType: 'Document',
-                                    imageByte: File(element).readAsBytesSync(),
+                                    imageByte:
+                                        await File(element).readAsBytes(),
                                     name: "Document-$imageName"),
                                 index: currentIndex);
-                          });
+                          }
 
+                          if (!mounted) return;
                           if (cameraProvider.imageList.isNotEmpty) {
                             Navigator.push(
                               context,

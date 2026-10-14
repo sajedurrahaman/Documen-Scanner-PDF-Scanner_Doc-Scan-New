@@ -178,7 +178,7 @@ class MergeImageHelper {
   ///load ui.Image from File
   ///[file] Image file
   static Future<ui.Image> loadImageFromFile(File file) async {
-    Uint8List bytes = file.readAsBytesSync();
+    Uint8List bytes = await file.readAsBytes();
     return await uint8ListToImage(bytes);
   }
 

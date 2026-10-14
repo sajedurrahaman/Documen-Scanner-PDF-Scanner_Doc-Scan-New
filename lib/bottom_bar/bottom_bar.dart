@@ -443,17 +443,19 @@ class _BottomBarState extends State<BottomBar> {
 
                     if (pictures != null && pictures.isNotEmpty) {
                       for (var element in pictures) {
+                        if (!mounted) return;
                         String imageName =
                             DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
                         cameraProvider.addImage(
                           ImageModel(
                             docType: 'Document',
-                            imageByte: File(element).readAsBytesSync(),
+                            imageByte: await File(element).readAsBytes(),
                             name: "Document-$imageName",
                           ),
                         );
                       }
 
+                      if (!mounted) return;
                       if (cameraProvider.imageList.isNotEmpty) {
                         createInterstitialAd(adUnitId: AdHelper.interstitialAdUnitId1);
                         Navigator.push(
@@ -466,6 +468,7 @@ class _BottomBarState extends State<BottomBar> {
                     }
                   } catch (e) {
                     debugPrint("Error: $e");
+                    if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("Error occurred: $e")),
                     );
