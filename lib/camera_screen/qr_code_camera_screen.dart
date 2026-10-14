@@ -113,6 +113,8 @@ class _QRCodeCameraScreenState extends State<QRCodeCameraScreen>
         children: [
           Center(
             child: MobileScanner(
+              // This screen owns start/stop, including pauses for result dialogs.
+              useAppLifecycleState: false,
               controller: controller,
               scanWindow: scanWindow,
               onDetect: (capture) async {

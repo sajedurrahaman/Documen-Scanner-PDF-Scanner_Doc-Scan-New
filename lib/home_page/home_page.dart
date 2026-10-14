@@ -19,7 +19,6 @@ import 'package:doc_scanner/utils/pdf_view_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 // ignore: depend_on_referenced_packages
@@ -30,7 +29,6 @@ import '../localaization/language_constant.dart';
 import '../utils/utils.dart';
 import 'directory_view.dart';
 import 'model/camera_item_model.dart';
-import 'package:http/http.dart' as http;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -43,6 +41,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<HomePageProvider>().clearDocumentImageFiles();
       context.read<HomePageProvider>().clearIdCardImageFiles();
       context.read<HomePageProvider>().clearQRCodeFiles();
@@ -53,90 +52,9 @@ class _HomePageState extends State<HomePage> {
       context.read<HomePageProvider>().loadBarCode();
       context.read<HomePageProvider>().getDirectoriesForCreate();
 
-      checkForUpdate(context);
       showInterstitialAd(context);
     });
     super.initState();
-  }
-
-  Future<void> checkForUpdate(BuildContext context) async {
-    print("objects: checkForUpdate called");
-    final PackageInfo info = await PackageInfo.fromPlatform();
-    final String currentVersion = info.version;
-    final String packageName = info.packageName;
-    print("objects: $currentVersion");
-    print("objects: $packageName");
-
-    final playStoreUrl =
-        'https://play.google.com/store/apps/details?id=$packageName&hl=en';
-
-    try {
-      final response = await http.get(Uri.parse(playStoreUrl));
-      if (response.statusCode == 200) {
-        print('url: ${response.body}');
-        // Use regex to extract the version number from the HTML response
-        final regex = RegExp(r'Current Version.+?>([\d.]+)<');
-        final match = regex.firstMatch(response.body);
-        if (match != null) {
-          final storeVersion = match.group(1)!.trim();
-          if (_isVersionNewer(currentVersion, storeVersion)) {
-            _showUpdateDialog(context, packageName);
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to check version: $e');
-    }
-  }
-
-  bool _isVersionNewer(String current, String store) {
-    final curr = current.split('.').map(int.parse).toList();
-    final st = store.split('.').map(int.parse).toList();
-
-    for (int i = 0; i < st.length; i++) {
-      if (i >= curr.length || st[i] > curr[i]) return true;
-      if (st[i] < curr[i]) return false;
-    }
-    return false;
-  }
-
-  void _showUpdateDialog(BuildContext context, String packageName) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Update Required"),
-          content: const Text(
-              "A new version of the app is available. Please update to continue."),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                final url =
-                    "https://play.google.com/store/apps/details?id=$packageName";
-                if (await canLaunch(url)) {
-                  await launch(url);
-                }
-              },
-              child: const Text("Update"),
-            ),
-            TextButton(
-              onPressed: () {
-                // Exit app
-                Future.delayed(const Duration(milliseconds: 200), () {
-                  // Use SystemNavigator.pop() or exit(0)
-                  // SystemNavigator.pop(); // if in main page
-                  // or
-                  Future.delayed(
-                      Duration.zero, () => Navigator.of(context).pop());
-                });
-              },
-              child: const Text("Exit"),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   void checkCameraPermissionAndNavigate(

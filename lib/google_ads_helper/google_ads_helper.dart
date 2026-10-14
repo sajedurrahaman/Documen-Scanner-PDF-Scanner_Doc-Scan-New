@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'ads_initialization.dart';
 
 import 'package:doc_scanner/main.dart';
 import 'package:flutter/foundation.dart';
@@ -99,10 +100,16 @@ class AdHelper {
     if (kDebugMode) return _androidTestInterstitial;
     return 'ca-app-pub-9877635475483541/5655684143';
   }
-
 }
 
-void createInterstitialAd({String? adUnitId}) {
+Future<void> createInterstitialAd({String? adUnitId}) async {
+  await WidgetsBinding.instance.endOfFrame;
+  try {
+    await AdsInitialization.ensureInitialized();
+  } catch (error) {
+    log('Ads initialization failed: $error');
+    return;
+  }
   _disposeInterstitial();
 
   InterstitialAd.load(

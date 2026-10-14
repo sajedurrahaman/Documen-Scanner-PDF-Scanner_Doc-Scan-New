@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'ads_initialization.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -23,7 +24,17 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     _loadAd();
   }
 
-  void _loadAd() {
+  Future<void> _loadAd() async {
+    // Let the home screen render before invoking the native ads SDK.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    try {
+      await AdsInitialization.ensureInitialized();
+    } catch (error) {
+      log('Ads initialization failed: $error');
+      return;
+    }
+    if (!mounted) return;
     final ad = BannerAd(
       size: AdSize.banner,
       adUnitId: widget.adUnitId,
@@ -51,6 +62,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
         },
       ),
     );
+    _bannerAd = ad;
     ad.load();
   }
 

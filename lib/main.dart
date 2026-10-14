@@ -1,4 +1,6 @@
-import 'dart:ui';
+import 'dart:async';
+import 'package:doc_scanner/bottom_bar/bottom_bar.dart';
+import 'package:doc_scanner/core/startup_gate.dart';
 import 'package:doc_scanner/home_page/provider/home_page_provider.dart';
 import 'package:doc_scanner/image_edit/provider/image_edit_provider.dart';
 import 'package:doc_scanner/l10n/app_localizations.dart';
@@ -125,27 +127,29 @@ void _handleNotificationTap(RemoteMessage message) {
   }
 }
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  MobileAds.instance.initialize();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  unawaited(
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]));
+  runApp(const MyApp());
+}
 
-  Future.delayed(const Duration(seconds: 5), () {
-    print("this call after 5 seconds");
-    setupFirebaseMessaging();
-  });
-
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  await LocalStorage().init();
-  await AppHelper().createDirectories();
+// These services do not gate access to local documents or the first home frame.
+Future<void> _initializeBackgroundServices() async {
+  unawaited(_initializeMessaging());
   await MetaEventsHelper.initialize();
   await MetaEventsHelper.logAppOpen();
+}
 
-  runApp(
-    const MyApp(),
-  );
+Future<void> _initializeMessaging() async {
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await setupFirebaseMessaging();
+  } catch (error) {
+    debugPrint('Firebase startup failed: $error');
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -163,16 +167,18 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Locale? _locale;
 
-  @override
-  void didChangeDependencies() {
-    getLocale().then((locale) => {setLocale(locale)});
-    super.didChangeDependencies();
+  Future<void> _initializeLocalData() async {
+    await Future.wait([
+      LocalStorage().init(),
+      AppHelper().createDirectories(),
+    ]);
+    final locale = await getLocale();
+    setLocale(locale);
   }
 
   void setLocale(Locale locale) {
-    setState(() {
-      _locale = locale;
-    });
+    if (!mounted || _locale == locale) return;
+    setState(() => _locale = locale);
   }
 
   @override
@@ -190,6 +196,7 @@ class _MyAppState extends State<MyApp> {
           data: MediaQuery.of(context)
               .copyWith(textScaler: TextScaler.linear(textScaleFactor)),
           child: MaterialApp(
+            navigatorKey: navigatorKey,
             title: 'Document Scanner - PDF Scanner',
             debugShowCheckedModeBanner: false,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -203,7 +210,12 @@ class _MyAppState extends State<MyApp> {
                     foregroundColor: AppColor.primaryColor),
               ),
             ),
-            home: const SplashScreen(),
+            home: StartupGate(
+              initialize: _initializeLocalData,
+              onReady: () => unawaited(_initializeBackgroundServices()),
+              loading: const SplashScreen(),
+              child: const BottomBar(),
+            ),
           ),
         );
       }),

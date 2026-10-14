@@ -1,29 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import '../bottom_bar/bottom_bar.dart';
 import '../utils/app_assets.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(seconds: 3), () {
-        Navigator.pushAndRemoveUntil(
-            context, MaterialPageRoute(builder: (context) => const BottomBar()),
-            (route) {
-          return false;
-        });
-      });
-    });
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {

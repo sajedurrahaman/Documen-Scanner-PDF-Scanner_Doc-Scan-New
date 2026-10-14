@@ -1,30 +1,78 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'dart:async';
 
+import 'package:doc_scanner/core/startup_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:doc_scanner/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Home waits for local data but has no fixed splash delay',
+      (tester) async {
+    final initialization = Completer<void>();
+    var calls = 0;
+    var readyCalls = 0;
+    final app = MaterialApp(
+      home: StartupGate(
+        initialize: () {
+          calls++;
+          return initialization.future;
+        },
+        onReady: () => readyCalls++,
+        loading: const Text('Loading'),
+        child: const Text('Documents'),
+      ),
+    );
+    await tester.pumpWidget(app);
+    expect(find.text('Loading'), findsOneWidget);
+    expect(find.text('Documents'), findsNothing);
+    expect(calls, 1);
+    expect(readyCalls, 0);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    initialization.complete();
     await tester.pump();
+    expect(find.text('Documents'), findsOneWidget);
+    expect(readyCalls, 1);
+    await tester.pumpWidget(app);
+    await tester.pump();
+    expect(calls, 1);
+    expect(readyCalls, 1);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('Failed local setup can be retried', (tester) async {
+    var attempts = 0;
+    await tester.pumpWidget(MaterialApp(
+      home: StartupGate(
+        initialize: () async {
+          if (++attempts == 1) throw StateError('Storage unavailable');
+        },
+        loading: const Text('Loading'),
+        child: const Text('Documents'),
+      ),
+    ));
+    await tester.pump();
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Documents'), findsNothing);
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    expect(find.text('Documents'), findsOneWidget);
+    expect(attempts, 2);
+  });
+
+  testWidgets('Disposal during setup does not trigger navigation or services',
+      (tester) async {
+    final initialization = Completer<void>();
+    var ready = false;
+    await tester.pumpWidget(MaterialApp(
+      home: StartupGate(
+        initialize: () => initialization.future,
+        onReady: () => ready = true,
+        loading: const Text('Loading'),
+        child: const Text('Documents'),
+      ),
+    ));
+    await tester.pumpWidget(const SizedBox());
+    initialization.complete();
+    await tester.pump();
+    expect(ready, false);
+    expect(tester.takeException(), isNull);
   });
 }
