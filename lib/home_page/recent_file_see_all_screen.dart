@@ -126,7 +126,7 @@ class _RecentFileSeeAllScreenState extends State<RecentFileSeeAllScreen> {
         top: false,
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.only(top: 14),
           child: ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             child: ColoredBox(
