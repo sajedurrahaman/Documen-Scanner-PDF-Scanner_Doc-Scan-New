@@ -149,8 +149,11 @@ class _BottomBarState extends State<BottomBar> {
               children: [
                 // PDF
                 SpeedDialChild(
-                  backgroundColor: const Color(0xFFc61a0e),
-                  child: Row(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  child: _SpeedDialGradient(
+                    colors: const [Color(0xFFFF383C), Color(0xFFB5171A)],
+                    child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -166,6 +169,7 @@ class _BottomBarState extends State<BottomBar> {
                         style: TextStyle(color: Colors.white),
                       ),
                     ],
+                  ),
                   ),
                   onTap: () async {
                     // Request storage permission
@@ -218,8 +222,11 @@ class _BottomBarState extends State<BottomBar> {
                 ),
                 // Bar Code
                 SpeedDialChild(
-                    backgroundColor: const Color(0xFF7B5EFF),
-                    child: Row(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    child: _SpeedDialGradient(
+                      colors: const [Color(0xFFF5921E), Color(0xFFDC7906)],
+                      child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -235,6 +242,7 @@ class _BottomBarState extends State<BottomBar> {
                           style: TextStyle(color: Colors.white),
                         ),
                       ],
+                    ),
                     ),
                     onTap: () async {
                       PermissionStatus status = await Permission.camera.status;
@@ -285,8 +293,11 @@ class _BottomBarState extends State<BottomBar> {
                     ),
                 // QR Code
                 SpeedDialChild(
-                    backgroundColor: const Color(0xFFF95658),
-                    child: Row(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    child: _SpeedDialGradient(
+                      colors: const [Color(0xFF8B4BEA), Color(0xFF5823A6)],
+                      child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -302,6 +313,7 @@ class _BottomBarState extends State<BottomBar> {
                           style: TextStyle(color: Colors.white),
                         ),
                       ],
+                    ),
                     ),
                     onTap: () async {
                       PermissionStatus status = await Permission.camera.status;
@@ -342,8 +354,11 @@ class _BottomBarState extends State<BottomBar> {
                     }),
                 //ID Card
                 SpeedDialChild(
-                  backgroundColor: const Color(0xffa9715e),
-                  child: Row(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  child: _SpeedDialGradient(
+                    colors: const [Color(0xFF22B35E), Color(0xFF00933D)],
+                    child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -359,6 +374,7 @@ class _BottomBarState extends State<BottomBar> {
                         style: TextStyle(color: Colors.white),
                       ),
                     ],
+                  ),
                   ),
                   onTap: () async {
                     // bool isGranted = await AppHelper.handlePermissions();
@@ -411,8 +427,11 @@ class _BottomBarState extends State<BottomBar> {
                 // Documents
 
                 SpeedDialChild(
-                  backgroundColor: const Color(0xFFFDAB35),
-                  child: Row(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  child: _SpeedDialGradient(
+                    colors: const [Color(0xFF2F7BEA), Color(0xFF0060EB)],
+                    child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -428,6 +447,7 @@ class _BottomBarState extends State<BottomBar> {
                         style: TextStyle(color: Colors.white),
                       ),
                     ],
+                  ),
                   ),
                   onTap: () async {
                     // bool isGranted = await AppHelper.handlePermissions();
@@ -630,6 +650,32 @@ class _BottomBarState extends State<BottomBar> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Fills a speed-dial child with a left-to-right gradient. The dial button
+/// itself stays transparent and flat so it does not add a second shadow.
+class _SpeedDialGradient extends StatelessWidget {
+  const _SpeedDialGradient({required this.colors, required this.child});
+
+  final List<Color> colors;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: colors,
+          ),
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
+        ),
+        child: child,
       ),
     );
   }
