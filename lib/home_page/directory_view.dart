@@ -22,6 +22,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../utils/utils.dart';
+import '../utils/pdf_merge_helper.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as path;
 // import 'package:document_file_save_plus/document_file_save_plus.dart';
@@ -108,7 +109,157 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
   void dispose() {
     _searchController.dispose();
     _folderNameController.dispose();
+    _mergeNameController.dispose();
     super.dispose();
+  }
+
+  bool _isMerging = false;
+  final _mergeNameController = TextEditingController();
+  bool get _busy => _isMerging || isDeleteLoading || isShareIng;
+  bool get _onlyFiles =>
+      _selectedItems.isNotEmpty &&
+      _selectedItems
+          .every((file) => _fileStats[file]?.type == FileSystemEntityType.file);
+  bool _isImage(String file) => const {'.jpg', '.jpeg', '.png'}
+      .contains(path.extension(file).toLowerCase());
+  bool get _allPdfs =>
+      _onlyFiles &&
+      _selectedItems
+          .every((file) => path.extension(file).toLowerCase() == '.pdf');
+  bool get _singleText =>
+      _onlyFiles &&
+      _selectedItems.length == 1 &&
+      path.extension(_selectedItems.first).toLowerCase() == '.txt';
+  bool get _canMove => !_busy && _onlyFiles;
+  bool get _canShare =>
+      !_busy &&
+      (_singleText ||
+          (_onlyFiles &&
+              _selectedItems.every((file) =>
+                  _isImage(file) ||
+                  path.extension(file).toLowerCase() == '.pdf')));
+  bool get _canMerge =>
+      !_busy &&
+      _selectedItems.length >= 2 &&
+      (_allPdfs || (_onlyFiles && _selectedItems.every(_isImage)));
+  bool get _canCopy => !_busy && _singleText;
+  bool get _canDelete => !_busy && _selectedItems.isNotEmpty;
+
+  Future<void> _shareSelected() async {
+    if (!_canShare) return;
+    final files = _selectedItems.toList();
+    final text = _singleText;
+    setState(() => isShareIng = true);
+    try {
+      if (text) {
+        await Share.share(await File(files.single).readAsString());
+      } else {
+        await Share.shareXFiles(files.map(XFile.new).toList());
+      }
+      if (mounted) _exitSelection();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content:
+                Text('${translation(context).somethingWentWrong}: $error')));
+      }
+    } finally {
+      if (mounted) setState(() => isShareIng = false);
+    }
+  }
+
+  Future<void> _mergeSelected() async {
+    if (!_canMerge) return;
+    final files = _selectedItems.toList();
+    final pdfs = _allPdfs;
+    final labels = translation(context);
+    final formKey = GlobalKey<FormState>();
+    _mergeNameController.clear();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(labels.renameFile,
+            style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.w500)),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: _mergeNameController,
+            autofocus: true,
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(
+              hintText: labels.enterFileName,
+              border: const OutlineInputBorder(
+                borderSide: BorderSide(color: AppColor.primaryColor),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+            ),
+            validator: (value) {
+              final name = value?.trim() ?? '';
+              if (name.isEmpty ||
+                  name == '.' ||
+                  name == '..' ||
+                  name.contains(RegExp(r'[\/\\]'))) {
+                return labels.pleaseEnterFileName;
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(labels.cancel)),
+          TextButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(
+                      dialogContext, _mergeNameController.text.trim());
+                }
+              },
+              child: Text(labels.ok)),
+        ],
+      ),
+    );
+    if (name == null || !mounted) return;
+    final baseName = name.toLowerCase().endsWith('.pdf')
+        ? name.substring(0, name.length - 4)
+        : name;
+    if (baseName.isEmpty) return;
+    final home = context.read<HomePageProvider>();
+    final recent = context.read<RecentFilesProvider?>();
+    setState(() => _isMerging = true);
+    try {
+      final output = pdfs
+          ? await mergePdfFiles(
+              paths: files, directoryPath: widget.directoryPath, name: baseName)
+          : await home.createPDFFromImages(
+              images: files.map(File.new).toList(),
+              directoryPath: widget.directoryPath,
+              context: context,
+              fileName: baseName);
+      if (output == null) throw StateError('Could not merge files');
+      if (path.split(widget.directoryPath).contains('ID Card')) {
+        home.addIdCardImage(output);
+      } else {
+        home.addDocumentImage(output);
+      }
+      if (recent != null) await recent.load();
+      if (!mounted) return;
+      _selectedItems.clear();
+      _isLongPressed = false;
+      await _refresh();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${labels.somethingWentWrong}: $error')));
+      }
+    } finally {
+      if (mounted) setState(() => _isMerging = false);
+    }
   }
 
   String get _title {
@@ -266,7 +417,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 20),
         minLeadingWidth: 24,
         horizontalTitleGap: 20,
-        leading: const Icon(Icons.delete_outline, color: Colors.black, size: 24),
+        leading:
+            const Icon(Icons.delete_outline, color: Colors.black, size: 24),
         title: Text(translation(sheetContext).delete,
             style: const TextStyle(color: Colors.black, fontSize: 16)),
         onTap: () {
@@ -295,8 +447,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child:
-                Text(labels.delete, style: const TextStyle(color: Colors.black)),
+            child: Text(labels.delete,
+                style: const TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -648,931 +800,227 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
     final size = MediaQuery.sizeOf(context);
     return WillPopScope(
       onWillPop: () async {
+        if (_isMerging) return false;
         if (_isLongPressed) {
           _exitSelection();
           return false;
         }
         return true;
       },
-      child: Scaffold(
-        backgroundColor: AppColor.primaryColor,
-        appBar: _buildHeader(),
-        body: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-          child: ColoredBox(
-            color: const Color(0xFFF4F7FC),
-            child: SafeArea(
-              top: false,
-              child: FutureBuilder<List<String>>(
-                future: allFiles,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done ||
-                      homePageProvider.isCreatingPDF ||
-                      isDeleteLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(
-                        child: Text(translation(context).somethingWentWrong));
-                  }
-                  final fileList = (snapshot.data ?? <String>[])
-                      .where((file) => path
-                          .basename(file)
-                          .toLowerCase()
-                          .contains(_query.trim().toLowerCase()))
-                      .toList();
-                  return Column(children: [
-                    Expanded(
-                      child: RefreshIndicator(
-                        onRefresh: _refresh,
-                        child: fileList.isEmpty
-                            ? LayoutBuilder(
-                                builder: (context, constraints) => ListView(
-                                      physics:
-                                          const AlwaysScrollableScrollPhysics(),
-                                      children: [
-                                        SizedBox(
-                                            height: constraints.maxHeight,
-                                            child: Center(
-                                              child: Text(_query.isEmpty
-                                                  ? translation(context)
-                                                      .noDataFound
-                                                  : translation(context)
-                                                      .noResultFound),
-                                            ))
-                                      ],
-                                    ))
-                            : ListView.builder(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                keyboardDismissBehavior:
-                                    ScrollViewKeyboardDismissBehavior.onDrag,
-                                itemCount: fileList.length,
-                                itemBuilder: (context, index) {
-                                  String filePath = fileList[index];
-                                  subFilePath = filePath;
-                                  final isSelected =
-                                      _selectedItems.contains(filePath);
-                                  if (_fileStats[filePath]?.type ==
-                                      FileSystemEntityType.directory) {
-                                    return _directoryTile(
-                                      filePath,
-                                      isSelected,
-                                      onTap: () {
-                                        if (_isLongPressed) {
-                                          _toggleItemSelection(filePath);
-                                          return;
-                                        }
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) =>
-                                                  DirectoryDetailsPage(
-                                                      directoryPath: filePath)),
-                                        ).then((_) {
-                                          if (mounted) _refresh();
-                                        });
-                                      },
-                                      onLongPress: () =>
-                                          _enterSelectionMode(filePath),
-                                      onMenu: () {
-                                        _showFileActions(
-                                          context: context,
-                                          builder: (context) {
-                                            return Container(
-                                              width: MediaQuery.sizeOf(context)
-                                                  .width,
-                                              decoration: const BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.only(
-                                                    topLeft:
-                                                        Radius.circular(20),
-                                                    topRight:
-                                                        Radius.circular(20),
-                                                  ),
-                                                  color: Colors.white),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Padding(
-                                                    padding: const EdgeInsets
-                                                            .symmetric(
-                                                            horizontal: 10)
-                                                        .copyWith(
-                                                            top: 20,
-                                                            bottom: 10),
-                                                    child: Row(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .center,
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        const Text(''),
-                                                        Text(
-                                                          translation(context)
-                                                              .documentFiles,
-                                                          style:
-                                                              const TextStyle(
-                                                            color: Colors.black,
-                                                            fontSize: 20,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                        Container(
-                                                          height:
-                                                              size.width >= 600
-                                                                  ? 40
-                                                                  : 30,
-                                                          width:
-                                                              size.width >= 600
-                                                                  ? 40
-                                                                  : 30,
-                                                          alignment:
-                                                              Alignment.center,
-                                                          decoration:
-                                                              const BoxDecoration(
-                                                            color: Color(
-                                                                0xFFF4F4F4),
-                                                            shape:
-                                                                BoxShape.circle,
-                                                          ),
-                                                          child: Material(
-                                                            color: Colors
-                                                                .transparent,
-                                                            child: InkWell(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          30),
-                                                              onTap: () {
-                                                                Navigator.pop(
-                                                                    context);
-                                                              },
-                                                              child: Icon(
-                                                                Icons
-                                                                    .close_rounded,
-                                                                size:
-                                                                    size.width >=
-                                                                            600
-                                                                        ? 30
-                                                                        : 20,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  Divider(
-                                                    color: Colors.grey[200],
-                                                    thickness: 1,
-                                                  ),
-                                                  Material(
-                                                    color: Colors.transparent,
-                                                    child: InkWell(
-                                                      onTap: () async {
-                                                        TextEditingController
-                                                            renameController =
-                                                            TextEditingController(
-                                                                text: filePath
-                                                                    .split("/")
-                                                                    .last);
-                                                        final formKey =
-                                                            GlobalKey<
-                                                                FormState>();
-                                                        Navigator.pop(context);
-                                                        showDialog(
-                                                          context: context,
-                                                          builder: (context) {
-                                                            String
-                                                                errorMessage =
-                                                                '';
-                                                            return StatefulBuilder(
-                                                                builder: (context,
-                                                                    setState) {
-                                                              return AlertDialog(
-                                                                title: Text(
-                                                                  translation(
-                                                                          context)
-                                                                      .renameFile,
-                                                                  style:
-                                                                      const TextStyle(
-                                                                    color: Colors
-                                                                        .black,
-                                                                    fontSize:
-                                                                        16,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w500,
-                                                                  ),
-                                                                ),
-                                                                content: Form(
-                                                                  key: formKey,
-                                                                  child:
-                                                                      TextFormField(
-                                                                    controller:
-                                                                        renameController,
-                                                                    keyboardType:
-                                                                        TextInputType
-                                                                            .text,
-                                                                    textInputAction:
-                                                                        TextInputAction
-                                                                            .done,
-                                                                    autofocus:
-                                                                        true,
-                                                                    validator:
-                                                                        (value) {
-                                                                      if (value!
-                                                                          .isEmpty) {
-                                                                        return translation(context)
-                                                                            .pleaseEnterFileName;
-                                                                      }
-                                                                      return null;
-                                                                    },
-                                                                    decoration:
-                                                                        InputDecoration(
-                                                                      errorText: errorMessage
-                                                                              .isEmpty
-                                                                          ? null
-                                                                          : errorMessage,
-                                                                      hintText:
-                                                                          translation(context)
-                                                                              .enterFileName,
-                                                                      border:
-                                                                          const OutlineInputBorder(
-                                                                        borderSide:
-                                                                            BorderSide(color: AppColor.primaryColor),
-                                                                      ),
-                                                                      contentPadding: const EdgeInsets
-                                                                          .symmetric(
-                                                                          horizontal:
-                                                                              10),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                                actions: [
-                                                                  TextButton(
-                                                                      onPressed: () =>
-                                                                          Navigator.pop(
-                                                                              context),
-                                                                      child: Text(
-                                                                          translation(context)
-                                                                              .cancel)),
-                                                                  TextButton(
-                                                                    onPressed:
-                                                                        () async {
-                                                                      if (formKey
-                                                                          .currentState!
-                                                                          .validate()) {
-                                                                        String
-                                                                            newName =
-                                                                            renameController.text;
-                                                                        String parentPath = Directory(filePath)
-                                                                            .parent
-                                                                            .path;
-                                                                        String
-                                                                            newPath =
-                                                                            "$parentPath/$newName";
-                                                                        String
-                                                                            lowerCaseNewPath =
-                                                                            "$parentPath/${newName.toLowerCase()}";
-                                                                        String
-                                                                            upperCaseNewPath =
-                                                                            "$parentPath/${newName.toUpperCase()}";
-                                                                        final Directory
-                                                                            newDirectory =
-                                                                            Directory(newPath);
-                                                                        if (newDirectory.existsSync() ||
-                                                                            Directory(lowerCaseNewPath).existsSync() ||
-                                                                            Directory(upperCaseNewPath).existsSync()) {
-                                                                          setState(
-                                                                              () {
-                                                                            errorMessage =
-                                                                                translation(context).folderAlreadyExists;
-                                                                          });
-                                                                        } else {
-                                                                          await Directory(filePath)
-                                                                              .rename(newPath);
-                                                                          Navigator.pop(
-                                                                              context);
-                                                                          allFiles =
-                                                                              _loadFiles();
-                                                                        }
-                                                                      }
-                                                                    },
-                                                                    child: Text(
-                                                                        translation(context)
-                                                                            .save),
-                                                                  ),
-                                                                ],
-                                                              );
-                                                            });
-                                                          },
-                                                        );
-                                                      },
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                horizontal:
-                                                                    20.0,
-                                                                vertical: 5),
-                                                        child: Row(
-                                                          children: [
-                                                            SvgPicture.asset(
-                                                              AppAssets.rename,
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 20,
-                                                            ),
-                                                            const Text(
-                                                              "Rename Folder",
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .black,
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w400,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  _deleteMenuItem(
-                                                      context, filePath),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    );
-                                  } else if (filePath
-                                          .toLowerCase()
-                                          .endsWith('.jpg') ||
-                                      filePath
-                                          .toLowerCase()
-                                          .endsWith('.jpeg') ||
-                                      filePath.toLowerCase().endsWith('.png')) {
-                                    return _directoryTile(
-                                      filePath,
-                                      isSelected,
-                                      onTap: () async {
-                                        if (_isLongPressed) {
-                                          _toggleItemSelection(filePath);
-                                          return;
-                                        }
-                                        await flutterGenralDialogue(
-                                          context: context,
-                                          imageFile: File(filePath),
-                                        );
-                                      },
-                                      onLongPress: () =>
-                                          _enterSelectionMode(filePath),
-                                      onMenu: () {
-                                        _showFileActions(
-                                          context: context,
-                                          builder: (context) {
-                                            return Container(
-                                              width: MediaQuery.sizeOf(context)
-                                                  .width,
-                                              decoration: const BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.only(
-                                                    topLeft:
-                                                        Radius.circular(20),
-                                                    topRight:
-                                                        Radius.circular(20),
-                                                  ),
-                                                  color: Colors.white),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Padding(
-                                                    padding: const EdgeInsets
-                                                            .symmetric(
-                                                            horizontal: 10)
-                                                        .copyWith(
-                                                            top: 20,
-                                                            bottom: 10),
-                                                    child: Row(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .center,
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        const Text(''),
-                                                        Text(
-                                                          translation(context)
-                                                              .documentFiles,
-                                                          style:
-                                                              const TextStyle(
-                                                            color: Colors.black,
-                                                            fontSize: 20,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                        Container(
-                                                          height:
-                                                              size.width >= 600
-                                                                  ? 40
-                                                                  : 30,
-                                                          width:
-                                                              size.width >= 600
-                                                                  ? 40
-                                                                  : 30,
-                                                          alignment:
-                                                              Alignment.center,
-                                                          decoration:
-                                                              const BoxDecoration(
-                                                            color: Color(
-                                                                0xFFF4F4F4),
-                                                            shape:
-                                                                BoxShape.circle,
-                                                          ),
-                                                          child: Material(
-                                                            color: Colors
-                                                                .transparent,
-                                                            child: InkWell(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          30),
-                                                              onTap: () {
-                                                                Navigator.pop(
-                                                                    context);
-                                                              },
-                                                              child: Icon(
-                                                                Icons
-                                                                    .close_rounded,
-                                                                size:
-                                                                    size.width >=
-                                                                            600
-                                                                        ? 30
-                                                                        : 20,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  Divider(
-                                                    color: Colors.grey[200],
-                                                    thickness: 1,
-                                                  ),
-                                                  Material(
-                                                    color: Colors.transparent,
-                                                    child: InkWell(
-                                                      onTap: () async {
-                                                        TextEditingController
-                                                            renameController =
-                                                            TextEditingController(
-                                                                text: path
-                                                                    .basenameWithoutExtension(
-                                                                        filePath));
-                                                        final formKey =
-                                                            GlobalKey<
-                                                                FormState>();
-                                                        Navigator.pop(context);
-                                                        showDialog(
-                                                          context: context,
-                                                          builder: (context) {
-                                                            String
-                                                                errorMessage =
-                                                                '';
-                                                            return StatefulBuilder(
-                                                                builder: (context,
-                                                                    setState) {
-                                                              return AlertDialog(
-                                                                title: Text(
-                                                                    translation(
-                                                                            context)
-                                                                        .renameFile,
-                                                                    style:
-                                                                        const TextStyle(
-                                                                      color: Colors
-                                                                          .black,
-                                                                      fontSize:
-                                                                          16,
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w500,
-                                                                    )),
-                                                                content: Form(
-                                                                  key: formKey,
-                                                                  child:
-                                                                      TextFormField(
-                                                                    controller:
-                                                                        renameController,
-                                                                    keyboardType:
-                                                                        TextInputType
-                                                                            .text,
-                                                                    textInputAction:
-                                                                        TextInputAction
-                                                                            .done,
-                                                                    autofocus:
-                                                                        true,
-                                                                    validator:
-                                                                        (value) {
-                                                                      if (value!
-                                                                          .isEmpty) {
-                                                                        return translation(context)
-                                                                            .pleaseEnterFileName;
-                                                                      }
-                                                                      return null;
-                                                                    },
-                                                                    decoration:
-                                                                        InputDecoration(
-                                                                      errorText: errorMessage
-                                                                              .isEmpty
-                                                                          ? null
-                                                                          : errorMessage,
-                                                                      hintText:
-                                                                          translation(context)
-                                                                              .enterFileName,
-                                                                      border:
-                                                                          const OutlineInputBorder(
-                                                                        borderSide:
-                                                                            BorderSide(color: AppColor.primaryColor),
-                                                                      ),
-                                                                      contentPadding: const EdgeInsets
-                                                                          .symmetric(
-                                                                          horizontal:
-                                                                              10),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                                actions: [
-                                                                  TextButton(
-                                                                      onPressed: () =>
-                                                                          Navigator.pop(
-                                                                              context),
-                                                                      child: Text(
-                                                                          translation(context)
-                                                                              .cancel)),
-                                                                  ////ID Card Image File Rename
-                                                                  TextButton(
-                                                                    onPressed:
-                                                                        () async {
-                                                                      if (formKey
-                                                                          .currentState!
-                                                                          .validate()) {
-                                                                        String
-                                                                            newName =
-                                                                            renameController.text;
-                                                                        String parentPath = Directory(filePath)
-                                                                            .parent
-                                                                            .path;
-                                                                        String
-                                                                            newPath =
-                                                                            "$parentPath/$newName.jpg";
-                                                                        if (File(newPath)
-                                                                            .existsSync()) {
-                                                                          setState(
-                                                                              () {
-                                                                            errorMessage =
-                                                                                translation(context).fileAlreadyExists;
-                                                                          });
-                                                                        } else {
-                                                                          File(filePath)
-                                                                              .renameSync(newPath);
-                                                                          Navigator.pop(
-                                                                              context);
-                                                                          allFiles =
-                                                                              _loadFiles();
-                                                                        }
-                                                                      }
-                                                                    },
-                                                                    child: Text(
-                                                                        translation(context)
-                                                                            .save),
-                                                                  ),
-
-                                                                  // TextButton(
-                                                                  //     onPressed: () async {
-                                                                  //       if (_formKey.currentState!.validate()) {
-                                                                  //         String newPath = filePath.replaceAll(path.basenameWithoutExtension(filePath), _renameController.text);
-                                                                  //         File(filePath).renameSync(newPath);
-                                                                  //         Navigator.pop(context);
-                                                                  //         allFiles = _loadFiles();
-                                                                  //       }
-                                                                  //     },
-                                                                  //     child: Text(translation(context).save)),
-                                                                ],
-                                                              );
-                                                            });
-                                                          },
-                                                        );
-                                                      },
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                horizontal:
-                                                                    20.0,
-                                                                vertical: 5),
-                                                        child: Row(
-                                                          children: [
-                                                            SvgPicture.asset(
-                                                              AppAssets.rename,
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 20,
-                                                            ),
-                                                            Text(
-                                                              translation(
-                                                                      context)
-                                                                  .renameFile,
-                                                              style:
-                                                                  const TextStyle(
-                                                                color: Colors
-                                                                    .black,
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w400,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Divider(
-                                                    color: Colors.grey[200],
-                                                    thickness: 1,
-                                                    indent: MediaQuery.sizeOf(
-                                                                context)
-                                                            .width *
-                                                        0.15,
-                                                  ),
-                                                  Material(
-                                                    color: Colors.transparent,
-                                                    child: InkWell(
-                                                      onTap: () async {
-                                                        await Gal.putImage(
-                                                            filePath,
-                                                            album:
-                                                                "Doc Scanner");
-                                                        Navigator.pop(context);
-                                                        AppHelper.showTopSnackBar(
-                                                            context,
-                                                            translation(context)
-                                                                .saveAtGallery);
-                                                      },
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                horizontal:
-                                                                    20.0,
-                                                                vertical: 5),
-                                                        child: Row(
-                                                          children: [
-                                                            const Icon(
-                                                              Icons
-                                                                  .ios_share_outlined,
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 20,
-                                                            ),
-                                                            Text(
-                                                              translation(
-                                                                      context)
-                                                                  .saveAtGallery,
-                                                              style:
-                                                                  const TextStyle(
-                                                                color: Colors
-                                                                    .black,
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w400,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  _deleteMenuItem(
-                                                      context, filePath),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    );
-                                  } else if (filePath
-                                      .toLowerCase()
-                                      .endsWith('.txt')) {
-                                    return _directoryTile(
-                                      filePath,
-                                      isSelected,
-                                      onTap: () async {
-                                        if (_isLongPressed) {
-                                          _toggleItemSelection(filePath);
-                                          return;
-                                        }
-                                        var urlLink = await homePageProvider
-                                            .readTxtFile(filePath);
-                                        showQrAndBarCodeViewDialogue(
+      child: AbsorbPointer(
+        absorbing: _isMerging,
+        child: Scaffold(
+          backgroundColor: AppColor.primaryColor,
+          appBar: _buildHeader(),
+          body: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+            child: ColoredBox(
+              color: const Color(0xFFF4F7FC),
+              child: SafeArea(
+                top: false,
+                child: FutureBuilder<List<String>>(
+                  future: allFiles,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done ||
+                        homePageProvider.isCreatingPDF ||
+                        _isMerging ||
+                        isDeleteLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                          child: Text(translation(context).somethingWentWrong));
+                    }
+                    final fileList = (snapshot.data ?? <String>[])
+                        .where((file) => path
+                            .basename(file)
+                            .toLowerCase()
+                            .contains(_query.trim().toLowerCase()))
+                        .toList();
+                    return Column(children: [
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: _refresh,
+                          child: fileList.isEmpty
+                              ? LayoutBuilder(
+                                  builder: (context, constraints) => ListView(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        children: [
+                                          SizedBox(
+                                              height: constraints.maxHeight,
+                                              child: Center(
+                                                child: Text(_query.isEmpty
+                                                    ? translation(context)
+                                                        .noDataFound
+                                                    : translation(context)
+                                                        .noResultFound),
+                                              ))
+                                        ],
+                                      ))
+                              : ListView.builder(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  keyboardDismissBehavior:
+                                      ScrollViewKeyboardDismissBehavior.onDrag,
+                                  itemCount: fileList.length,
+                                  itemBuilder: (context, index) {
+                                    String filePath = fileList[index];
+                                    subFilePath = filePath;
+                                    final isSelected =
+                                        _selectedItems.contains(filePath);
+                                    if (_fileStats[filePath]?.type ==
+                                        FileSystemEntityType.directory) {
+                                      return _directoryTile(
+                                        filePath,
+                                        isSelected,
+                                        onTap: () {
+                                          if (_isLongPressed) {
+                                            _toggleItemSelection(filePath);
+                                            return;
+                                          }
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    DirectoryDetailsPage(
+                                                        directoryPath:
+                                                            filePath)),
+                                          ).then((_) {
+                                            if (mounted) _refresh();
+                                          });
+                                        },
+                                        onLongPress: () =>
+                                            _enterSelectionMode(filePath),
+                                        onMenu: () {
+                                          _showFileActions(
                                             context: context,
-                                            text: await homePageProvider
-                                                .readTxtFile(filePath),
-                                            browserView: () {
-                                              StringBuffer formattedContent =
-                                                  StringBuffer();
-
-                                              List<String> parts =
-                                                  urlLink.toString().split(';');
-                                              for (var part in parts
-                                                  .where((p) => p.isNotEmpty)) {
-                                                List<String> keyValue =
-                                                    part.split(':');
-                                                String key = keyValue[0];
-                                                String value =
-                                                    keyValue.length > 1
-                                                        ? keyValue
-                                                            .sublist(1)
-                                                            .join(':')
-                                                        : '';
-
-                                                // Format keys into labels
-                                                if (key == "WIFI" ||
-                                                    key == "Wifi" ||
-                                                    key == "wifi") {
-                                                  formattedContent.writeln(
-                                                      "WIFI NAME : $value");
-                                                } else if (key == "T") {
-                                                  formattedContent
-                                                      .writeln("TYPE : $value");
-                                                } else if (key == "P") {
-                                                  formattedContent.writeln(
-                                                      "PASSWORD : $value");
-                                                } else {
-                                                  formattedContent
-                                                      .writeln("$key : $value");
-                                                }
-                                              }
-
-                                              // Copy the formatted content to the clipboard
-                                              urlLink
-                                                          .toString()
-                                                          .startsWith("WIFI") ||
-                                                      urlLink
-                                                          .toString()
-                                                          .startsWith("Wifi") ||
-                                                      urlLink
-                                                          .toString()
-                                                          .startsWith("wifi")
-                                                  ? _openBrowserWithSearch(
-                                                      formattedContent
-                                                          .toString())
-                                                  : _openBrowserWithSearch(
-                                                      urlLink);
-                                            });
-                                      },
-                                      onLongPress: () =>
-                                          _enterSelectionMode(filePath),
-                                      onMenu: () {
-                                        _showFileActions(
-                                          context: context,
-                                          builder: (context) {
-                                            return Container(
-                                              width: MediaQuery.sizeOf(context)
-                                                  .width,
-                                              decoration: const BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.only(
-                                                    topLeft:
-                                                        Radius.circular(20),
-                                                    topRight:
-                                                        Radius.circular(20),
-                                                  ),
-                                                  color: Colors.white),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Padding(
-                                                    padding: const EdgeInsets
-                                                            .symmetric(
-                                                            horizontal: 10)
-                                                        .copyWith(
-                                                            top: 20,
-                                                            bottom: 10),
-                                                    child: Row(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .center,
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        const Text(''),
-                                                        Text(
-                                                          translation(context)
-                                                              .documentFiles,
-                                                          style:
-                                                              const TextStyle(
-                                                            color: Colors.black,
-                                                            fontSize: 20,
-                                                            fontWeight:
-                                                                FontWeight.w500,
+                                            builder: (context) {
+                                              return Container(
+                                                width:
+                                                    MediaQuery.sizeOf(context)
+                                                        .width,
+                                                decoration: const BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.only(
+                                                      topLeft:
+                                                          Radius.circular(20),
+                                                      topRight:
+                                                          Radius.circular(20),
+                                                    ),
+                                                    color: Colors.white),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Padding(
+                                                      padding: const EdgeInsets
+                                                              .symmetric(
+                                                              horizontal: 10)
+                                                          .copyWith(
+                                                              top: 20,
+                                                              bottom: 10),
+                                                      child: Row(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .center,
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          const Text(''),
+                                                          Text(
+                                                            translation(context)
+                                                                .documentFiles,
+                                                            style:
+                                                                const TextStyle(
+                                                              color:
+                                                                  Colors.black,
+                                                              fontSize: 20,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
                                                           ),
-                                                        ),
-                                                        Container(
-                                                          height:
-                                                              size.width >= 600
-                                                                  ? 40
-                                                                  : 30,
-                                                          width:
-                                                              size.width >= 600
-                                                                  ? 40
-                                                                  : 30,
-                                                          alignment:
-                                                              Alignment.center,
-                                                          decoration:
-                                                              const BoxDecoration(
-                                                            color: Color(
-                                                                0xFFF4F4F4),
-                                                            shape:
-                                                                BoxShape.circle,
-                                                          ),
-                                                          child: Material(
-                                                            color: Colors
-                                                                .transparent,
-                                                            child: InkWell(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          30),
-                                                              onTap: () {
-                                                                Navigator.pop(
-                                                                    context);
-                                                              },
-                                                              child: Icon(
-                                                                Icons
-                                                                    .close_rounded,
-                                                                size:
-                                                                    size.width >=
-                                                                            600
-                                                                        ? 30
-                                                                        : 20,
+                                                          Container(
+                                                            height:
+                                                                size.width >=
+                                                                        600
+                                                                    ? 40
+                                                                    : 30,
+                                                            width: size.width >=
+                                                                    600
+                                                                ? 40
+                                                                : 30,
+                                                            alignment: Alignment
+                                                                .center,
+                                                            decoration:
+                                                                const BoxDecoration(
+                                                              color: Color(
+                                                                  0xFFF4F4F4),
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                            ),
+                                                            child: Material(
+                                                              color: Colors
+                                                                  .transparent,
+                                                              child: InkWell(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            30),
+                                                                onTap: () {
+                                                                  Navigator.pop(
+                                                                      context);
+                                                                },
+                                                                child: Icon(
+                                                                  Icons
+                                                                      .close_rounded,
+                                                                  size:
+                                                                      size.width >=
+                                                                              600
+                                                                          ? 30
+                                                                          : 20,
+                                                                ),
                                                               ),
                                                             ),
                                                           ),
-                                                        ),
-                                                      ],
+                                                        ],
+                                                      ),
                                                     ),
-                                                  ),
-                                                  Divider(
-                                                    color: Colors.grey[200],
-                                                    thickness: 1,
-                                                  ),
-                                                  Material(
-                                                    color: Colors.transparent,
-                                                    child: InkWell(
-                                                      onTap: () async {
-                                                        TextEditingController
-                                                            renameController =
-                                                            TextEditingController(
-                                                                text: path
-                                                                    .basenameWithoutExtension(
-                                                                        filePath));
-                                                        final formKey =
-                                                            GlobalKey<
-                                                                FormState>();
-                                                        Navigator.pop(context);
-                                                        showDialog(
-                                                          context: context,
-                                                          builder: (context) {
-                                                            String
-                                                                errorMessage =
-                                                                '';
-                                                            return StatefulBuilder(
-                                                                builder: (context,
-                                                                    setState) {
-                                                              return AlertDialog(
-                                                                title: Text(
+                                                    Divider(
+                                                      color: Colors.grey[200],
+                                                      thickness: 1,
+                                                    ),
+                                                    Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        onTap: () async {
+                                                          TextEditingController
+                                                              renameController =
+                                                              TextEditingController(
+                                                                  text: filePath
+                                                                      .split(
+                                                                          "/")
+                                                                      .last);
+                                                          final formKey =
+                                                              GlobalKey<
+                                                                  FormState>();
+                                                          Navigator.pop(
+                                                              context);
+                                                          showDialog(
+                                                            context: context,
+                                                            builder: (context) {
+                                                              String
+                                                                  errorMessage =
+                                                                  '';
+                                                              return StatefulBuilder(
+                                                                  builder: (context,
+                                                                      setState) {
+                                                                return AlertDialog(
+                                                                  title: Text(
                                                                     translation(
                                                                             context)
                                                                         .renameFile,
@@ -1585,367 +1033,64 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                       fontWeight:
                                                                           FontWeight
                                                                               .w500,
-                                                                    )),
-                                                                content: Form(
-                                                                  key: formKey,
-                                                                  child:
-                                                                      TextFormField(
-                                                                    controller:
-                                                                        renameController,
-                                                                    keyboardType:
-                                                                        TextInputType
-                                                                            .text,
-                                                                    textInputAction:
-                                                                        TextInputAction
-                                                                            .done,
-                                                                    autofocus:
-                                                                        true,
-                                                                    validator:
-                                                                        (value) {
-                                                                      if (value!
-                                                                          .isEmpty) {
-                                                                        return translation(context)
-                                                                            .pleaseEnterFileName;
-                                                                      }
-                                                                      return null;
-                                                                    },
-                                                                    decoration:
-                                                                        InputDecoration(
-                                                                      errorText: errorMessage
-                                                                              .isEmpty
-                                                                          ? null
-                                                                          : errorMessage,
-                                                                      hintText:
-                                                                          translation(context)
-                                                                              .enterFileName,
-                                                                      border:
-                                                                          const OutlineInputBorder(
-                                                                        borderSide:
-                                                                            BorderSide(color: AppColor.primaryColor),
-                                                                      ),
-                                                                      contentPadding: const EdgeInsets
-                                                                          .symmetric(
-                                                                          horizontal:
-                                                                              10),
                                                                     ),
                                                                   ),
-                                                                ),
-                                                                actions: [
-                                                                  TextButton(
-                                                                      onPressed: () =>
-                                                                          Navigator.pop(
-                                                                              context),
-                                                                      child: Text(
-                                                                          translation(context)
-                                                                              .cancel)),
-                                                                  TextButton(
-                                                                    onPressed:
-                                                                        () async {
-                                                                      if (formKey
-                                                                          .currentState!
-                                                                          .validate()) {
-                                                                        // String newPath = filePath.replaceAll(path.basenameWithoutExtension(filePath), _renameController.text);
-                                                                        String
-                                                                            newName =
-                                                                            renameController.text;
-                                                                        String parentPath = Directory(filePath)
-                                                                            .parent
-                                                                            .path;
-                                                                        String
-                                                                            newPath =
-                                                                            "$parentPath/$newName.txt";
-
-                                                                        if (File(newPath)
-                                                                            .existsSync()) {
-                                                                          setState(
-                                                                              () {
-                                                                            errorMessage =
-                                                                                translation(context).fileAlreadyExists;
-                                                                          });
-                                                                        } else {
-                                                                          File(filePath)
-                                                                              .renameSync(newPath);
-                                                                          Navigator.pop(
-                                                                              context);
-                                                                          allFiles =
-                                                                              _loadFiles();
+                                                                  content: Form(
+                                                                    key:
+                                                                        formKey,
+                                                                    child:
+                                                                        TextFormField(
+                                                                      controller:
+                                                                          renameController,
+                                                                      keyboardType:
+                                                                          TextInputType
+                                                                              .text,
+                                                                      textInputAction:
+                                                                          TextInputAction
+                                                                              .done,
+                                                                      autofocus:
+                                                                          true,
+                                                                      validator:
+                                                                          (value) {
+                                                                        if (value!
+                                                                            .isEmpty) {
+                                                                          return translation(context)
+                                                                              .pleaseEnterFileName;
                                                                         }
-                                                                      }
-                                                                    },
-                                                                    child: Text(
-                                                                        translation(context)
-                                                                            .save),
-                                                                  ),
-                                                                ],
-                                                              );
-                                                            });
-                                                          },
-                                                        );
-                                                      },
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                horizontal:
-                                                                    20.0,
-                                                                vertical: 5),
-                                                        child: Row(
-                                                          children: [
-                                                            SvgPicture.asset(
-                                                              AppAssets.rename,
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 20,
-                                                            ),
-                                                            Text(
-                                                              translation(
-                                                                      context)
-                                                                  .renameFile,
-                                                              style:
-                                                                  const TextStyle(
-                                                                color: Colors
-                                                                    .black,
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w400,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  _deleteMenuItem(
-                                                      context, filePath),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    );
-                                  } else if (filePath
-                                      .toLowerCase()
-                                      .endsWith('.pdf')) {
-                                    return _directoryTile(
-                                      filePath,
-                                      isSelected,
-                                      onTap: () async {
-                                        if (_isLongPressed) {
-                                          _toggleItemSelection(filePath);
-                                          return;
-                                        }
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => PdfViewScreen(
-                                              filePath: filePath,
-                                              fileName:
-                                                  filePath.split('/').last,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      onLongPress: () =>
-                                          _enterSelectionMode(filePath),
-                                      onMenu: () {
-                                        _showFileActions(
-                                          context: context,
-                                          builder: (context) {
-                                            return Container(
-                                              width: MediaQuery.sizeOf(context)
-                                                  .width,
-                                              decoration: const BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.only(
-                                                    topLeft:
-                                                        Radius.circular(20),
-                                                    topRight:
-                                                        Radius.circular(20),
-                                                  ),
-                                                  color: Colors.white),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Padding(
-                                                    padding: const EdgeInsets
-                                                            .symmetric(
-                                                            horizontal: 10)
-                                                        .copyWith(
-                                                            top: 20,
-                                                            bottom: 10),
-                                                    child: Row(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .center,
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        const Text(''),
-                                                        Text(
-                                                          translation(context)
-                                                              .documentFiles,
-                                                          style:
-                                                              const TextStyle(
-                                                            color: Colors.black,
-                                                            fontSize: 20,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                        Container(
-                                                          height:
-                                                              size.width >= 600
-                                                                  ? 40
-                                                                  : 30,
-                                                          width:
-                                                              size.width >= 600
-                                                                  ? 40
-                                                                  : 30,
-                                                          alignment:
-                                                              Alignment.center,
-                                                          decoration:
-                                                              const BoxDecoration(
-                                                            color: Color(
-                                                                0xFFF4F4F4),
-                                                            shape:
-                                                                BoxShape.circle,
-                                                          ),
-                                                          child: Material(
-                                                            color: Colors
-                                                                .transparent,
-                                                            child: InkWell(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          30),
-                                                              onTap: () {
-                                                                Navigator.pop(
-                                                                    context);
-                                                              },
-                                                              child: Icon(
-                                                                Icons
-                                                                    .close_rounded,
-                                                                size:
-                                                                    size.width >=
-                                                                            600
-                                                                        ? 30
-                                                                        : 20,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  Divider(
-                                                    color: Colors.grey[200],
-                                                    thickness: 1,
-                                                  ),
-                                                  Material(
-                                                    color: Colors.transparent,
-                                                    child: InkWell(
-                                                      onTap: () async {
-                                                        TextEditingController
-                                                            renameController =
-                                                            TextEditingController(
-                                                                text: path
-                                                                    .basenameWithoutExtension(
-                                                                        filePath));
-                                                        final formKey =
-                                                            GlobalKey<
-                                                                FormState>();
-                                                        Navigator.pop(context);
-                                                        showDialog(
-                                                          context: context,
-                                                          builder: (context) {
-                                                            String
-                                                                errorMessage =
-                                                                '';
-                                                            return StatefulBuilder(
-                                                                builder: (context,
-                                                                    setState) {
-                                                              return AlertDialog(
-                                                                title: Text(
-                                                                  translation(
-                                                                          context)
-                                                                      .renameFile,
-                                                                  style:
-                                                                      const TextStyle(
-                                                                    color: Colors
-                                                                        .black,
-                                                                    fontSize:
-                                                                        16,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w500,
-                                                                  ),
-                                                                ),
-                                                                content: Form(
-                                                                  key: formKey,
-                                                                  child:
-                                                                      TextFormField(
-                                                                    controller:
-                                                                        renameController,
-                                                                    keyboardType:
-                                                                        TextInputType
-                                                                            .text,
-                                                                    textInputAction:
-                                                                        TextInputAction
-                                                                            .done,
-                                                                    autofocus:
-                                                                        true,
-                                                                    validator:
-                                                                        (value) {
-                                                                      if (value!
-                                                                          .isEmpty) {
-                                                                        return translation(context)
-                                                                            .pleaseEnterFileName;
-                                                                      }
-                                                                      return null;
-                                                                    },
-                                                                    decoration:
-                                                                        InputDecoration(
-                                                                      hintText:
-                                                                          translation(context)
-                                                                              .enterFileName,
-                                                                      errorText: errorMessage
-                                                                              .isEmpty
-                                                                          ? null
-                                                                          : errorMessage,
-                                                                      border:
-                                                                          const OutlineInputBorder(
-                                                                        borderSide:
-                                                                            BorderSide(color: AppColor.primaryColor),
+                                                                        return null;
+                                                                      },
+                                                                      decoration:
+                                                                          InputDecoration(
+                                                                        errorText: errorMessage.isEmpty
+                                                                            ? null
+                                                                            : errorMessage,
+                                                                        hintText:
+                                                                            translation(context).enterFileName,
+                                                                        border:
+                                                                            const OutlineInputBorder(
+                                                                          borderSide:
+                                                                              BorderSide(color: AppColor.primaryColor),
+                                                                        ),
+                                                                        contentPadding: const EdgeInsets
+                                                                            .symmetric(
+                                                                            horizontal:
+                                                                                10),
                                                                       ),
-                                                                      contentPadding: const EdgeInsets
-                                                                          .symmetric(
-                                                                          horizontal:
-                                                                              10),
                                                                     ),
                                                                   ),
-                                                                ),
-                                                                actions: [
-                                                                  TextButton(
-                                                                    onPressed: () =>
-                                                                        Navigator.pop(
-                                                                            context),
-                                                                    child: Text(
-                                                                        translation(context)
-                                                                            .cancel),
-                                                                  ),
-                                                                  TextButton(
+                                                                  actions: [
+                                                                    TextButton(
+                                                                        onPressed: () =>
+                                                                            Navigator.pop(
+                                                                                context),
+                                                                        child: Text(
+                                                                            translation(context).cancel)),
+                                                                    TextButton(
                                                                       onPressed:
                                                                           () async {
                                                                         if (formKey
                                                                             .currentState!
                                                                             .validate()) {
-                                                                          //  String newPath = filePath.replaceAll(path.basenameWithoutExtension(filePath), _renameController.text);
-
                                                                           String
                                                                               newName =
                                                                               renameController.text;
@@ -1954,7 +1099,730 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                               Directory(filePath).parent.path;
                                                                           String
                                                                               newPath =
-                                                                              "$parentPath/$newName.pdf";
+                                                                              "$parentPath/$newName";
+                                                                          String
+                                                                              lowerCaseNewPath =
+                                                                              "$parentPath/${newName.toLowerCase()}";
+                                                                          String
+                                                                              upperCaseNewPath =
+                                                                              "$parentPath/${newName.toUpperCase()}";
+                                                                          final Directory
+                                                                              newDirectory =
+                                                                              Directory(newPath);
+                                                                          if (newDirectory.existsSync() ||
+                                                                              Directory(lowerCaseNewPath).existsSync() ||
+                                                                              Directory(upperCaseNewPath).existsSync()) {
+                                                                            setState(() {
+                                                                              errorMessage = translation(context).folderAlreadyExists;
+                                                                            });
+                                                                          } else {
+                                                                            await Directory(filePath).rename(newPath);
+                                                                            Navigator.pop(context);
+                                                                            allFiles =
+                                                                                _loadFiles();
+                                                                          }
+                                                                        }
+                                                                      },
+                                                                      child: Text(
+                                                                          translation(context)
+                                                                              .save),
+                                                                    ),
+                                                                  ],
+                                                                );
+                                                              });
+                                                            },
+                                                          );
+                                                        },
+                                                        child: Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      20.0,
+                                                                  vertical: 5),
+                                                          child: Row(
+                                                            children: [
+                                                              SvgPicture.asset(
+                                                                AppAssets
+                                                                    .rename,
+                                                                color: Colors
+                                                                    .black,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 20,
+                                                              ),
+                                                              const Text(
+                                                                "Rename Folder",
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    _deleteMenuItem(
+                                                        context, filePath),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        },
+                                      );
+                                    } else if (filePath
+                                            .toLowerCase()
+                                            .endsWith('.jpg') ||
+                                        filePath
+                                            .toLowerCase()
+                                            .endsWith('.jpeg') ||
+                                        filePath
+                                            .toLowerCase()
+                                            .endsWith('.png')) {
+                                      return _directoryTile(
+                                        filePath,
+                                        isSelected,
+                                        onTap: () async {
+                                          if (_isLongPressed) {
+                                            _toggleItemSelection(filePath);
+                                            return;
+                                          }
+                                          await flutterGenralDialogue(
+                                            context: context,
+                                            imageFile: File(filePath),
+                                          );
+                                        },
+                                        onLongPress: () =>
+                                            _enterSelectionMode(filePath),
+                                        onMenu: () {
+                                          _showFileActions(
+                                            context: context,
+                                            builder: (context) {
+                                              return Container(
+                                                width:
+                                                    MediaQuery.sizeOf(context)
+                                                        .width,
+                                                decoration: const BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.only(
+                                                      topLeft:
+                                                          Radius.circular(20),
+                                                      topRight:
+                                                          Radius.circular(20),
+                                                    ),
+                                                    color: Colors.white),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Padding(
+                                                      padding: const EdgeInsets
+                                                              .symmetric(
+                                                              horizontal: 10)
+                                                          .copyWith(
+                                                              top: 20,
+                                                              bottom: 10),
+                                                      child: Row(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .center,
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          const Text(''),
+                                                          Text(
+                                                            translation(context)
+                                                                .documentFiles,
+                                                            style:
+                                                                const TextStyle(
+                                                              color:
+                                                                  Colors.black,
+                                                              fontSize: 20,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
+                                                          Container(
+                                                            height:
+                                                                size.width >=
+                                                                        600
+                                                                    ? 40
+                                                                    : 30,
+                                                            width: size.width >=
+                                                                    600
+                                                                ? 40
+                                                                : 30,
+                                                            alignment: Alignment
+                                                                .center,
+                                                            decoration:
+                                                                const BoxDecoration(
+                                                              color: Color(
+                                                                  0xFFF4F4F4),
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                            ),
+                                                            child: Material(
+                                                              color: Colors
+                                                                  .transparent,
+                                                              child: InkWell(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            30),
+                                                                onTap: () {
+                                                                  Navigator.pop(
+                                                                      context);
+                                                                },
+                                                                child: Icon(
+                                                                  Icons
+                                                                      .close_rounded,
+                                                                  size:
+                                                                      size.width >=
+                                                                              600
+                                                                          ? 30
+                                                                          : 20,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Divider(
+                                                      color: Colors.grey[200],
+                                                      thickness: 1,
+                                                    ),
+                                                    Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        onTap: () async {
+                                                          TextEditingController
+                                                              renameController =
+                                                              TextEditingController(
+                                                                  text: path
+                                                                      .basenameWithoutExtension(
+                                                                          filePath));
+                                                          final formKey =
+                                                              GlobalKey<
+                                                                  FormState>();
+                                                          Navigator.pop(
+                                                              context);
+                                                          showDialog(
+                                                            context: context,
+                                                            builder: (context) {
+                                                              String
+                                                                  errorMessage =
+                                                                  '';
+                                                              return StatefulBuilder(
+                                                                  builder: (context,
+                                                                      setState) {
+                                                                return AlertDialog(
+                                                                  title: Text(
+                                                                      translation(
+                                                                              context)
+                                                                          .renameFile,
+                                                                      style:
+                                                                          const TextStyle(
+                                                                        color: Colors
+                                                                            .black,
+                                                                        fontSize:
+                                                                            16,
+                                                                        fontWeight:
+                                                                            FontWeight.w500,
+                                                                      )),
+                                                                  content: Form(
+                                                                    key:
+                                                                        formKey,
+                                                                    child:
+                                                                        TextFormField(
+                                                                      controller:
+                                                                          renameController,
+                                                                      keyboardType:
+                                                                          TextInputType
+                                                                              .text,
+                                                                      textInputAction:
+                                                                          TextInputAction
+                                                                              .done,
+                                                                      autofocus:
+                                                                          true,
+                                                                      validator:
+                                                                          (value) {
+                                                                        if (value!
+                                                                            .isEmpty) {
+                                                                          return translation(context)
+                                                                              .pleaseEnterFileName;
+                                                                        }
+                                                                        return null;
+                                                                      },
+                                                                      decoration:
+                                                                          InputDecoration(
+                                                                        errorText: errorMessage.isEmpty
+                                                                            ? null
+                                                                            : errorMessage,
+                                                                        hintText:
+                                                                            translation(context).enterFileName,
+                                                                        border:
+                                                                            const OutlineInputBorder(
+                                                                          borderSide:
+                                                                              BorderSide(color: AppColor.primaryColor),
+                                                                        ),
+                                                                        contentPadding: const EdgeInsets
+                                                                            .symmetric(
+                                                                            horizontal:
+                                                                                10),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  actions: [
+                                                                    TextButton(
+                                                                        onPressed: () =>
+                                                                            Navigator.pop(
+                                                                                context),
+                                                                        child: Text(
+                                                                            translation(context).cancel)),
+                                                                    ////ID Card Image File Rename
+                                                                    TextButton(
+                                                                      onPressed:
+                                                                          () async {
+                                                                        if (formKey
+                                                                            .currentState!
+                                                                            .validate()) {
+                                                                          String
+                                                                              newName =
+                                                                              renameController.text;
+                                                                          String
+                                                                              parentPath =
+                                                                              Directory(filePath).parent.path;
+                                                                          String
+                                                                              newPath =
+                                                                              "$parentPath/$newName.jpg";
+                                                                          if (File(newPath)
+                                                                              .existsSync()) {
+                                                                            setState(() {
+                                                                              errorMessage = translation(context).fileAlreadyExists;
+                                                                            });
+                                                                          } else {
+                                                                            File(filePath).renameSync(newPath);
+                                                                            Navigator.pop(context);
+                                                                            allFiles =
+                                                                                _loadFiles();
+                                                                          }
+                                                                        }
+                                                                      },
+                                                                      child: Text(
+                                                                          translation(context)
+                                                                              .save),
+                                                                    ),
+
+                                                                    // TextButton(
+                                                                    //     onPressed: () async {
+                                                                    //       if (_formKey.currentState!.validate()) {
+                                                                    //         String newPath = filePath.replaceAll(path.basenameWithoutExtension(filePath), _renameController.text);
+                                                                    //         File(filePath).renameSync(newPath);
+                                                                    //         Navigator.pop(context);
+                                                                    //         allFiles = _loadFiles();
+                                                                    //       }
+                                                                    //     },
+                                                                    //     child: Text(translation(context).save)),
+                                                                  ],
+                                                                );
+                                                              });
+                                                            },
+                                                          );
+                                                        },
+                                                        child: Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      20.0,
+                                                                  vertical: 5),
+                                                          child: Row(
+                                                            children: [
+                                                              SvgPicture.asset(
+                                                                AppAssets
+                                                                    .rename,
+                                                                color: Colors
+                                                                    .black,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 20,
+                                                              ),
+                                                              Text(
+                                                                translation(
+                                                                        context)
+                                                                    .renameFile,
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Divider(
+                                                      color: Colors.grey[200],
+                                                      thickness: 1,
+                                                      indent: MediaQuery.sizeOf(
+                                                                  context)
+                                                              .width *
+                                                          0.15,
+                                                    ),
+                                                    Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        onTap: () async {
+                                                          await Gal.putImage(
+                                                              filePath,
+                                                              album:
+                                                                  "Doc Scanner");
+                                                          Navigator.pop(
+                                                              context);
+                                                          AppHelper.showTopSnackBar(
+                                                              context,
+                                                              translation(
+                                                                      context)
+                                                                  .saveAtGallery);
+                                                        },
+                                                        child: Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      20.0,
+                                                                  vertical: 5),
+                                                          child: Row(
+                                                            children: [
+                                                              const Icon(
+                                                                Icons
+                                                                    .ios_share_outlined,
+                                                                color: Colors
+                                                                    .black,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 20,
+                                                              ),
+                                                              Text(
+                                                                translation(
+                                                                        context)
+                                                                    .saveAtGallery,
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    _deleteMenuItem(
+                                                        context, filePath),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        },
+                                      );
+                                    } else if (filePath
+                                        .toLowerCase()
+                                        .endsWith('.txt')) {
+                                      return _directoryTile(
+                                        filePath,
+                                        isSelected,
+                                        onTap: () async {
+                                          if (_isLongPressed) {
+                                            _toggleItemSelection(filePath);
+                                            return;
+                                          }
+                                          var urlLink = await homePageProvider
+                                              .readTxtFile(filePath);
+                                          showQrAndBarCodeViewDialogue(
+                                              context: context,
+                                              text: await homePageProvider
+                                                  .readTxtFile(filePath),
+                                              browserView: () {
+                                                StringBuffer formattedContent =
+                                                    StringBuffer();
+
+                                                List<String> parts = urlLink
+                                                    .toString()
+                                                    .split(';');
+                                                for (var part in parts.where(
+                                                    (p) => p.isNotEmpty)) {
+                                                  List<String> keyValue =
+                                                      part.split(':');
+                                                  String key = keyValue[0];
+                                                  String value =
+                                                      keyValue.length > 1
+                                                          ? keyValue
+                                                              .sublist(1)
+                                                              .join(':')
+                                                          : '';
+
+                                                  // Format keys into labels
+                                                  if (key == "WIFI" ||
+                                                      key == "Wifi" ||
+                                                      key == "wifi") {
+                                                    formattedContent.writeln(
+                                                        "WIFI NAME : $value");
+                                                  } else if (key == "T") {
+                                                    formattedContent.writeln(
+                                                        "TYPE : $value");
+                                                  } else if (key == "P") {
+                                                    formattedContent.writeln(
+                                                        "PASSWORD : $value");
+                                                  } else {
+                                                    formattedContent.writeln(
+                                                        "$key : $value");
+                                                  }
+                                                }
+
+                                                // Copy the formatted content to the clipboard
+                                                urlLink.toString().startsWith(
+                                                            "WIFI") ||
+                                                        urlLink
+                                                            .toString()
+                                                            .startsWith(
+                                                                "Wifi") ||
+                                                        urlLink
+                                                            .toString()
+                                                            .startsWith("wifi")
+                                                    ? _openBrowserWithSearch(
+                                                        formattedContent
+                                                            .toString())
+                                                    : _openBrowserWithSearch(
+                                                        urlLink);
+                                              });
+                                        },
+                                        onLongPress: () =>
+                                            _enterSelectionMode(filePath),
+                                        onMenu: () {
+                                          _showFileActions(
+                                            context: context,
+                                            builder: (context) {
+                                              return Container(
+                                                width:
+                                                    MediaQuery.sizeOf(context)
+                                                        .width,
+                                                decoration: const BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.only(
+                                                      topLeft:
+                                                          Radius.circular(20),
+                                                      topRight:
+                                                          Radius.circular(20),
+                                                    ),
+                                                    color: Colors.white),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Padding(
+                                                      padding: const EdgeInsets
+                                                              .symmetric(
+                                                              horizontal: 10)
+                                                          .copyWith(
+                                                              top: 20,
+                                                              bottom: 10),
+                                                      child: Row(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .center,
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          const Text(''),
+                                                          Text(
+                                                            translation(context)
+                                                                .documentFiles,
+                                                            style:
+                                                                const TextStyle(
+                                                              color:
+                                                                  Colors.black,
+                                                              fontSize: 20,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
+                                                          Container(
+                                                            height:
+                                                                size.width >=
+                                                                        600
+                                                                    ? 40
+                                                                    : 30,
+                                                            width: size.width >=
+                                                                    600
+                                                                ? 40
+                                                                : 30,
+                                                            alignment: Alignment
+                                                                .center,
+                                                            decoration:
+                                                                const BoxDecoration(
+                                                              color: Color(
+                                                                  0xFFF4F4F4),
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                            ),
+                                                            child: Material(
+                                                              color: Colors
+                                                                  .transparent,
+                                                              child: InkWell(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            30),
+                                                                onTap: () {
+                                                                  Navigator.pop(
+                                                                      context);
+                                                                },
+                                                                child: Icon(
+                                                                  Icons
+                                                                      .close_rounded,
+                                                                  size:
+                                                                      size.width >=
+                                                                              600
+                                                                          ? 30
+                                                                          : 20,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Divider(
+                                                      color: Colors.grey[200],
+                                                      thickness: 1,
+                                                    ),
+                                                    Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        onTap: () async {
+                                                          TextEditingController
+                                                              renameController =
+                                                              TextEditingController(
+                                                                  text: path
+                                                                      .basenameWithoutExtension(
+                                                                          filePath));
+                                                          final formKey =
+                                                              GlobalKey<
+                                                                  FormState>();
+                                                          Navigator.pop(
+                                                              context);
+                                                          showDialog(
+                                                            context: context,
+                                                            builder: (context) {
+                                                              String
+                                                                  errorMessage =
+                                                                  '';
+                                                              return StatefulBuilder(
+                                                                  builder: (context,
+                                                                      setState) {
+                                                                return AlertDialog(
+                                                                  title: Text(
+                                                                      translation(
+                                                                              context)
+                                                                          .renameFile,
+                                                                      style:
+                                                                          const TextStyle(
+                                                                        color: Colors
+                                                                            .black,
+                                                                        fontSize:
+                                                                            16,
+                                                                        fontWeight:
+                                                                            FontWeight.w500,
+                                                                      )),
+                                                                  content: Form(
+                                                                    key:
+                                                                        formKey,
+                                                                    child:
+                                                                        TextFormField(
+                                                                      controller:
+                                                                          renameController,
+                                                                      keyboardType:
+                                                                          TextInputType
+                                                                              .text,
+                                                                      textInputAction:
+                                                                          TextInputAction
+                                                                              .done,
+                                                                      autofocus:
+                                                                          true,
+                                                                      validator:
+                                                                          (value) {
+                                                                        if (value!
+                                                                            .isEmpty) {
+                                                                          return translation(context)
+                                                                              .pleaseEnterFileName;
+                                                                        }
+                                                                        return null;
+                                                                      },
+                                                                      decoration:
+                                                                          InputDecoration(
+                                                                        errorText: errorMessage.isEmpty
+                                                                            ? null
+                                                                            : errorMessage,
+                                                                        hintText:
+                                                                            translation(context).enterFileName,
+                                                                        border:
+                                                                            const OutlineInputBorder(
+                                                                          borderSide:
+                                                                              BorderSide(color: AppColor.primaryColor),
+                                                                        ),
+                                                                        contentPadding: const EdgeInsets
+                                                                            .symmetric(
+                                                                            horizontal:
+                                                                                10),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  actions: [
+                                                                    TextButton(
+                                                                        onPressed: () =>
+                                                                            Navigator.pop(
+                                                                                context),
+                                                                        child: Text(
+                                                                            translation(context).cancel)),
+                                                                    TextButton(
+                                                                      onPressed:
+                                                                          () async {
+                                                                        if (formKey
+                                                                            .currentState!
+                                                                            .validate()) {
+                                                                          // String newPath = filePath.replaceAll(path.basenameWithoutExtension(filePath), _renameController.text);
+                                                                          String
+                                                                              newName =
+                                                                              renameController.text;
+                                                                          String
+                                                                              parentPath =
+                                                                              Directory(filePath).parent.path;
+                                                                          String
+                                                                              newPath =
+                                                                              "$parentPath/$newName.txt";
 
                                                                           if (File(newPath)
                                                                               .existsSync()) {
@@ -1971,243 +1839,571 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                       },
                                                                       child: Text(
                                                                           translation(context)
-                                                                              .save)),
-                                                                ],
-                                                              );
-                                                            });
-                                                          },
-                                                        );
-                                                      },
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                horizontal:
-                                                                    20.0,
-                                                                vertical: 5),
-                                                        child: Row(
-                                                          children: [
-                                                            SvgPicture.asset(
-                                                              AppAssets.rename,
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 20,
-                                                            ),
-                                                            Text(
-                                                              translation(
-                                                                      context)
-                                                                  .renameFile,
-                                                              style:
-                                                                  const TextStyle(
+                                                                              .save),
+                                                                    ),
+                                                                  ],
+                                                                );
+                                                              });
+                                                            },
+                                                          );
+                                                        },
+                                                        child: Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      20.0,
+                                                                  vertical: 5),
+                                                          child: Row(
+                                                            children: [
+                                                              SvgPicture.asset(
+                                                                AppAssets
+                                                                    .rename,
                                                                 color: Colors
                                                                     .black,
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w400,
                                                               ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Divider(
-                                                    color: Colors.grey[200],
-                                                    thickness: 1,
-                                                    indent: MediaQuery.sizeOf(
-                                                                context)
-                                                            .width *
-                                                        0.15,
-                                                  ),
-                                                  Material(
-                                                    color: Colors.transparent,
-                                                    child: InkWell(
-                                                      onTap: () async {
-                                                        Navigator.pop(context);
-                                                        try {
-                                                          await DownloadHelper
-                                                              .saveFileToDownloads(
-                                                                  filePath);
-                                                          AppHelper
-                                                              .showTopSnackBar(
-                                                            context,
-                                                            translation(context)
-                                                                .fileSavedDownloadFolder,
-                                                          );
-                                                        } catch (e) {
-                                                          AppHelper
-                                                              .showTopSnackBar(
-                                                            context,
-                                                            "Failed to download file: $e",
-                                                          );
-                                                        }
-                                                      },
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                horizontal:
-                                                                    20.0,
-                                                                vertical: 5),
-                                                        child: Row(
-                                                          children: [
-                                                            const Icon(
-                                                              Icons
-                                                                  .ios_share_outlined,
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 20,
-                                                            ),
-                                                            Text(
-                                                              translation(
-                                                                      context)
-                                                                  .downloadFile,
-                                                              style:
-                                                                  const TextStyle(
-                                                                color: Colors
-                                                                    .black,
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w400,
+                                                              const SizedBox(
+                                                                width: 20,
                                                               ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  _deleteMenuItem(
-                                                      context, filePath),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    );
-                                  } else {
-                                    return Text(
-                                      translation(context).somethingWentWrong,
-                                    );
-                                  }
-                                },
-                              ),
-                      ),
-                    ),
-                    Column(
-                      children: [
-                        if (_isLongPressed)
-                          Container(
-                            height: size.width >= 600 ? 100 : 70,
-                            color: Colors.white,
-                            padding: EdgeInsets.symmetric(
-                                horizontal:
-                                    AppHelper.isTablet(context) ? 40 : 24.0),
-                            alignment: Alignment.center,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                GestureDetector(
-                                  onTap: () async {
-                                    if (_selectedItems.every((element) =>
-                                            element
-                                                .toLowerCase()
-                                                .endsWith('.jpg') ||
-                                            element
-                                                .toLowerCase()
-                                                .endsWith('.txt') ||
-                                            element
-                                                .toLowerCase()
-                                                .endsWith('.pdf') ||
-                                            element
-                                                .toLowerCase()
-                                                .endsWith('.jpeg') ||
-                                            element
-                                                .toLowerCase()
-                                                .endsWith('.png')) &&
-                                        _selectedItems.isNotEmpty) {
-                                      await showModalBottomSheet(
-                                        context: context,
-                                        builder: (context) {
-                                          List<String> directories =
-                                              getSubdirectoriesSyncForIos(
-                                                  widget.directoryPath);
-                                          directories
-                                              .remove(widget.directoryPath);
-                                          log(directories.toString());
-
-                                          return SizedBox(
-                                            height: MediaQuery.of(context)
-                                                    .size
-                                                    .height *
-                                                0.5,
-                                            child: directories.isNotEmpty
-                                                ? Padding(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 20.0,
-                                                        vertical: 10),
-                                                    child: ListView(
-                                                      scrollDirection:
-                                                          Axis.vertical,
-                                                      children: List.generate(
-                                                          directories.length,
-                                                          (index) {
-                                                        return ListTile(
-                                                          leading: const Icon(
-                                                            Icons.folder,
-                                                            color: AppColor
-                                                                .primaryColor,
-                                                            size: 40,
+                                                              Text(
+                                                                translation(
+                                                                        context)
+                                                                    .renameFile,
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
-                                                          title: Text(
-                                                              directories[index]
-                                                                  .split('/')
-                                                                  .last),
-                                                          onTap: () async {
-                                                            var conflictResult =
-                                                                homePageProvider
-                                                                    .checkIfFilesExistInDirectory(
-                                                              targetDirectoryPath:
-                                                                  directories[
-                                                                      index],
-                                                              filePaths:
-                                                                  _selectedItems
-                                                                      .toList(),
-                                                            );
-
-                                                            if (conflictResult) {
-                                                              showDialog(
-                                                                context:
-                                                                    context,
-                                                                builder:
-                                                                    (context) {
-                                                                  return AlertDialog(
-                                                                    title: Text(
-                                                                        translation(context)
-                                                                            .conflictAlert),
-                                                                    content: Text(
-                                                                        translation(context)
-                                                                            .fileConflictAlertContent),
-                                                                    actions: [
-                                                                      TextButton(
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    _deleteMenuItem(
+                                                        context, filePath),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        },
+                                      );
+                                    } else if (filePath
+                                        .toLowerCase()
+                                        .endsWith('.pdf')) {
+                                      return _directoryTile(
+                                        filePath,
+                                        isSelected,
+                                        onTap: () async {
+                                          if (_isLongPressed) {
+                                            _toggleItemSelection(filePath);
+                                            return;
+                                          }
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  PdfViewScreen(
+                                                filePath: filePath,
+                                                fileName:
+                                                    filePath.split('/').last,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        onLongPress: () =>
+                                            _enterSelectionMode(filePath),
+                                        onMenu: () {
+                                          _showFileActions(
+                                            context: context,
+                                            builder: (context) {
+                                              return Container(
+                                                width:
+                                                    MediaQuery.sizeOf(context)
+                                                        .width,
+                                                decoration: const BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.only(
+                                                      topLeft:
+                                                          Radius.circular(20),
+                                                      topRight:
+                                                          Radius.circular(20),
+                                                    ),
+                                                    color: Colors.white),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Padding(
+                                                      padding: const EdgeInsets
+                                                              .symmetric(
+                                                              horizontal: 10)
+                                                          .copyWith(
+                                                              top: 20,
+                                                              bottom: 10),
+                                                      child: Row(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .center,
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          const Text(''),
+                                                          Text(
+                                                            translation(context)
+                                                                .documentFiles,
+                                                            style:
+                                                                const TextStyle(
+                                                              color:
+                                                                  Colors.black,
+                                                              fontSize: 20,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
+                                                          Container(
+                                                            height:
+                                                                size.width >=
+                                                                        600
+                                                                    ? 40
+                                                                    : 30,
+                                                            width: size.width >=
+                                                                    600
+                                                                ? 40
+                                                                : 30,
+                                                            alignment: Alignment
+                                                                .center,
+                                                            decoration:
+                                                                const BoxDecoration(
+                                                              color: Color(
+                                                                  0xFFF4F4F4),
+                                                              shape: BoxShape
+                                                                  .circle,
+                                                            ),
+                                                            child: Material(
+                                                              color: Colors
+                                                                  .transparent,
+                                                              child: InkWell(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            30),
+                                                                onTap: () {
+                                                                  Navigator.pop(
+                                                                      context);
+                                                                },
+                                                                child: Icon(
+                                                                  Icons
+                                                                      .close_rounded,
+                                                                  size:
+                                                                      size.width >=
+                                                                              600
+                                                                          ? 30
+                                                                          : 20,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Divider(
+                                                      color: Colors.grey[200],
+                                                      thickness: 1,
+                                                    ),
+                                                    Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        onTap: () async {
+                                                          TextEditingController
+                                                              renameController =
+                                                              TextEditingController(
+                                                                  text: path
+                                                                      .basenameWithoutExtension(
+                                                                          filePath));
+                                                          final formKey =
+                                                              GlobalKey<
+                                                                  FormState>();
+                                                          Navigator.pop(
+                                                              context);
+                                                          showDialog(
+                                                            context: context,
+                                                            builder: (context) {
+                                                              String
+                                                                  errorMessage =
+                                                                  '';
+                                                              return StatefulBuilder(
+                                                                  builder: (context,
+                                                                      setState) {
+                                                                return AlertDialog(
+                                                                  title: Text(
+                                                                    translation(
+                                                                            context)
+                                                                        .renameFile,
+                                                                    style:
+                                                                        const TextStyle(
+                                                                      color: Colors
+                                                                          .black,
+                                                                      fontSize:
+                                                                          16,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w500,
+                                                                    ),
+                                                                  ),
+                                                                  content: Form(
+                                                                    key:
+                                                                        formKey,
+                                                                    child:
+                                                                        TextFormField(
+                                                                      controller:
+                                                                          renameController,
+                                                                      keyboardType:
+                                                                          TextInputType
+                                                                              .text,
+                                                                      textInputAction:
+                                                                          TextInputAction
+                                                                              .done,
+                                                                      autofocus:
+                                                                          true,
+                                                                      validator:
+                                                                          (value) {
+                                                                        if (value!
+                                                                            .isEmpty) {
+                                                                          return translation(context)
+                                                                              .pleaseEnterFileName;
+                                                                        }
+                                                                        return null;
+                                                                      },
+                                                                      decoration:
+                                                                          InputDecoration(
+                                                                        hintText:
+                                                                            translation(context).enterFileName,
+                                                                        errorText: errorMessage.isEmpty
+                                                                            ? null
+                                                                            : errorMessage,
+                                                                        border:
+                                                                            const OutlineInputBorder(
+                                                                          borderSide:
+                                                                              BorderSide(color: AppColor.primaryColor),
+                                                                        ),
+                                                                        contentPadding: const EdgeInsets
+                                                                            .symmetric(
+                                                                            horizontal:
+                                                                                10),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  actions: [
+                                                                    TextButton(
+                                                                      onPressed:
+                                                                          () =>
+                                                                              Navigator.pop(context),
+                                                                      child: Text(
+                                                                          translation(context)
+                                                                              .cancel),
+                                                                    ),
+                                                                    TextButton(
                                                                         onPressed:
-                                                                            () {
-                                                                          Navigator.pop(
-                                                                              context);
+                                                                            () async {
+                                                                          if (formKey
+                                                                              .currentState!
+                                                                              .validate()) {
+                                                                            //  String newPath = filePath.replaceAll(path.basenameWithoutExtension(filePath), _renameController.text);
+
+                                                                            String
+                                                                                newName =
+                                                                                renameController.text;
+                                                                            String
+                                                                                parentPath =
+                                                                                Directory(filePath).parent.path;
+                                                                            String
+                                                                                newPath =
+                                                                                "$parentPath/$newName.pdf";
+
+                                                                            if (File(newPath).existsSync()) {
+                                                                              setState(() {
+                                                                                errorMessage = translation(context).fileAlreadyExists;
+                                                                              });
+                                                                            } else {
+                                                                              File(filePath).renameSync(newPath);
+                                                                              Navigator.pop(context);
+                                                                              allFiles = _loadFiles();
+                                                                            }
+                                                                          }
                                                                         },
                                                                         child: Text(
-                                                                            translation(context).cancel),
+                                                                            translation(context).save)),
+                                                                  ],
+                                                                );
+                                                              });
+                                                            },
+                                                          );
+                                                        },
+                                                        child: Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      20.0,
+                                                                  vertical: 5),
+                                                          child: Row(
+                                                            children: [
+                                                              SvgPicture.asset(
+                                                                AppAssets
+                                                                    .rename,
+                                                                color: Colors
+                                                                    .black,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 20,
+                                                              ),
+                                                              Text(
+                                                                translation(
+                                                                        context)
+                                                                    .renameFile,
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Divider(
+                                                      color: Colors.grey[200],
+                                                      thickness: 1,
+                                                      indent: MediaQuery.sizeOf(
+                                                                  context)
+                                                              .width *
+                                                          0.15,
+                                                    ),
+                                                    Material(
+                                                      color: Colors.transparent,
+                                                      child: InkWell(
+                                                        onTap: () async {
+                                                          Navigator.pop(
+                                                              context);
+                                                          try {
+                                                            await DownloadHelper
+                                                                .saveFileToDownloads(
+                                                                    filePath);
+                                                            AppHelper
+                                                                .showTopSnackBar(
+                                                              context,
+                                                              translation(
+                                                                      context)
+                                                                  .fileSavedDownloadFolder,
+                                                            );
+                                                          } catch (e) {
+                                                            AppHelper
+                                                                .showTopSnackBar(
+                                                              context,
+                                                              "Failed to download file: $e",
+                                                            );
+                                                          }
+                                                        },
+                                                        child: Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      20.0,
+                                                                  vertical: 5),
+                                                          child: Row(
+                                                            children: [
+                                                              const Icon(
+                                                                Icons
+                                                                    .ios_share_outlined,
+                                                                color: Colors
+                                                                    .black,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 20,
+                                                              ),
+                                                              Text(
+                                                                translation(
+                                                                        context)
+                                                                    .downloadFile,
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    _deleteMenuItem(
+                                                        context, filePath),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        },
+                                      );
+                                    } else {
+                                      return Text(
+                                        translation(context).somethingWentWrong,
+                                      );
+                                    }
+                                  },
+                                ),
+                        ),
+                      ),
+                      Column(
+                        children: [
+                          if (_isLongPressed)
+                            Container(
+                              height: size.width >= 600 ? 100 : 70,
+                              color: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                  horizontal:
+                                      AppHelper.isTablet(context) ? 40 : 24.0),
+                              alignment: Alignment.center,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  GestureDetector(
+                                    onTap: !_canMove
+                                        ? null
+                                        : () async {
+                                            if (_selectedItems.every(
+                                                    (element) =>
+                                                        element
+                                                            .toLowerCase()
+                                                            .endsWith('.jpg') ||
+                                                        element
+                                                            .toLowerCase()
+                                                            .endsWith('.txt') ||
+                                                        element
+                                                            .toLowerCase()
+                                                            .endsWith('.pdf') ||
+                                                        element
+                                                            .toLowerCase()
+                                                            .endsWith(
+                                                                '.jpeg') ||
+                                                        element
+                                                            .toLowerCase()
+                                                            .endsWith(
+                                                                '.png')) &&
+                                                _selectedItems.isNotEmpty) {
+                                              await showModalBottomSheet(
+                                                context: context,
+                                                builder: (context) {
+                                                  List<String> directories =
+                                                      getSubdirectoriesSyncForIos(
+                                                          widget.directoryPath);
+                                                  directories.remove(
+                                                      widget.directoryPath);
+                                                  log(directories.toString());
+
+                                                  return SizedBox(
+                                                    height:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .height *
+                                                            0.5,
+                                                    child:
+                                                        directories.isNotEmpty
+                                                            ? Padding(
+                                                                padding: const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        20.0,
+                                                                    vertical:
+                                                                        10),
+                                                                child: ListView(
+                                                                  scrollDirection:
+                                                                      Axis.vertical,
+                                                                  children: List.generate(
+                                                                      directories
+                                                                          .length,
+                                                                      (index) {
+                                                                    return ListTile(
+                                                                      leading:
+                                                                          const Icon(
+                                                                        Icons
+                                                                            .folder,
+                                                                        color: AppColor
+                                                                            .primaryColor,
+                                                                        size:
+                                                                            40,
                                                                       ),
-                                                                      TextButton(
-                                                                        onPressed:
-                                                                            () {
+                                                                      title: Text(directories[
+                                                                              index]
+                                                                          .split(
+                                                                              '/')
+                                                                          .last),
+                                                                      onTap:
+                                                                          () async {
+                                                                        var conflictResult =
+                                                                            homePageProvider.checkIfFilesExistInDirectory(
+                                                                          targetDirectoryPath:
+                                                                              directories[index],
+                                                                          filePaths:
+                                                                              _selectedItems.toList(),
+                                                                        );
+
+                                                                        if (conflictResult) {
+                                                                          showDialog(
+                                                                            context:
+                                                                                context,
+                                                                            builder:
+                                                                                (context) {
+                                                                              return AlertDialog(
+                                                                                title: Text(translation(context).conflictAlert),
+                                                                                content: Text(translation(context).fileConflictAlertContent),
+                                                                                actions: [
+                                                                                  TextButton(
+                                                                                    onPressed: () {
+                                                                                      Navigator.pop(context);
+                                                                                    },
+                                                                                    child: Text(translation(context).cancel),
+                                                                                  ),
+                                                                                  TextButton(
+                                                                                    onPressed: () {
+                                                                                      homePageProvider.moveFilesToDirectory(
+                                                                                        targetDirectoryPath: directories[index],
+                                                                                        filePaths: _selectedItems.toList(),
+                                                                                      );
+                                                                                      setState(() {
+                                                                                        _selectedItems.clear();
+                                                                                        _isLongPressed = false;
+                                                                                      });
+                                                                                      Navigator.pop(context);
+                                                                                      Navigator.pop(context);
+                                                                                      allFiles = _loadFiles();
+                                                                                    },
+                                                                                    child: Text(translation(context).duplicate),
+                                                                                  ),
+                                                                                ],
+                                                                              );
+                                                                            },
+                                                                          );
+                                                                        } else {
                                                                           homePageProvider
                                                                               .moveFilesToDirectory(
                                                                             targetDirectoryPath:
@@ -2223,295 +2419,413 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                           });
                                                                           Navigator.pop(
                                                                               context);
-                                                                          Navigator.pop(
-                                                                              context);
                                                                           allFiles =
                                                                               _loadFiles();
-                                                                        },
-                                                                        child: Text(
-                                                                            translation(context).duplicate),
-                                                                      ),
-                                                                    ],
-                                                                  );
-                                                                },
-                                                              );
-                                                            } else {
-                                                              homePageProvider
-                                                                  .moveFilesToDirectory(
-                                                                targetDirectoryPath:
-                                                                    directories[
-                                                                        index],
-                                                                filePaths:
-                                                                    _selectedItems
-                                                                        .toList(),
-                                                              );
-                                                              setState(() {
-                                                                _selectedItems
-                                                                    .clear();
-                                                                _isLongPressed =
-                                                                    false;
-                                                              });
-                                                              Navigator.pop(
-                                                                  context);
-                                                              allFiles =
-                                                                  _loadFiles();
-                                                            }
+                                                                        }
 
-                                                            // homePageProvider.moveFilesToDirectory(
-                                                            //   targetDirectoryPath: directories[index],
-                                                            //   filePaths: _selectedItems.toList(),
-                                                            //   context: context,
-                                                            // );
-                                                            // setState(() {
-                                                            //   _selectedItems.clear();
-                                                            //   _isLongPressed = false;
-                                                            // });
-                                                            // Navigator.pop(context);
-                                                            // allFiles = _loadFiles();
-                                                          },
-                                                        );
-                                                      }),
-                                                    ),
-                                                  )
-                                                : Center(
-                                                    child: Text(
-                                                      translation(context)
-                                                          .noDirectoryFound,
-                                                    ),
-                                                  ),
-                                          );
-                                        },
-                                      );
-                                    } else if (_selectedItems.isEmpty) {
-                                      ScaffoldMessenger.of(context)
-                                          .clearSnackBars();
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            translation(context)
-                                                .pleaseSelectFirst,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          duration: const Duration(seconds: 1),
-                                        ),
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context)
-                                          .clearSnackBars();
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            translation(context)
-                                                .pleaseSelectFileOnly,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          duration: const Duration(seconds: 1),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      SvgPicture.asset(
-                                        AppAssets.move,
-                                        height: AppHelper.isTablet(context)
-                                            ? 24
-                                            : 20,
-                                        width: AppHelper.isTablet(context)
-                                            ? 24
-                                            : 20,
-                                        fit: BoxFit.fill,
-                                        color: _selectedItems.isNotEmpty
-                                            ? AppColor.primaryColor
-                                            : Colors.black,
-                                      ),
-                                      Text(
-                                        translation(context).move,
-                                        style: TextStyle(
-                                            color: _selectedItems.isNotEmpty
-                                                ? AppColor.primaryColor
-                                                : Colors.black,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () async {
-                                    if (_selectedItems.isNotEmpty) {
-                                      if (_selectedItems.every((element) =>
-                                          element
-                                              .toLowerCase()
-                                              .endsWith('.jpg') ||
-                                          element
-                                              .toLowerCase()
-                                              .endsWith('.pdf') ||
-                                          element
-                                              .toLowerCase()
-                                              .endsWith('.jpeg') ||
-                                          element
-                                              .toLowerCase()
-                                              .endsWith('.png'))) {
-                                        if (isShareIng) {
-                                          return;
-                                        } else {
-                                          isShareIng = true;
-                                          await Share.shareXFiles(_selectedItems
-                                                  .map((e) => XFile(e))
-                                                  .toList())
-                                              .then((value) {
-                                            isShareIng = false;
-                                            setState(() {
-                                              _selectedItems.clear();
-                                              _isLongPressed = false;
-                                            });
-                                          });
-                                        }
-                                      } else if (_selectedItems.every(
-                                              (element) => element
-                                                  .toLowerCase()
-                                                  .endsWith('.txt')) &&
-                                          _selectedItems.length == 1) {
-                                        String text =
-                                            await File(_selectedItems.first)
-                                                .readAsString();
-                                        if (isShareIng) {
-                                          return;
-                                        } else {
-                                          isShareIng = true;
-                                          await Share.share(text).then((value) {
-                                            isShareIng = false;
-                                          });
-                                        }
-                                      } else if (_selectedItems.every(
-                                              (element) => element
-                                                  .toLowerCase()
-                                                  .endsWith('.txt')) &&
-                                          _selectedItems.length > 1) {
-                                        ScaffoldMessenger.of(context)
-                                            .clearSnackBars();
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            duration: Duration(seconds: 1),
-                                            content: Text(
-                                              "Please select one text file only",
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(context)
-                                            .clearSnackBars();
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                            duration:
-                                                const Duration(seconds: 1),
-                                            content: Text(
-                                              translation(context)
-                                                  .pleaseSelectFileOnly,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    } else {
-                                      ScaffoldMessenger.of(context)
-                                          .clearSnackBars();
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          duration: const Duration(seconds: 1),
-                                          content: Text(
-                                            translation(context)
-                                                .pleaseSelectFirst,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      SvgPicture.asset(
-                                        AppAssets.share,
-                                        height: AppHelper.isTablet(context)
-                                            ? 24
-                                            : 20,
-                                        width: AppHelper.isTablet(context)
-                                            ? 24
-                                            : 20,
-                                        fit: BoxFit.fill,
-                                        color: _selectedItems.isNotEmpty
-                                            ? AppColor.primaryColor
-                                            : Colors.black,
-                                      ),
-                                      Text(
-                                        translation(context).share,
-                                        style: TextStyle(
-                                            color: _selectedItems.isNotEmpty
-                                                ? AppColor.primaryColor
-                                                : Colors.black,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                widget.directoryPath.endsWith("QR Code") ||
-                                        widget.directoryPath
-                                            .endsWith("Bar Code") ||
-                                        isSubfolderOfQRCode(
-                                            widget.directoryPath)
-                                    ? GestureDetector(
-                                        onTap: () async {
-                                          if (_selectedItems.isNotEmpty) {
-                                            if (_selectedItems.length == 1 &&
-                                                _selectedItems.first
-                                                    .toLowerCase()
-                                                    .endsWith('.txt')) {
-                                              String text = await File(
-                                                      _selectedItems.first)
-                                                  .readAsString();
-                                              Clipboard.setData(
-                                                      ClipboardData(text: text))
-                                                  .then((value) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    duration: const Duration(
-                                                        seconds: 1),
-                                                    content: Text(
-                                                      translation(context)
-                                                          .textCopied,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                      ),
+                                                                        // homePageProvider.moveFilesToDirectory(
+                                                                        //   targetDirectoryPath: directories[index],
+                                                                        //   filePaths: _selectedItems.toList(),
+                                                                        //   context: context,
+                                                                        // );
+                                                                        // setState(() {
+                                                                        //   _selectedItems.clear();
+                                                                        //   _isLongPressed = false;
+                                                                        // });
+                                                                        // Navigator.pop(context);
+                                                                        // allFiles = _loadFiles();
+                                                                      },
+                                                                    );
+                                                                  }),
+                                                                ),
+                                                              )
+                                                            : Center(
+                                                                child: Text(
+                                                                  translation(
+                                                                          context)
+                                                                      .noDirectoryFound,
+                                                                ),
+                                                              ),
+                                                  );
+                                                },
+                                              );
+                                            } else if (_selectedItems.isEmpty) {
+                                              ScaffoldMessenger.of(context)
+                                                  .clearSnackBars();
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    translation(context)
+                                                        .pleaseSelectFirst,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
                                                     ),
                                                   ),
-                                                );
-                                              });
+                                                  duration: const Duration(
+                                                      seconds: 1),
+                                                ),
+                                              );
                                             } else {
+                                              ScaffoldMessenger.of(context)
+                                                  .clearSnackBars();
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    translation(context)
+                                                        .pleaseSelectFileOnly,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  duration: const Duration(
+                                                      seconds: 1),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        SvgPicture.asset(
+                                          AppAssets.move,
+                                          height: AppHelper.isTablet(context)
+                                              ? 24
+                                              : 20,
+                                          width: AppHelper.isTablet(context)
+                                              ? 24
+                                              : 20,
+                                          fit: BoxFit.fill,
+                                          color: _canMove
+                                              ? AppColor.primaryColor
+                                              : Colors.grey,
+                                        ),
+                                        Text(
+                                          translation(context).move,
+                                          style: TextStyle(
+                                              color: _canMove
+                                                  ? AppColor.primaryColor
+                                                  : Colors.grey,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: _canShare ? _shareSelected : null,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        SvgPicture.asset(
+                                          AppAssets.share,
+                                          height: AppHelper.isTablet(context)
+                                              ? 24
+                                              : 20,
+                                          width: AppHelper.isTablet(context)
+                                              ? 24
+                                              : 20,
+                                          fit: BoxFit.fill,
+                                          color: _canShare
+                                              ? AppColor.primaryColor
+                                              : Colors.grey,
+                                        ),
+                                        Text(
+                                          translation(context).share,
+                                          style: TextStyle(
+                                              color: _canShare
+                                                  ? AppColor.primaryColor
+                                                  : Colors.grey,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  widget.directoryPath.endsWith("QR Code") ||
+                                          widget.directoryPath
+                                              .endsWith("Bar Code") ||
+                                          isSubfolderOfQRCode(
+                                              widget.directoryPath)
+                                      ? GestureDetector(
+                                          onTap: !_canCopy
+                                              ? null
+                                              : () async {
+                                                  if (_selectedItems
+                                                      .isNotEmpty) {
+                                                    if (_selectedItems.length ==
+                                                            1 &&
+                                                        _selectedItems.first
+                                                            .toLowerCase()
+                                                            .endsWith('.txt')) {
+                                                      String text = await File(
+                                                              _selectedItems
+                                                                  .first)
+                                                          .readAsString();
+                                                      Clipboard.setData(
+                                                              ClipboardData(
+                                                                  text: text))
+                                                          .then((value) {
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                          SnackBar(
+                                                            duration:
+                                                                const Duration(
+                                                                    seconds: 1),
+                                                            content: Text(
+                                                              translation(
+                                                                      context)
+                                                                  .textCopied,
+                                                              style:
+                                                                  const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        );
+                                                      });
+                                                    } else {
+                                                      ScaffoldMessenger.of(
+                                                              context)
+                                                          .showSnackBar(
+                                                        SnackBar(
+                                                          duration:
+                                                              const Duration(
+                                                                  seconds: 1),
+                                                          content: Text(
+                                                            translation(context)
+                                                                .pleaseSelectOneTextOnly,
+                                                            style:
+                                                                const TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    }
+                                                  } else {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                        duration:
+                                                            const Duration(
+                                                                seconds: 1),
+                                                        content: Text(
+                                                          translation(context)
+                                                              .pleaseSelectFirst,
+                                                          style:
+                                                              const TextStyle(
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.copy,
+                                                size: 20,
+                                                color: _canCopy
+                                                    ? AppColor.primaryColor
+                                                    : Colors.grey,
+                                              ),
+                                              Text(
+                                                translation(context).copy,
+                                                style: TextStyle(
+                                                    color: _canCopy
+                                                        ? AppColor.primaryColor
+                                                        : Colors.grey,
+                                                    fontSize: 12,
+                                                    fontWeight:
+                                                        FontWeight.w500),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : GestureDetector(
+                                          onTap:
+                                              _canMerge ? _mergeSelected : null,
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              SvgPicture.asset(
+                                                AppAssets.merge,
+                                                height:
+                                                    AppHelper.isTablet(context)
+                                                        ? 24
+                                                        : 20,
+                                                width:
+                                                    AppHelper.isTablet(context)
+                                                        ? 24
+                                                        : 20,
+                                                fit: BoxFit.fill,
+                                                color: _canMerge
+                                                    ? AppColor.primaryColor
+                                                    : Colors.grey,
+                                              ),
+                                              Text(
+                                                translation(context).merge,
+                                                style: TextStyle(
+                                                    color: _canMerge
+                                                        ? AppColor.primaryColor
+                                                        : Colors.grey,
+                                                    fontSize: 12,
+                                                    fontWeight:
+                                                        FontWeight.w500),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                  GestureDetector(
+                                    onTap: !_canDelete
+                                        ? null
+                                        : () async {
+                                            if (_selectedItems.isNotEmpty) {
+                                              showNormalAlertDialogue(
+                                                context: context,
+                                                title:
+                                                    translation(context).alert,
+                                                content: translation(context)
+                                                    .areYouSureYouWantToDeleteTheSelectedItems
+                                                    .trim()
+                                                    .replaceAllMapped(
+                                                        RegExp(r'\s+([?؟？])'),
+                                                        (match) => match[1]!),
+                                                onOkText:
+                                                    translation(context).ok,
+                                                onCancelText:
+                                                    translation(context).cancel,
+                                                onOk: () async {
+                                                  Navigator.pop(context);
+                                                  setState(() {
+                                                    isDeleteLoading = true;
+                                                  });
+                                                  for (int i = 0;
+                                                      i < _selectedItems.length;
+                                                      i++) {
+                                                    var item = _selectedItems
+                                                        .elementAt(i);
+                                                    var fileSystemEntity =
+                                                        FileSystemEntity
+                                                            .typeSync(item);
+                                                    if (fileSystemEntity ==
+                                                        FileSystemEntityType
+                                                            .file) {
+                                                      try {
+                                                        File file = File(item);
+                                                        if (item
+                                                            .split("/")
+                                                            .contains(
+                                                                "Document")) {
+                                                          homePageProvider
+                                                              .removeDocumentImage(
+                                                                  item);
+                                                        } else if (item
+                                                            .split("/")
+                                                            .contains(
+                                                                "ID Card")) {
+                                                          homePageProvider
+                                                              .removeIdCardImage(
+                                                                  item);
+                                                        } else if (item
+                                                            .split("/")
+                                                            .contains(
+                                                                "QR Code")) {
+                                                          homePageProvider
+                                                              .removeQrCode(
+                                                                  item);
+                                                        } else {
+                                                          homePageProvider
+                                                              .removeBarCode(
+                                                                  item);
+                                                        }
+                                                        file.deleteSync();
+                                                      } catch (e) {}
+                                                    } else if (fileSystemEntity ==
+                                                        FileSystemEntityType
+                                                            .directory) {
+                                                      Directory directory =
+                                                          Directory(item);
+                                                      List<FileSystemEntity>
+                                                          entities =
+                                                          directory.listSync();
+                                                      if (entities.isEmpty) {
+                                                        directory.deleteSync(
+                                                            recursive: true);
+                                                      } else {
+                                                        for (var entity
+                                                            in entities) {
+                                                          if (entity.path
+                                                              .split("/")
+                                                              .contains(
+                                                                  "Document")) {
+                                                            homePageProvider
+                                                                .removeDocumentImage(
+                                                                    entity
+                                                                        .path);
+                                                          } else if (entity.path
+                                                              .split("/")
+                                                              .contains(
+                                                                  "ID Card")) {
+                                                            homePageProvider
+                                                                .removeIdCardImage(
+                                                                    entity
+                                                                        .path);
+                                                          } else if (entity.path
+                                                              .split("/")
+                                                              .contains(
+                                                                  "QR Code")) {
+                                                            homePageProvider
+                                                                .removeQrCode(
+                                                                    entity
+                                                                        .path);
+                                                          } else {
+                                                            homePageProvider
+                                                                .removeBarCode(
+                                                                    entity
+                                                                        .path);
+                                                          }
+                                                        }
+                                                        directory.deleteSync(
+                                                            recursive: true);
+                                                      }
+                                                    }
+                                                  }
+                                                  allFiles = _loadFiles();
+
+                                                  setState(() {
+                                                    _selectedItems.clear();
+                                                    _isLongPressed = false;
+                                                    isDeleteLoading = false;
+                                                  });
+                                                },
+                                                onCancel: () {
+                                                  Navigator.pop(context);
+                                                },
+                                              );
+                                            } else {
+                                              ScaffoldMessenger.of(context)
+                                                  .clearSnackBars();
                                               ScaffoldMessenger.of(context)
                                                   .showSnackBar(
                                                 SnackBar(
@@ -2519,7 +2833,7 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                       seconds: 1),
                                                   content: Text(
                                                     translation(context)
-                                                        .pleaseSelectOneTextOnly,
+                                                        .pleaseSelectFirst,
                                                     style: const TextStyle(
                                                       color: Colors.white,
                                                     ),
@@ -2527,466 +2841,48 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                 ),
                                               );
                                             }
-                                          } else {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                duration:
-                                                    const Duration(seconds: 1),
-                                                content: Text(
-                                                  translation(context)
-                                                      .pleaseSelectFirst,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.copy,
-                                              size: 20,
-                                              color: _selectedItems.length == 1
+                                          },
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        SvgPicture.asset(
+                                          AppAssets.delete,
+                                          width: AppHelper.isTablet(context)
+                                              ? 29
+                                              : 20,
+                                          height: AppHelper.isTablet(context)
+                                              ? 29
+                                              : 20,
+                                          color: _canDelete
+                                              ? AppColor.primaryColor
+                                              : Colors.grey,
+                                        ),
+                                        Text(
+                                          translation(context).delete,
+                                          style: TextStyle(
+                                              color: _canDelete
                                                   ? AppColor.primaryColor
-                                                  : Colors.black,
-                                            ),
-                                            Text(
-                                              translation(context).copy,
-                                              style: TextStyle(
-                                                  color:
-                                                      _selectedItems.length == 1
-                                                          ? AppColor
-                                                              .primaryColor
-                                                          : Colors.black,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w500),
-                                            ),
-                                          ],
+                                                  : Colors.grey,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500),
                                         ),
-                                      )
-                                    : GestureDetector(
-                                        onTap: () async {
-                                          if (_selectedItems.isNotEmpty) {
-                                            if (_selectedItems.length >= 2) {
-                                              if (_selectedItems.every(
-                                                  (element) =>
-                                                      element
-                                                          .toLowerCase()
-                                                          .endsWith('.jpg') ||
-                                                      element
-                                                          .toLowerCase()
-                                                          .endsWith('.jpeg') ||
-                                                      element
-                                                          .toLowerCase()
-                                                          .endsWith('.png'))) {
-                                                await showDialog(
-                                                  context: context,
-                                                  builder: (context) {
-                                                    TextEditingController
-                                                        renameController =
-                                                        TextEditingController();
-                                                    return AlertDialog(
-                                                      title: SizedBox(
-                                                        width:
-                                                            AppHelper.isTablet(
-                                                                    context)
-                                                                ? 300
-                                                                : 250,
-                                                        child:
-                                                            const Text("PDF"),
-                                                      ),
-                                                      content: TextFormField(
-                                                        controller:
-                                                            renameController,
-                                                        keyboardType:
-                                                            TextInputType.text,
-                                                        textInputAction:
-                                                            TextInputAction
-                                                                .done,
-                                                        autofocus: true,
-                                                        validator: (value) {
-                                                          if (value!.isEmpty) {
-                                                            return translation(
-                                                                    context)
-                                                                .pleaseEnterFileName;
-                                                          }
-                                                          return null;
-                                                        },
-                                                        decoration:
-                                                            InputDecoration(
-                                                          hintText: translation(
-                                                                  context)
-                                                              .enterFileName,
-                                                          focusedBorder:
-                                                              const OutlineInputBorder(
-                                                            borderSide: BorderSide(
-                                                                color: AppColor
-                                                                    .primaryColor),
-                                                          ),
-                                                          contentPadding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal:
-                                                                      10),
-                                                        ),
-                                                      ),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed: () {
-                                                            Navigator.pop(
-                                                                context);
-                                                          },
-                                                          child: Text(
-                                                              translation(
-                                                                      context)
-                                                                  .cancel),
-                                                        ),
-                                                        TextButton(
-                                                          onPressed: () async {
-                                                            if (renameController
-                                                                .text
-                                                                .isNotEmpty) {
-                                                              AppHelper
-                                                                  .showTopSnackBar(
-                                                                      context,
-                                                                      "PDF save successfully in Document Folder");
-
-                                                              Navigator.pop(
-                                                                  context); // Close the current dialog
-                                                              // Set target path
-                                                              String fileName =
-                                                                  renameController
-                                                                      .text;
-
-                                                              await homePageProvider
-                                                                  .createPDFFromImages(
-                                                                images: _selectedItems
-                                                                    .map((e) =>
-                                                                        File(e))
-                                                                    .toList(),
-                                                                directoryPath:
-                                                                    widget
-                                                                        .directoryPath,
-                                                                context:
-                                                                    context,
-                                                                fileName:
-                                                                    fileName,
-                                                              )
-                                                                  .then(
-                                                                      (value) async {
-                                                                if (value !=
-                                                                    null) {
-                                                                  // Save the PDF in the target folder
-
-                                                                  // Update the UI or perform any additional actions
-                                                                  allFiles =
-                                                                      _loadFiles();
-
-                                                                  if (widget
-                                                                          .directoryPath
-                                                                          .split(
-                                                                              "/")
-                                                                          .last ==
-                                                                      "ID Card") {
-                                                                    homePageProvider
-                                                                        .addIdCardImage(
-                                                                            value);
-                                                                  } else if (widget
-                                                                          .directoryPath
-                                                                          .split(
-                                                                              "/")
-                                                                          .last ==
-                                                                      "Document") {
-                                                                    homePageProvider
-                                                                        .addDocumentImage(
-                                                                            value);
-                                                                  }
-                                                                  // Clear selections and update state
-                                                                  setState(() {
-                                                                    _selectedItems
-                                                                        .clear();
-                                                                    _isLongPressed =
-                                                                        false;
-                                                                  });
-
-                                                                  // Show success popup
-                                                                }
-                                                              });
-                                                            } else {
-                                                              ScaffoldMessenger
-                                                                      .of(context)
-                                                                  .clearSnackBars();
-                                                              ScaffoldMessenger
-                                                                      .of(context)
-                                                                  .showSnackBar(
-                                                                SnackBar(
-                                                                  duration:
-                                                                      const Duration(
-                                                                          seconds:
-                                                                              1),
-                                                                  content: Text(
-                                                                    translation(
-                                                                            context)
-                                                                        .pleaseEnterFileName,
-                                                                    style: const TextStyle(
-                                                                        color: Colors
-                                                                            .white),
-                                                                  ),
-                                                                ),
-                                                              );
-                                                            }
-                                                          },
-                                                          child: Text(
-                                                              translation(
-                                                                      context)
-                                                                  .ok),
-                                                        ),
-                                                      ],
-                                                    );
-                                                  },
-                                                );
-                                              } else {
-                                                ScaffoldMessenger.of(context)
-                                                    .clearSnackBars();
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    duration: const Duration(
-                                                        seconds: 1),
-                                                    content: Text(
-                                                      translation(context)
-                                                          .pleaseSelectImagesOnly,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                            }
-                                          } else {
-                                            ScaffoldMessenger.of(context)
-                                                .clearSnackBars();
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                duration:
-                                                    const Duration(seconds: 1),
-                                                content: Text(
-                                                  translation(context)
-                                                      .pleaseSelectFirst,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            SvgPicture.asset(
-                                              AppAssets.merge,
-                                              height:
-                                                  AppHelper.isTablet(context)
-                                                      ? 24
-                                                      : 20,
-                                              width: AppHelper.isTablet(context)
-                                                  ? 24
-                                                  : 20,
-                                              fit: BoxFit.fill,
-                                              color: _selectedItems.length >= 2
-                                                  ? AppColor.primaryColor
-                                                  : Colors.black,
-                                            ),
-                                            Text(
-                                              translation(context).merge,
-                                              style: TextStyle(
-                                                  color:
-                                                      _selectedItems.length >= 2
-                                                          ? AppColor
-                                                              .primaryColor
-                                                          : Colors.black,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w500),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                GestureDetector(
-                                  onTap: () async {
-                                    if (_selectedItems.isNotEmpty) {
-                                      showNormalAlertDialogue(
-                                        context: context,
-                                        title: translation(context).alert,
-                                        content: translation(context)
-                                            .areYouSureYouWantToDeleteTheSelectedItems
-                                            .trim()
-                                            .replaceAllMapped(
-                                                RegExp(r'\s+([?؟？])'),
-                                                (match) => match[1]!),
-                                        onOkText: translation(context).ok,
-                                        onCancelText:
-                                            translation(context).cancel,
-                                        onOk: () async {
-                                          Navigator.pop(context);
-                                          setState(() {
-                                            isDeleteLoading = true;
-                                          });
-                                          for (int i = 0;
-                                              i < _selectedItems.length;
-                                              i++) {
-                                            var item =
-                                                _selectedItems.elementAt(i);
-                                            var fileSystemEntity =
-                                                FileSystemEntity.typeSync(item);
-                                            if (fileSystemEntity ==
-                                                FileSystemEntityType.file) {
-                                              try {
-                                                File file = File(item);
-                                                if (item
-                                                    .split("/")
-                                                    .contains("Document")) {
-                                                  homePageProvider
-                                                      .removeDocumentImage(
-                                                          item);
-                                                } else if (item
-                                                    .split("/")
-                                                    .contains("ID Card")) {
-                                                  homePageProvider
-                                                      .removeIdCardImage(item);
-                                                } else if (item
-                                                    .split("/")
-                                                    .contains("QR Code")) {
-                                                  homePageProvider
-                                                      .removeQrCode(item);
-                                                } else {
-                                                  homePageProvider
-                                                      .removeBarCode(item);
-                                                }
-                                                file.deleteSync();
-                                              } catch (e) {}
-                                            } else if (fileSystemEntity ==
-                                                FileSystemEntityType
-                                                    .directory) {
-                                              Directory directory =
-                                                  Directory(item);
-                                              List<FileSystemEntity> entities =
-                                                  directory.listSync();
-                                              if (entities.isEmpty) {
-                                                directory.deleteSync(
-                                                    recursive: true);
-                                              } else {
-                                                for (var entity in entities) {
-                                                  if (entity.path
-                                                      .split("/")
-                                                      .contains("Document")) {
-                                                    homePageProvider
-                                                        .removeDocumentImage(
-                                                            entity.path);
-                                                  } else if (entity.path
-                                                      .split("/")
-                                                      .contains("ID Card")) {
-                                                    homePageProvider
-                                                        .removeIdCardImage(
-                                                            entity.path);
-                                                  } else if (entity.path
-                                                      .split("/")
-                                                      .contains("QR Code")) {
-                                                    homePageProvider
-                                                        .removeQrCode(
-                                                            entity.path);
-                                                  } else {
-                                                    homePageProvider
-                                                        .removeBarCode(
-                                                            entity.path);
-                                                  }
-                                                }
-                                                directory.deleteSync(
-                                                    recursive: true);
-                                              }
-                                            }
-                                          }
-                                          allFiles = _loadFiles();
-
-                                          setState(() {
-                                            _selectedItems.clear();
-                                            _isLongPressed = false;
-                                            isDeleteLoading = false;
-                                          });
-                                        },
-                                        onCancel: () {
-                                          Navigator.pop(context);
-                                        },
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context)
-                                          .clearSnackBars();
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          duration: const Duration(seconds: 1),
-                                          content: Text(
-                                            translation(context)
-                                                .pleaseSelectFirst,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      SvgPicture.asset(
-                                        AppAssets.delete,
-                                        width: AppHelper.isTablet(context)
-                                            ? 29
-                                            : 20,
-                                        height: AppHelper.isTablet(context)
-                                            ? 29
-                                            : 20,
-                                        color: _selectedItems.isNotEmpty
-                                            ? AppColor.primaryColor
-                                            : Colors.black,
-                                      ),
-                                      Text(
-                                        translation(context).delete,
-                                        style: TextStyle(
-                                            color: _selectedItems.isNotEmpty
-                                                ? AppColor.primaryColor
-                                                : Colors.black,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
+                          BannerAdWidget(
+                            adUnitId: AdHelper.directoryViewBannerAdUnitId,
                           ),
-                        BannerAdWidget(
-                          adUnitId: AdHelper.directoryViewBannerAdUnitId,
-                        ),
-                      ],
-                    ),
-                  ]);
-                },
+                        ],
+                      ),
+                    ]);
+                  },
+                ),
               ),
             ),
           ),
