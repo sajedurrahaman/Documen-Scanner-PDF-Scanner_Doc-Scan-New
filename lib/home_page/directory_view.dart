@@ -2832,7 +2832,11 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                         context: context,
                                         title: translation(context).alert,
                                         content: translation(context)
-                                            .areYouSureYouWantToDeleteTheSelectedItems,
+                                            .areYouSureYouWantToDeleteTheSelectedItems
+                                            .trim()
+                                            .replaceAllMapped(
+                                                RegExp(r'\s+([?؟？])'),
+                                                (match) => match[1]!),
                                         onOkText: translation(context).ok,
                                         onCancelText:
                                             translation(context).cancel,

@@ -503,7 +503,10 @@ class _HomePageState extends State<HomePage> {
     return showNormalAlertDialogue(
       context: context,
       title: translation(context).deleteFile,
-      content: translation(context).areYouSureYouWantToDeleteTheSelectedItems,
+      content: translation(context)
+          .areYouSureYouWantToDeleteTheSelectedItems
+          .trim()
+          .replaceAllMapped(RegExp(r'\s+([?؟？])'), (match) => match[1]!),
       onOkText: translation(context).ok,
       onCancelText: translation(context).cancel,
       onOk: () async {
