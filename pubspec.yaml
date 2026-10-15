@@ -74,6 +74,7 @@ dependencies:
   facebook_app_events: ^0.30.3
   upgrader: 13.6.0
   webview_flutter: ^4.10.0
+  lottie: ^3.3.3
 
 dependency_overrides:
   url_launcher_android: 6.3.32

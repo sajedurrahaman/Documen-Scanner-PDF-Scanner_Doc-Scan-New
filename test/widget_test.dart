@@ -4,7 +4,65 @@ import 'package:doc_scanner/core/startup_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// Loading UI that reports itself as shown as soon as it is built.
+StartupLoadingBuilder _instantLoading(String label) => (_, onShown) {
+      onShown();
+      return Text(label);
+    };
+
 void main() {
+  testWidgets('Two-second countdown starts when the splash content is shown',
+      (tester) async {
+    VoidCallback? reportShown;
+    await tester.pumpWidget(MaterialApp(
+      home: StartupGate(
+        minimumDuration: const Duration(seconds: 2),
+        initialize: () async {},
+        loadingBuilder: (_, onShown) {
+          reportShown = onShown;
+          return const Text('Splash');
+        },
+        child: const Text('Home'),
+      ),
+    ));
+    // Simulates a slow Lottie load: setup is done but the animation is not
+    // on screen yet, so the splash must not be dismissed.
+    await tester.pump(const Duration(milliseconds: 1500));
+    expect(find.text('Splash'), findsOneWidget);
+    reportShown!();
+    await tester.pump(const Duration(milliseconds: 1999));
+    expect(find.text('Splash'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1));
+    expect(find.text('Home'), findsOneWidget);
+  });
+
+  for (final slowSetup in [false, true]) {
+    testWidgets(
+        'Two-second splash waits for ${slowSetup ? "slow" : "fast"} setup',
+        (tester) async {
+      final ready = Completer<void>();
+      await tester.pumpWidget(MaterialApp(
+          home: StartupGate(
+        minimumDuration: const Duration(seconds: 2),
+        initialize: () => ready.future,
+        loadingBuilder: _instantLoading('Splash'),
+        child: const Text('Home'),
+      )));
+      if (!slowSetup) ready.complete();
+      await tester.pump(const Duration(milliseconds: 1999));
+      expect(find.text('Splash'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 1));
+      if (slowSetup) {
+        expect(find.text('Splash'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 1));
+        ready.complete();
+        await tester.pump();
+        await tester.pump();
+      }
+      expect(find.text('Home'), findsOneWidget);
+    });
+  }
+
   testWidgets('Home waits for local data but has no fixed splash delay',
       (tester) async {
     final initialization = Completer<void>();
@@ -17,7 +75,7 @@ void main() {
           return initialization.future;
         },
         onReady: () => readyCalls++,
-        loading: const Text('Loading'),
+        loadingBuilder: (_, __) => const Text('Loading'),
         child: const Text('Documents'),
       ),
     );
@@ -44,7 +102,7 @@ void main() {
         initialize: () async {
           if (++attempts == 1) throw StateError('Storage unavailable');
         },
-        loading: const Text('Loading'),
+        loadingBuilder: (_, __) => const Text('Loading'),
         child: const Text('Documents'),
       ),
     ));
@@ -65,7 +123,7 @@ void main() {
       home: StartupGate(
         initialize: () => initialization.future,
         onReady: () => ready = true,
-        loading: const Text('Loading'),
+        loadingBuilder: (_, __) => const Text('Loading'),
         child: const Text('Documents'),
       ),
     ));

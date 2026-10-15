@@ -213,9 +213,13 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             home: StartupGate(
+              // Counted from the moment the splash animation is on screen, so
+              // Lottie load time never eats into the visible splash.
+              minimumDuration: const Duration(seconds: 2),
               initialize: _initializeLocalData,
               onReady: () => unawaited(_initializeBackgroundServices()),
-              loading: const SplashScreen(),
+              loadingBuilder: (_, onShown) =>
+                  SplashScreen(onAnimationShown: onShown),
               child: const BottomBar(),
             ),
           ),
