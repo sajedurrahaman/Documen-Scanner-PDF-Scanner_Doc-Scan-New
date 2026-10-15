@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:doc_scanner/home_page/directory_view.dart';
 import 'package:doc_scanner/home_page/provider/home_page_provider.dart';
@@ -19,13 +20,27 @@ class _Paths extends PathProviderPlatform {
   Future<String?> getApplicationDocumentsPath() async => root;
 }
 
+class _PendingMerge extends HomePageProvider {
+  final result = Completer<File?>();
+  @override
+  Future<File?> createPDFFromImages({
+    required List<File> images,
+    required String directoryPath,
+    required BuildContext context,
+    required String fileName,
+  }) =>
+      result.future;
+}
+
 Future<void> settleFiles(WidgetTester tester) async {
   // Directory reads run on the real filesystem, outside the fake test clock.
   for (var i = 0; i < 100; i++) {
     await tester
         .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
     await tester.pump();
-    if (i >= 10 && find.byType(CircularProgressIndicator).evaluate().isEmpty) break;
+    if (i >= 10 && find.byType(CircularProgressIndicator).evaluate().isEmpty) {
+      break;
+    }
   }
   await tester.pumpAndSettle();
 }
@@ -155,6 +170,107 @@ void main() {
     await tester.tap(rename);
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('actions follow selection types and two PDFs enable Merge',
+      (tester) async {
+    await tester.runAsync(() async {
+      await File('${root.path}/Doc Scanner/Document/Second.pdf')
+          .writeAsString('sample');
+      await File('${root.path}/Doc Scanner/Document/Image.jpg')
+          .writeAsString('sample');
+    });
+    await mount(tester, 'Document');
+    bool enabled(String label) =>
+        tester
+            .widget<GestureDetector>(find
+                .ancestor(
+                    of: find.text(label),
+                    matching: find.byType(GestureDetector))
+                .first)
+            .onTap !=
+        null;
+    await tester.longPress(find.text('Notes.pdf'));
+    await tester.pumpAndSettle();
+    expect(enabled('Merge'), isFalse);
+    expect(enabled('Share'), isTrue);
+    expect(enabled('Move'), isTrue);
+    await tester.tap(find.text('Second.pdf'));
+    await tester.pumpAndSettle();
+    expect(enabled('Merge'), isTrue);
+    await tester.tap(find.text('Merge'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Image.jpg'));
+    await tester.pumpAndSettle();
+    expect(enabled('Merge'), isFalse);
+    await tester.tap(find.text('Work Report'));
+    await tester.pumpAndSettle();
+    expect(enabled('Merge'), isFalse);
+    expect(enabled('Share'), isFalse);
+    expect(enabled('Move'), isFalse);
+    expect(enabled('Delete'), isTrue);
+    await tester.tap(find.text('Deselect All'));
+    await tester.pumpAndSettle();
+    expect(enabled('Delete'), isFalse);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+      'merge naming matches rename and loading blocks header taps and Back',
+      (tester) async {
+    provider.dispose();
+    final pending = _PendingMerge();
+    provider = pending;
+    late File output;
+    await tester.runAsync(() async {
+      await File('${root.path}/Doc Scanner/Document/First.jpg')
+          .writeAsString('sample');
+      await File('${root.path}/Doc Scanner/Document/Second.jpg')
+          .writeAsString('sample');
+      output = File('${root.path}/Doc Scanner/Document/Combined.pdf');
+    });
+    await mount(tester, 'Document');
+    await tester.longPress(find.text('First.jpg'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Second.jpg'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Merge'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rename File'), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).decoration!.border,
+        isA<OutlineInputBorder>());
+    await tester.enterText(find.byType(TextFormField), 'Combined');
+    await tester.tap(find.widgetWithText(TextButton, 'Ok'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(
+        find.byWidgetPredicate(
+            (w) => w is AbsorbPointer && w.absorbing && w.child is Scaffold),
+        findsOneWidget);
+    await tester.tap(find.byIcon(Icons.close), warnIfMissed: false);
+    await tester.pump();
+    expect(find.text('2 Selected'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.byType(DirectoryDetailsPage), findsOneWidget);
+    expect(find.text('2 Selected'), findsOneWidget);
+    await tester.runAsync(() async {
+      await output.writeAsString('sample output');
+      pending.result.complete(output);
+    });
+    await settleFiles(tester);
+    expect(find.text('Combined.pdf'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
