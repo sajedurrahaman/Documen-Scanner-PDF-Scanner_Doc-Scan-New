@@ -30,6 +30,7 @@ import '../camera_screen/provider/camera_provider.dart';
 import '../localaization/language_constant.dart';
 import '../utils/utils.dart';
 import 'directory_view.dart';
+import 'recent_file_see_all_screen.dart';
 import 'model/camera_item_model.dart';
 
 class HomePage extends StatefulWidget {
@@ -644,7 +645,16 @@ class _HomePageState extends State<HomePage> {
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                const SearchPage(),
+                                                RecentFileSeeAllScreen(
+                                                  onOpen: _openRecent,
+                                                  onRename: _renameRecent,
+                                                  onDownload: _downloadRecent,
+                                                  onShare: _shareRecent,
+                                                  onDelete: _deleteRecent,
+                                                  onRefresh: _refreshRecentFiles,
+                                                  timeAgo: _timeAgo,
+                                                  sizeLabel: _formatBytes,
+                                                ),
                                           ),
                                         );
                                       },
