@@ -21,10 +21,11 @@ class _Paths extends PathProviderPlatform {
 
 Future<void> settleFiles(WidgetTester tester) async {
   // Directory reads run on the real filesystem, outside the fake test clock.
-  for (var i = 0; i < 10; i++) {
+  for (var i = 0; i < 100; i++) {
     await tester
         .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
     await tester.pump();
+    if (i >= 10 && find.byType(CircularProgressIndicator).evaluate().isEmpty) break;
   }
   await tester.pumpAndSettle();
 }
@@ -157,6 +158,44 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
+
+  for (final folder in [true, false]) {
+    testWidgets(
+        '${folder ? 'Folder' : 'File'} menu deletion confirms and refreshes the list',
+        (tester) async {
+      await mount(tester, 'Document');
+      final name = folder ? 'Work Report' : 'Notes.pdf';
+      Future<void> openDelete() async {
+        final menus = find.byIcon(Icons.more_vert);
+        await tester.tap(folder ? menus.first : menus.last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete'));
+        await tester.pumpAndSettle();
+      }
+
+      await openDelete();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text(name), findsOneWidget);
+      expect(
+          await tester.runAsync(() =>
+              FileSystemEntity.type('${root.path}/Doc Scanner/Document/$name')),
+          isNot(FileSystemEntityType.notFound));
+      await openDelete();
+      await tester.runAsync(() async {
+        await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      });
+      await settleFiles(tester);
+      expect(find.text(name), findsNothing);
+      expect(
+          await tester.runAsync(() =>
+              FileSystemEntity.type('${root.path}/Doc Scanner/Document/$name')),
+          FileSystemEntityType.notFound);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
 
   for (final category in ['ID Card', 'QR Code', 'Bar Code']) {
     testWidgets('$category renders files and opens the existing action menu',

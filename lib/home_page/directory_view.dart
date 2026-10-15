@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:doc_scanner/utils/Common.dart';
 import 'package:doc_scanner/utils/addHelper.dart';
 import 'package:doc_scanner/home_page/provider/home_page_provider.dart';
+import 'provider/recent_files_provider.dart';
 import 'package:doc_scanner/localaization/language_constant.dart';
 import 'package:doc_scanner/utils/app_assets.dart';
 import 'package:doc_scanner/utils/app_color.dart';
@@ -257,6 +258,86 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
     }
     final extension = path.extension(file).replaceFirst('.', '').toUpperCase();
     return '$extension • $size • $time';
+  }
+
+  Widget _deleteMenuItem(BuildContext sheetContext, String filePath) {
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+        minLeadingWidth: 24,
+        horizontalTitleGap: 20,
+        leading: const Icon(Icons.delete_outline, color: Colors.black, size: 24),
+        title: Text(translation(sheetContext).delete,
+            style: const TextStyle(color: Colors.black, fontSize: 16)),
+        onTap: () {
+          Navigator.pop(sheetContext);
+          _deleteEntry(filePath);
+        },
+      ),
+    );
+  }
+
+  Future<void> _deleteEntry(String filePath) async {
+    final labels = translation(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(labels.delete),
+        content: Text(
+          labels.areYouSureYouWantToDeleteTheSelectedItems
+              .trim()
+              .replaceAllMapped(RegExp(r'\s+([?؟？])'), (match) => match[1]!),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(labels.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child:
+                Text(labels.delete, style: const TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final home = context.read<HomePageProvider>();
+    final recent = context.read<RecentFilesProvider?>();
+    setState(() => isDeleteLoading = true);
+    try {
+      final type = await FileSystemEntity.type(filePath, followLinks: false);
+      if (type == FileSystemEntityType.directory) {
+        await Directory(filePath).delete(recursive: true);
+      } else if (type == FileSystemEntityType.file) {
+        await File(filePath).delete();
+      }
+      // Re-read storage so folder contents disappear from Home and Recents too.
+      home.clearDocumentImageFiles();
+      home.clearIdCardImageFiles();
+      home.clearQRCodeFiles();
+      home.clearBarCodeFiles();
+      await Future.wait([
+        home.loadDocumentImage(),
+        home.loadIdCardImage(),
+        home.loadQRCode(),
+        home.loadBarCode(),
+        if (recent != null) recent.load(),
+      ]);
+      if (!mounted) return;
+      _selectedItems.remove(filePath);
+      if (_selectedItems.isEmpty) _isLongPressed = false;
+      await _refresh();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${labels.somethingWentWrong}: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isDeleteLoading = false);
+    }
   }
 
   Future<void> _showFileActions({
@@ -927,6 +1008,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                       ),
                                                     ),
                                                   ),
+                                                  _deleteMenuItem(
+                                                      context, filePath),
                                                 ],
                                               ),
                                             );
@@ -1290,6 +1373,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                       ),
                                                     ),
                                                   ),
+                                                  _deleteMenuItem(
+                                                      context, filePath),
                                                 ],
                                               ),
                                             );
@@ -1634,6 +1719,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                       ),
                                                     ),
                                                   ),
+                                                  _deleteMenuItem(
+                                                      context, filePath),
                                                 ],
                                               ),
                                             );
@@ -1996,6 +2083,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                       ),
                                                     ),
                                                   ),
+                                                  _deleteMenuItem(
+                                                      context, filePath),
                                                 ],
                                               ),
                                             );
@@ -2014,9 +2103,6 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                     ),
                     Column(
                       children: [
-                        BannerAdWidget(
-                          adUnitId: AdHelper.directoryViewBannerAdUnitId,
-                        ),
                         if (_isLongPressed)
                           Container(
                             height: size.width >= 600 ? 100 : 70,
@@ -2891,6 +2977,9 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                               ],
                             ),
                           ),
+                        BannerAdWidget(
+                          adUnitId: AdHelper.directoryViewBannerAdUnitId,
+                        ),
                       ],
                     ),
                   ]);
