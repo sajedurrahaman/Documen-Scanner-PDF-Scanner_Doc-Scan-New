@@ -127,6 +127,12 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
     }
   }
 
+  bool get _isCategoryRoot =>
+      path.basename(path.dirname(path.normalize(widget.directoryPath))) ==
+          'Doc Scanner' &&
+      const {'Document', 'ID Card', 'QR Code', 'Bar Code'}
+          .contains(path.basename(path.normalize(widget.directoryPath)));
+
   PreferredSizeWidget _buildHeader() {
     final labels = translation(context);
     final allSelected =
@@ -198,27 +204,30 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                 )),
               )
             ]
-          : [
-              if (!_searching)
-                IconButton(
-                  tooltip: 'Create folder',
-                  icon: const Icon(Icons.create_new_folder_outlined),
-                  onPressed: () => _showCenterDialog(context),
-                ),
-              IconButton(
-                tooltip: _searching ? labels.cancel : labels.search,
-                icon: Icon(_searching ? Icons.close : Icons.search, size: 27),
-                onPressed: () => setState(() {
-                  _searching = !_searching;
-                  if (!_searching) {
-                    _query = '';
-                    _searchController.clear();
-                    FocusScope.of(context).unfocus();
-                  }
-                }),
-              ),
-              const SizedBox(width: 8),
-            ],
+          : !_isCategoryRoot
+              ? const <Widget>[]
+              : [
+                  if (!_searching)
+                    IconButton(
+                      tooltip: 'Create folder',
+                      icon: const Icon(Icons.create_new_folder_outlined),
+                      onPressed: () => _showCenterDialog(context),
+                    ),
+                  IconButton(
+                    tooltip: _searching ? labels.cancel : labels.search,
+                    icon:
+                        Icon(_searching ? Icons.close : Icons.search, size: 27),
+                    onPressed: () => setState(() {
+                      _searching = !_searching;
+                      if (!_searching) {
+                        _query = '';
+                        _searchController.clear();
+                        FocusScope.of(context).unfocus();
+                      }
+                    }),
+                  ),
+                  const SizedBox(width: 8),
+                ],
     );
   }
 
@@ -2014,7 +2023,7 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                             color: Colors.white,
                             padding: EdgeInsets.symmetric(
                                 horizontal:
-                                    AppHelper.isTablet(context) ? 30 : 8.0),
+                                    AppHelper.isTablet(context) ? 40 : 24.0),
                             alignment: Alignment.center,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
