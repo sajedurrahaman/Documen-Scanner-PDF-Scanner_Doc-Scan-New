@@ -1,4 +1,6 @@
 class AppAssets {
+  static const String splashAnimation =
+      'assets/home_assets/Splash_Screen_no_loader.json';
   static const String splashLogo = "assets/png/app_icon.png";
   static const String documents = "assets/icons/documents.svg";
   static const String idCard = "assets/icons/id_card.svg";

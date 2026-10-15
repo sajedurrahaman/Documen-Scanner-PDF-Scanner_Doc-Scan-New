@@ -87,6 +87,7 @@ dependencies:
   flutter_local_notifications:
   facebook_app_events: ^0.30.3
   upgrader: 13.6.0
+  lottie: ^3.3.3
 
 
 dev_dependencies:
