@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../localaization/language_constant.dart';
 import '../utils/app_assets.dart';
@@ -48,10 +49,7 @@ class _AboutAppScreenState extends State<AboutAppScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           _card(Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-            ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child:
-                    Image.asset(AppAssets.splashLogo, width: 60, height: 60)),
+            SvgPicture.asset(AppAssets.homeAppBarIcon, width: 62, height: 62),
             const SizedBox(width: 14),
             Expanded(
                 child: Column(

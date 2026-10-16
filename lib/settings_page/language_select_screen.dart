@@ -109,8 +109,8 @@ class _LanguageSelectScreenState extends State<LanguageSelectScreen> {
                             borderRadius: BorderRadius.circular(5),
                             child: SvgPicture.asset(
                               '$settingsAssetRoot${language.$4}',
-                              width: 44,
-                              height: 32,
+                              width: language.$1 == 'en' ? 40 : 44,
+                              height: language.$1 == 'en' ? 28 : 32,
                               fit: BoxFit.cover,
                             )),
                         const SizedBox(width: 12),
