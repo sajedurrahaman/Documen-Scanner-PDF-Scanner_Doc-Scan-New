@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -79,9 +80,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return SettingsScaffold(
       root: true,
       title: Row(children: [
-        ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(AppAssets.splashLogo, width: 46, height: 46)),
+        SvgPicture.asset(AppAssets.homeAppBarIcon, width: 46, height: 46),
         const SizedBox(width: 12),
         Expanded(
             child:
