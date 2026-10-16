@@ -600,4 +600,96 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get tapCameraToScanFirstDocument =>
       'अपना पहला दस्तावेज़ स्कैन करने के लिए नीचे कैमरा बटन टैप करें।';
+
+  @override
+  String get appSettingsSection => 'ऐप सेटिंग्स';
+
+  @override
+  String get vibrateDuringScanning => 'स्कैन करते समय कंपन';
+
+  @override
+  String get soundDuringScanning => 'स्कैन करते समय ध्वनि';
+
+  @override
+  String get supportSection => 'सहायता';
+
+  @override
+  String get recommendApp => 'इस ऐप की सिफारिश करें';
+
+  @override
+  String get leaveStoreReview => 'स्टोर पर समीक्षा लिखें';
+
+  @override
+  String get howDataHandled => 'आपके डेटा का उपयोग';
+
+  @override
+  String get termsOfUseSubtitle => 'उपयोग की शर्तें';
+
+  @override
+  String get exploreOtherApps => 'अन्य ऐप देखें';
+
+  @override
+  String get aboutSection => 'परिचय';
+
+  @override
+  String get aboutApp => 'ऐप के बारे में';
+
+  @override
+  String get appInfoSubtitle => 'ऐप की जानकारी, संस्करण, लाइसेंस';
+
+  @override
+  String get chooseAppLanguage => 'ऐप की भाषा चुनें';
+
+  @override
+  String get changeAppLanguage => 'ऐप में इस्तेमाल की जाने वाली भाषा बदलें';
+
+  @override
+  String get appVersionLabel => 'संस्करण';
+
+  @override
+  String get aboutAppDescription =>
+      'अपने स्मार्टफोन को एक शक्तिशाली पोर्टेबल स्कैनर में बदलें। अपने मोबाइल से आसानी से दस्तावेज़ स्कैन करें, व्यवस्थित करें, बदलें और साझा करें।';
+
+  @override
+  String get worksWith => 'इनके लिए उपयोगी';
+
+  @override
+  String get receiptsTag => 'रसीदें';
+
+  @override
+  String get notesTag => 'नोट्स';
+
+  @override
+  String get certificatesTag => 'प्रमाणपत्र';
+
+  @override
+  String get photosTag => 'फ़ोटो';
+
+  @override
+  String get keyFeatures => 'मुख्य सुविधाएँ';
+
+  @override
+  String get featureScanPdf => 'दस्तावेज़ से PDF';
+
+  @override
+  String get featureClearCopies => 'स्पष्ट डिजिटल प्रतियाँ';
+
+  @override
+  String get featureAutoCrop => 'ऑटो क्रॉप और सुधार';
+
+  @override
+  String get featureMultiPage => 'कई पृष्ठों वाली PDF';
+
+  @override
+  String get featureManageShare => 'सहेजें, सँभालें और साझा करें';
+
+  @override
+  String get featureFastScan => 'तेज़ और आसान स्कैन';
+
+  @override
+  String get goPaperless => 'कागज़ का उपयोग घटाएँ';
+
+  @override
+  String get keepDocumentsOrganized =>
+      'अपने महत्वपूर्ण दस्तावेज़ व्यवस्थित रखें।';
 }

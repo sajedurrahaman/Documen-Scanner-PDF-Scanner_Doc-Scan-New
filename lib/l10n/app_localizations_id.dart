@@ -602,4 +602,96 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get tapCameraToScanFirstDocument =>
       'Ketuk tombol kamera di bawah untuk memindai dokumen pertama Anda.';
+
+  @override
+  String get appSettingsSection => 'Pengaturan Aplikasi';
+
+  @override
+  String get vibrateDuringScanning => 'Getar saat memindai';
+
+  @override
+  String get soundDuringScanning => 'Suara saat memindai';
+
+  @override
+  String get supportSection => 'Dukungan';
+
+  @override
+  String get recommendApp => 'Rekomendasikan aplikasi ini';
+
+  @override
+  String get leaveStoreReview => 'Tulis ulasan di toko';
+
+  @override
+  String get howDataHandled => 'Cara data Anda ditangani';
+
+  @override
+  String get termsOfUseSubtitle => 'Ketentuan penggunaan';
+
+  @override
+  String get exploreOtherApps => 'Jelajahi aplikasi lain';
+
+  @override
+  String get aboutSection => 'Tentang';
+
+  @override
+  String get aboutApp => 'Tentang Aplikasi';
+
+  @override
+  String get appInfoSubtitle => 'Informasi, versi, lisensi';
+
+  @override
+  String get chooseAppLanguage => 'Pilih Bahasa Aplikasi';
+
+  @override
+  String get changeAppLanguage => 'Ubah bahasa yang digunakan di aplikasi';
+
+  @override
+  String get appVersionLabel => 'Versi';
+
+  @override
+  String get aboutAppDescription =>
+      'Ubah ponsel Anda menjadi pemindai portabel yang andal. Pindai, atur, konversi, dan bagikan dokumen dengan mudah dari perangkat seluler Anda.';
+
+  @override
+  String get worksWith => 'Cocok untuk';
+
+  @override
+  String get receiptsTag => 'Struk';
+
+  @override
+  String get notesTag => 'Catatan';
+
+  @override
+  String get certificatesTag => 'Sertifikat';
+
+  @override
+  String get photosTag => 'Foto';
+
+  @override
+  String get keyFeatures => 'Fitur Utama';
+
+  @override
+  String get featureScanPdf => 'Pindai dokumen ke PDF';
+
+  @override
+  String get featureClearCopies => 'Salinan digital jernih';
+
+  @override
+  String get featureAutoCrop => 'Pangkas dan perbaiki otomatis';
+
+  @override
+  String get featureMultiPage => 'PDF banyak halaman';
+
+  @override
+  String get featureManageShare => 'Simpan, kelola dan bagikan';
+
+  @override
+  String get featureFastScan => 'Pemindaian cepat dan mudah';
+
+  @override
+  String get goPaperless => 'Kurangi kertas';
+
+  @override
+  String get keepDocumentsOrganized =>
+      'Jaga dokumen penting Anda tetap teratur.';
 }

@@ -587,4 +587,95 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get tapCameraToScanFirstDocument => '아래 카메라 버튼을 눌러 첫 문서를 스캔하세요.';
+
+  @override
+  String get appSettingsSection => '앱 설정';
+
+  @override
+  String get vibrateDuringScanning => '스캔 중 진동';
+
+  @override
+  String get soundDuringScanning => '스캔 중 소리';
+
+  @override
+  String get supportSection => '지원';
+
+  @override
+  String get recommendApp => '이 앱 추천하기';
+
+  @override
+  String get leaveStoreReview => '스토어에 리뷰 남기기';
+
+  @override
+  String get howDataHandled => '데이터 처리 방식';
+
+  @override
+  String get termsOfUseSubtitle => '이용 약관';
+
+  @override
+  String get exploreOtherApps => '다른 앱 둘러보기';
+
+  @override
+  String get aboutSection => '소개';
+
+  @override
+  String get aboutApp => '앱 정보';
+
+  @override
+  String get appInfoSubtitle => '앱 정보, 버전, 라이선스';
+
+  @override
+  String get chooseAppLanguage => '앱 언어 선택';
+
+  @override
+  String get changeAppLanguage => '앱에서 사용하는 언어 변경';
+
+  @override
+  String get appVersionLabel => '버전';
+
+  @override
+  String get aboutAppDescription =>
+      '스마트폰을 강력한 휴대용 스캐너로 바꾸세요. 모바일 기기에서 문서를 쉽게 스캔하고 정리하고 변환하고 공유하세요.';
+
+  @override
+  String get worksWith => '지원 항목';
+
+  @override
+  String get receiptsTag => '영수증';
+
+  @override
+  String get notesTag => '메모';
+
+  @override
+  String get certificatesTag => '증명서';
+
+  @override
+  String get photosTag => '사진';
+
+  @override
+  String get keyFeatures => '주요 기능';
+
+  @override
+  String get featureScanPdf => '문서를 PDF로 스캔';
+
+  @override
+  String get featureClearCopies => '선명한 디지털 사본';
+
+  @override
+  String get featureAutoCrop => '자동 자르기 및 보정';
+
+  @override
+  String get featureMultiPage => '여러 페이지 PDF';
+
+  @override
+  String get featureManageShare => '저장, 관리 및 공유';
+
+  @override
+  String get featureFastScan => '빠르고 간편한 스캔';
+
+  @override
+  String get goPaperless => '종이 사용 줄이기';
+
+  @override
+  String get keepDocumentsOrganized => '중요한 문서를 깔끔하게 정리하세요.';
 }

@@ -1,33 +1,28 @@
-import 'dart:developer';
 import 'dart:io';
-
-import 'package:doc_scanner/main.dart';
-import 'package:doc_scanner/settings_page/web_view_page.dart';
-import 'package:doc_scanner/settings_page/widgets/switch_item.dart';
-import 'package:doc_scanner/utils/app_constant.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../core/local_storage.dart';
 import '../localaization/language.dart';
 import '../localaization/language_constant.dart';
+import '../main.dart';
 import '../utils/app_assets.dart';
-import 'dart:developer' as developer;
-
-import '../utils/helper.dart';
+import '../utils/app_constant.dart';
+import 'about_app_screen.dart';
+import 'language_select_screen.dart';
+import 'web_view_page.dart';
+import 'widgets/settings_ui.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
-
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool vibration = true;
-  bool beep = true;
-
+  late bool vibration;
+  late bool beep;
   @override
   void initState() {
     super.initState();
@@ -35,473 +30,189 @@ class _SettingsPageState extends State<SettingsPage> {
     beep = LocalStorage().getBool(AppConstant.BEEP_KEY);
   }
 
+  String get _storeUrl => Platform.isIOS
+      ? 'https://apps.apple.com/app/id6472610820'
+      : 'https://play.google.com/store/apps/details?id=com.documentscannerpdfscanner_';
+
+  Future<void> _run(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(translation(context).somethingWentWrong)));
+    }
+  }
+
+  Future<void> _openExternal(String url) async {
+    if (!await launchUrl(Uri.parse(url),
+        mode: LaunchMode.externalApplication)) {
+      throw StateError('Cannot open link');
+    }
+  }
+
+  void _web(String title, String url) => Navigator.of(context).push(
+        MaterialPageRoute(
+            builder: (_) => WebViewPage(appBarTitleName: title, url: url)),
+      );
+
+  Widget _switch(bool value, ValueChanged<bool> change) => Switch.adaptive(
+        value: value,
+        onChanged: change,
+        activeTrackColor: settingsBlue,
+        activeThumbColor: Colors.white,
+        inactiveTrackColor: const Color(0xFFD5DFEF),
+        inactiveThumbColor: Colors.white,
+        trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      );
+
   @override
   Widget build(BuildContext context) {
-    // Use the already-loaded app locale on the very first frame of this tab.
-    final languages = Language.languageList();
-    final selectedLanguage = languages.firstWhere(
+    final labels = translation(context);
+    final selectedLanguage = Language.languageList().firstWhere(
       (language) =>
           language.languageCode == Localizations.localeOf(context).languageCode,
-      orElse: () =>
-          languages.firstWhere((language) => language.languageCode == ENGLISH),
+      orElse: () => Language.languageList()
+          .firstWhere((language) => language.languageCode == ENGLISH),
     );
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text(
-          translation(context).settings,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
-        child: Column(
-          children: [
-            Container(
-              width: MediaQuery.sizeOf(context).width,
-              height: MediaQuery.sizeOf(context).height * 0.058,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                children: [
-                  SvgPicture.asset(
-                    AppAssets.languageIcon,
-                    height: AppHelper.isTablet(context)?30: 20,
-                    width: AppHelper.isTablet(context)?30: 20,
-                  ),
-                  SizedBox(
-                    width: MediaQuery.sizeOf(context).width * 0.015,
-                  ),
-                  Text(
-                    translation(context).language,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 17,
-                    ),
-                  ),
-                  Expanded(
-                    child: DropdownButton<Language>(
-                      underline: const SizedBox.shrink(),
-                      alignment: AlignmentDirectional.centerEnd,
-                      isExpanded: true,
-                      isDense: true,
-                      icon: const SizedBox.shrink(),
-                      value: selectedLanguage,
-                      onChanged: (Language? newValue) async {
-                        if (newValue == null) return;
-                        // Update the app immediately, before persistence completes
-                        // or the user navigates away from Settings.
-                        MyApp.setLocale(context, Locale(newValue.languageCode));
-                        await setLocale(newValue.languageCode);
-                      },
-                      selectedItemBuilder: (BuildContext context) {
-                        return languages
-                            .map<Widget>((Language language) {
-                          return Text(
-                            selectedLanguage.name,
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 14,
-                            ),
-                          );
-                        }).toList();
-                      },
-                      items: languages
-                          .map<DropdownMenuItem<Language>>((Language language) {
-                        return DropdownMenuItem<Language>(
-                          value: language,
-                          child: ListTile(
-                            title: Text(language.name),
-                            titleAlignment: ListTileTitleAlignment.center,
-                            trailing: selectedLanguage.name == language.name
-                                ? const Icon(Icons.done)
-                                : const SizedBox.shrink(),
-                          ),
-                        );
-                      }).toList(),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                   Icon(
-                    Icons.arrow_forward_ios,
-                    size: AppHelper.isTablet(context)?20: 15,
-                  ),
-                ],
-              ),
+    return SettingsScaffold(
+      root: true,
+      title: Row(children: [
+        ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(AppAssets.splashLogo, width: 46, height: 46)),
+        const SizedBox(width: 12),
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(labels.documentScanner,
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  height: 1.1,
+                  letterSpacing: 0.4)),
+          const SizedBox(height: 4),
+          Text(labels.scanSaveShare,
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 0.6)),
+        ])),
+      ]),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        children: [
+          SettingsSectionLabel(labels.appSettingsSection),
+          SettingsCard(children: [
+            SettingsRow(
+              key: const ValueKey('settings-language'),
+              icon: const SettingsIcon('settings_language_icon.svg',
+                  background: Color(0xFF176BEB)),
+              title: labels.language,
+              subtitle: selectedLanguage.name,
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(selectedLanguage.name,
+                    key: const ValueKey('settings-active-language'),
+                    style: const TextStyle(fontSize: 12, color: settingsMuted)),
+                const SizedBox(width: 6),
+                const Icon(Icons.chevron_right, color: settingsMuted, size: 24),
+              ]),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => LanguageSelectScreen(
+                            onLocaleChanged: (locale) =>
+                                MyApp.setLocale(context, locale),
+                          ))),
             ),
-            SizedBox(
-              height: MediaQuery.sizeOf(context).height * 0.015,
+            SettingsRow(
+              icon: const SettingsIcon('settings_vibration_icon.svg',
+                  background: Color(0xFFF0E7FF)),
+              title: labels.vibration,
+              subtitle: labels.vibrateDuringScanning,
+              trailing: _switch(vibration, (value) {
+                setState(() => vibration = value);
+                LocalStorage().setBool(AppConstant.VIBRATION_KEY, value);
+              }),
             ),
-            Container(
-              // height: 120,
-              width: MediaQuery.sizeOf(context).width,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SwitchItem(
-                    iconPath: AppAssets.vibration,
-                    title: translation(context).vibration,
-                    onChanged: (value) {
-                      log(value.toString());
-                      setState(() {
-                        vibration = value;
-                      });
-                      LocalStorage().setBool(AppConstant.VIBRATION_KEY, value);
-                    },
-                    value: vibration,
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  SwitchItem(
-                      iconPath: AppAssets.beep,
-                      title: translation(context).beep,
-                      onChanged: (value) {
-                        setState(() {
-                          beep = value;
-                        });
-                        LocalStorage().setBool(AppConstant.BEEP_KEY, value);
-                      },
-                      value: beep),
-                ],
-              ),
+            SettingsRow(
+              icon: const SettingsIcon('settings_beep_icon.svg',
+                  background: Color(0xFFE3F7EC)),
+              title: labels.beep,
+              subtitle: labels.soundDuringScanning,
+              trailing: _switch(beep, (value) {
+                setState(() => beep = value);
+                LocalStorage().setBool(AppConstant.BEEP_KEY, value);
+              }),
             ),
-            SizedBox(
-              height: MediaQuery.sizeOf(context).height * 0.015,
+          ]),
+          SettingsSectionLabel(labels.supportSection),
+          SettingsCard(children: [
+            SettingsRow(
+              icon: const SettingsIcon('settings_share_icon.svg'),
+              title: labels.shareWithFriend,
+              subtitle: labels.recommendApp,
+              onTap: () => _run(() async {
+                final box = context.findRenderObject() as RenderBox?;
+                await SharePlus.instance.share(ShareParams(
+                  text: _storeUrl,
+                  sharePositionOrigin: box == null
+                      ? null
+                      : box.localToGlobal(Offset.zero) & box.size,
+                ));
+              }),
             ),
-            Container(
-              width: MediaQuery.sizeOf(context).width,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Column(
-                children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(6),
-                      onTap: () {
-                        if (Platform.isIOS) {
-                          Share.share(
-                            'https://apps.apple.com/app/id6472610820',
-                          );
-                        } else if (Platform.isAndroid) {
-                          Share.share(
-                            'https://play.google.com/store/apps/details?id=com.documentscannerpdfscanner_',
-                          );
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            SvgPicture.asset(
-                              AppAssets.shareWithFriend,
-                              height: AppHelper.isTablet(context)?30: 20,
-                              width: AppHelper.isTablet(context)?30: 20,
-                            ),
-                            SizedBox(
-                              width: MediaQuery.sizeOf(context).width * 0.015,
-                            ),
-                            Text(
-                              translation(context).shareWithFriend,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 17,
-                              ),
-                            ),
-                            const Spacer(),
-                             Icon(
-                              Icons.arrow_forward_ios,
-                              size: AppHelper.isTablet(context)?20: 15,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: MediaQuery.sizeOf(context).height * 0.012,
-                  ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(6),
-                      onTap: () async {
-                        try {
-                          if (Platform.isIOS) {
-                            final url = Uri.parse(
-                              "https://apps.apple.com/app/id6472610820",
-                            );
-                            await launchUrl(
-                              url,
-                              mode: LaunchMode.externalApplication,
-                            );
-                          } else {
-                            final url = Uri.parse(
-                              "https://play.google.com/store/apps/details?id=com.documentscannerpdfscanner_",
-                            );
-                            await launchUrl(
-                              url,
-                              mode: LaunchMode.externalApplication,
-                            );
-                          }
-
-                          // if (Platform.isAndroid || Platform.isIOS) {
-                          //   final appId = Platform.isAndroid
-                          //       ? ''
-                          //       : 'com.documentscannerpdfscanner';
-                          //   final url = Uri.parse(
-                          //     Platform.isAndroid
-                          //         ? "market://details?id=$appId"
-                          //         : "https://apps.apple.com/app/id6472610820",
-                          //   );
-                          //   await launchUrl(
-                          //     url,
-                          //     mode: LaunchMode.externalApplication,
-                          //   );
-                          // }
-                        } catch (e) {
-                          developer.log(e.toString());
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            SvgPicture.asset(
-                              AppAssets.rateUs,
-                              height: AppHelper.isTablet(context)?30: 20,
-                              width: AppHelper.isTablet(context)?30: 20,
-                            ),
-                            SizedBox(
-                              width: MediaQuery.sizeOf(context).width * 0.015,
-                            ),
-                            Text(
-                              translation(context).rateUs,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 17,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const Spacer(),
-                             Icon(
-                              Icons.arrow_forward_ios,
-                              size: AppHelper.isTablet(context)?20: 15,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: MediaQuery.sizeOf(context).height * 0.012,
-                  ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(6),
-                      onTap: () {
-                        if (Platform.isIOS) {
-                          if (mounted) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => WebViewPage(
-                                  appBarTitleName:
-                                      translation(context).privacyPolicy,
-                                  url:
-                                      "https://sites.google.com/view/docum-scanner/home",
-                                ),
-                              ),
-                            );
-                          }
-                        } else if (Platform.isAndroid) {
-                          if (mounted) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => WebViewPage(
-                                  appBarTitleName:
-                                      translation(context).privacyPolicy,
-                                  url:
-                                      "https://sites.google.com/view/docum-scanne",
-                                ),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            SvgPicture.asset(
-                              AppAssets.privacyPolicy,
-                              height: AppHelper.isTablet(context)?30: 20,
-                              width: AppHelper.isTablet(context)?30: 20,
-                            ),
-                            SizedBox(
-                              width: MediaQuery.sizeOf(context).width * 0.015,
-                            ),
-                            Text(
-                              translation(context).privacyPolicy,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 17,
-                              ),
-                            ),
-                            const Spacer(),
-                             Icon(
-                              Icons.arrow_forward_ios,
-                              size: AppHelper.isTablet(context)?20: 15,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: MediaQuery.sizeOf(context).height * 0.012,
-                  ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(6),
-                      onTap: () {
-                        if (Platform.isIOS) {
-                          if (mounted) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => WebViewPage(
-                                  appBarTitleName:
-                                      translation(context).termsAndConditions,
-                                  url:
-                                      "https://sites.google.com/view/docum-scanner/home",
-                                ),
-                              ),
-                            );
-                          }
-                        } else if (Platform.isAndroid) {
-                          if (mounted) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => WebViewPage(
-                                  appBarTitleName:
-                                      translation(context).termsAndConditions,
-                                  url:
-                                      "https://sites.google.com/view/docu-scanne",
-                                ),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            SvgPicture.asset(
-                              AppAssets.termsCondition,
-                              height: AppHelper.isTablet(context)?30: 20,
-                              width: AppHelper.isTablet(context)?30: 20,
-                            ),
-                            SizedBox(
-                              width: MediaQuery.sizeOf(context).width * 0.015,
-                            ),
-                            Text(
-                              translation(context).termsAndConditions,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 17,
-                              ),
-                            ),
-                            const Spacer(),
-                             Icon(
-                              Icons.arrow_forward_ios,
-                              size: AppHelper.isTablet(context)?20: 15,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: MediaQuery.sizeOf(context).height * 0.012,
-                  ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(6),
-                      onTap: () async {
-                        try {
-                          if (Platform.isAndroid) {
-                            final url = Uri.parse(
-                              "https://play.google.com/store/apps/dev?id=6584495725981374366",
-                            );
-                            await launchUrl(
-                              url,
-                              mode: LaunchMode.externalApplication,
-                            );
-                          } else if (Platform.isIOS) {
-                            final url = Uri.parse(
-                              "https://apps.apple.com/us/developer/md-sajedur-rahaman/id1586019019",
-                            );
-                            await launchUrl(
-                              url,
-                              mode: LaunchMode.externalApplication,
-                            );
-                          }
-                        } catch (e) {
-                          developer.log(e.toString());
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            SvgPicture.asset(
-                              AppAssets.moreApps,
-                              height: AppHelper.isTablet(context) ? 30 : 20,
-                              width: AppHelper.isTablet(context) ? 30 : 20,
-                            ),
-                            SizedBox(
-                              width: MediaQuery.sizeOf(context).width * 0.015,
-                            ),
-                            Text(
-                              translation(context).moreApps,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 17,
-                              ),
-                            ),
-                            const Spacer(),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              size: AppHelper.isTablet(context) ? 20 : 15,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            SettingsRow(
+              icon: const SettingsIcon('settings_rate_us_icon.svg',
+                  background: Color(0xFFFFF3DF)),
+              title: labels.rateUs,
+              subtitle: labels.leaveStoreReview,
+              onTap: () => _run(() => _openExternal(_storeUrl)),
             ),
-          ],
-        ),
+            SettingsRow(
+              icon: const SettingsIcon('settings_privacy_and_policy_icon.svg',
+                  background: Color(0xFFE3F7EC)),
+              title: labels.privacyPolicy,
+              subtitle: labels.howDataHandled,
+              onTap: () => _web(
+                  labels.privacyPolicy,
+                  Platform.isIOS
+                      ? 'https://sites.google.com/view/docum-scanner/home'
+                      : 'https://sites.google.com/view/docum-scanne'),
+            ),
+            SettingsRow(
+              icon: const SettingsIcon('settings_terms_and_conditions_icon.svg',
+                  background: Color(0xFFF0E7FF)),
+              title: labels.termsAndConditions,
+              subtitle: labels.termsOfUseSubtitle,
+              onTap: () => _web(
+                  labels.termsAndConditions,
+                  Platform.isIOS
+                      ? 'https://sites.google.com/view/docum-scanner/home'
+                      : 'https://sites.google.com/view/docu-scanne'),
+            ),
+            SettingsRow(
+              icon: const SettingsIcon('settings_more_app_icon.svg'),
+              title: labels.moreApps,
+              subtitle: labels.exploreOtherApps,
+              onTap: () => _run(() => _openExternal(Platform.isIOS
+                  ? 'https://apps.apple.com/us/developer/md-sajedur-rahaman/id1586019019'
+                  : 'https://play.google.com/store/apps/dev?id=6584495725981374366')),
+            ),
+          ]),
+          SettingsSectionLabel(labels.aboutSection),
+          SettingsCard(children: [
+            SettingsRow(
+              icon: const SettingsIcon('settings_about_icons.svg',
+                  background: settingsInk),
+              title: labels.aboutApp,
+              subtitle: labels.appInfoSubtitle,
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const AboutAppScreen())),
+            )
+          ]),
+        ],
       ),
     );
   }

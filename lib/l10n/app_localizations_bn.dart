@@ -603,4 +603,95 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get tapCameraToScanFirstDocument =>
       'প্রথম ডকুমেন্ট স্ক্যান করতে নিচের ক্যামেরা বাটনে ট্যাপ করুন।';
+
+  @override
+  String get appSettingsSection => 'অ্যাপ সেটিংস';
+
+  @override
+  String get vibrateDuringScanning => 'স্ক্যান করার সময় কম্পন';
+
+  @override
+  String get soundDuringScanning => 'স্ক্যান করার সময় শব্দ';
+
+  @override
+  String get supportSection => 'সহায়তা';
+
+  @override
+  String get recommendApp => 'অ্যাপটি সুপারিশ করুন';
+
+  @override
+  String get leaveStoreReview => 'স্টোরে রিভিউ দিন';
+
+  @override
+  String get howDataHandled => 'আপনার তথ্য কীভাবে ব্যবহৃত হয়';
+
+  @override
+  String get termsOfUseSubtitle => 'ব্যবহারের শর্তাবলি';
+
+  @override
+  String get exploreOtherApps => 'অন্যান্য অ্যাপ দেখুন';
+
+  @override
+  String get aboutSection => 'পরিচিতি';
+
+  @override
+  String get aboutApp => 'অ্যাপ সম্পর্কে';
+
+  @override
+  String get appInfoSubtitle => 'অ্যাপের তথ্য, সংস্করণ, লাইসেন্স';
+
+  @override
+  String get chooseAppLanguage => 'অ্যাপের ভাষা বেছে নিন';
+
+  @override
+  String get changeAppLanguage => 'অ্যাপে ব্যবহৃত ভাষা পরিবর্তন করুন';
+
+  @override
+  String get appVersionLabel => 'সংস্করণ';
+
+  @override
+  String get aboutAppDescription =>
+      'আপনার স্মার্টফোনকে একটি শক্তিশালী বহনযোগ্য স্ক্যানারে পরিণত করুন। মোবাইল থেকেই সহজে নথি স্ক্যান, সাজানো, রূপান্তর ও শেয়ার করুন।';
+
+  @override
+  String get worksWith => 'যা স্ক্যান করতে পারবেন';
+
+  @override
+  String get receiptsTag => 'রসিদ';
+
+  @override
+  String get notesTag => 'নোট';
+
+  @override
+  String get certificatesTag => 'সনদ';
+
+  @override
+  String get photosTag => 'ছবি';
+
+  @override
+  String get keyFeatures => 'প্রধান সুবিধা';
+
+  @override
+  String get featureScanPdf => 'নথি থেকে PDF';
+
+  @override
+  String get featureClearCopies => 'পরিষ্কার ডিজিটাল কপি';
+
+  @override
+  String get featureAutoCrop => 'স্বয়ংক্রিয় ক্রপ ও উন্নতি';
+
+  @override
+  String get featureMultiPage => 'একাধিক পৃষ্ঠার PDF';
+
+  @override
+  String get featureManageShare => 'সেভ, সাজানো ও শেয়ার';
+
+  @override
+  String get featureFastScan => 'দ্রুত ও সহজ স্ক্যান';
+
+  @override
+  String get goPaperless => 'কাগজের ব্যবহার কমান';
+
+  @override
+  String get keepDocumentsOrganized => 'আপনার গুরুত্বপূর্ণ নথি গুছিয়ে রাখুন।';
 }

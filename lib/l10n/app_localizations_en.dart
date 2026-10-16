@@ -597,4 +597,96 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tapCameraToScanFirstDocument =>
       'Tap the camera button below to scan your first document.';
+
+  @override
+  String get appSettingsSection => 'App Settings';
+
+  @override
+  String get vibrateDuringScanning => 'Vibrate during scanning';
+
+  @override
+  String get soundDuringScanning => 'Sound during scanning';
+
+  @override
+  String get supportSection => 'Support';
+
+  @override
+  String get recommendApp => 'Recommend this app';
+
+  @override
+  String get leaveStoreReview => 'Leave a store review';
+
+  @override
+  String get howDataHandled => 'How your data is handled';
+
+  @override
+  String get termsOfUseSubtitle => 'Terms of use';
+
+  @override
+  String get exploreOtherApps => 'Explore other apps';
+
+  @override
+  String get aboutSection => 'About';
+
+  @override
+  String get aboutApp => 'About App';
+
+  @override
+  String get appInfoSubtitle => 'App information, version, licenses';
+
+  @override
+  String get chooseAppLanguage => 'Choose App Language';
+
+  @override
+  String get changeAppLanguage => 'Change the language used in the app';
+
+  @override
+  String get appVersionLabel => 'Version';
+
+  @override
+  String get aboutAppDescription =>
+      'Transform your smartphone into a powerful portable scanner. Scan, organize, convert, and share your documents effortlessly from your mobile device.';
+
+  @override
+  String get worksWith => 'Works with';
+
+  @override
+  String get receiptsTag => 'Receipts';
+
+  @override
+  String get notesTag => 'Notes';
+
+  @override
+  String get certificatesTag => 'Certificates';
+
+  @override
+  String get photosTag => 'Photos';
+
+  @override
+  String get keyFeatures => 'Key Features';
+
+  @override
+  String get featureScanPdf => 'Scan docs to PDF';
+
+  @override
+  String get featureClearCopies => 'Clear digital copies';
+
+  @override
+  String get featureAutoCrop => 'Auto crop & enhance';
+
+  @override
+  String get featureMultiPage => 'Multi-page PDF files';
+
+  @override
+  String get featureManageShare => 'Save, manage & share';
+
+  @override
+  String get featureFastScan => 'Fast & simple scanning';
+
+  @override
+  String get goPaperless => 'Go paperless';
+
+  @override
+  String get keepDocumentsOrganized =>
+      'Keep your important documents organized.';
 }
