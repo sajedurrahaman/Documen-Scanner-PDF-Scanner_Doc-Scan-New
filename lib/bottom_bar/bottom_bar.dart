@@ -364,7 +364,6 @@ class _BottomBarState extends State<BottomBar> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         SvgPicture.asset(AppAssets.idCard,
-                            color: Colors.white,
                             height: size.width >= 600 ? 30 : 25,
                             width: size.width >= 600 ? 30 : 25),
                         const SizedBox(
@@ -437,7 +436,6 @@ class _BottomBarState extends State<BottomBar> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         SvgPicture.asset(AppAssets.documents,
-                            color: Colors.white,
                             height: size.width >= 600 ? 30 : 25,
                             width: size.width >= 600 ? 30 : 25),
                         const SizedBox(
