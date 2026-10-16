@@ -586,4 +586,95 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get tapCameraToScanFirstDocument =>
       '下のカメラボタンをタップして、最初のドキュメントをスキャンしてください。';
+
+  @override
+  String get appSettingsSection => 'アプリ設定';
+
+  @override
+  String get vibrateDuringScanning => 'スキャン時に振動';
+
+  @override
+  String get soundDuringScanning => 'スキャン時に音を鳴らす';
+
+  @override
+  String get supportSection => 'サポート';
+
+  @override
+  String get recommendApp => 'このアプリをおすすめする';
+
+  @override
+  String get leaveStoreReview => 'ストアでレビューを書く';
+
+  @override
+  String get howDataHandled => 'データの取り扱い';
+
+  @override
+  String get termsOfUseSubtitle => '利用規約';
+
+  @override
+  String get exploreOtherApps => '他のアプリを見る';
+
+  @override
+  String get aboutSection => '概要';
+
+  @override
+  String get aboutApp => 'アプリについて';
+
+  @override
+  String get appInfoSubtitle => 'アプリ情報、バージョン、ライセンス';
+
+  @override
+  String get chooseAppLanguage => 'アプリの言語を選択';
+
+  @override
+  String get changeAppLanguage => 'アプリで使う言語を変更';
+
+  @override
+  String get appVersionLabel => 'バージョン';
+
+  @override
+  String get aboutAppDescription =>
+      'スマートフォンを便利な携帯スキャナーに。モバイル端末から文書を簡単にスキャン、整理、変換、共有できます。';
+
+  @override
+  String get worksWith => '対応するもの';
+
+  @override
+  String get receiptsTag => '領収書';
+
+  @override
+  String get notesTag => 'メモ';
+
+  @override
+  String get certificatesTag => '証明書';
+
+  @override
+  String get photosTag => '写真';
+
+  @override
+  String get keyFeatures => '主な機能';
+
+  @override
+  String get featureScanPdf => '文書を PDF にスキャン';
+
+  @override
+  String get featureClearCopies => '鮮明なデジタルコピー';
+
+  @override
+  String get featureAutoCrop => '自動切り抜きと補正';
+
+  @override
+  String get featureMultiPage => '複数ページの PDF';
+
+  @override
+  String get featureManageShare => '保存・管理・共有';
+
+  @override
+  String get featureFastScan => 'すばやく簡単なスキャン';
+
+  @override
+  String get goPaperless => 'ペーパーレスに';
+
+  @override
+  String get keepDocumentsOrganized => '大切な文書を整理しましょう。';
 }

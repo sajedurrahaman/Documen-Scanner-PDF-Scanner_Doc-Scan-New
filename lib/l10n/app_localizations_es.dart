@@ -603,4 +603,96 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tapCameraToScanFirstDocument =>
       'Toca el botón de la cámara de abajo para escanear tu primer documento.';
+
+  @override
+  String get appSettingsSection => 'Ajustes de la app';
+
+  @override
+  String get vibrateDuringScanning => 'Vibrar al escanear';
+
+  @override
+  String get soundDuringScanning => 'Sonido al escanear';
+
+  @override
+  String get supportSection => 'Ayuda';
+
+  @override
+  String get recommendApp => 'Recomienda esta app';
+
+  @override
+  String get leaveStoreReview => 'Escribe una reseña';
+
+  @override
+  String get howDataHandled => 'Cómo se tratan tus datos';
+
+  @override
+  String get termsOfUseSubtitle => 'Condiciones de uso';
+
+  @override
+  String get exploreOtherApps => 'Explora otras apps';
+
+  @override
+  String get aboutSection => 'Acerca de';
+
+  @override
+  String get aboutApp => 'Acerca de la app';
+
+  @override
+  String get appInfoSubtitle => 'Información, versión y licencias';
+
+  @override
+  String get chooseAppLanguage => 'Elige el idioma';
+
+  @override
+  String get changeAppLanguage => 'Cambia el idioma de la app';
+
+  @override
+  String get appVersionLabel => 'Versión';
+
+  @override
+  String get aboutAppDescription =>
+      'Convierte tu teléfono en un potente escáner portátil. Escanea, organiza, convierte y comparte documentos fácilmente desde tu dispositivo móvil.';
+
+  @override
+  String get worksWith => 'Compatible con';
+
+  @override
+  String get receiptsTag => 'Recibos';
+
+  @override
+  String get notesTag => 'Notas';
+
+  @override
+  String get certificatesTag => 'Certificados';
+
+  @override
+  String get photosTag => 'Fotos';
+
+  @override
+  String get keyFeatures => 'Funciones principales';
+
+  @override
+  String get featureScanPdf => 'Escanear a PDF';
+
+  @override
+  String get featureClearCopies => 'Copias digitales claras';
+
+  @override
+  String get featureAutoCrop => 'Recorte y mejora automática';
+
+  @override
+  String get featureMultiPage => 'PDF de varias páginas';
+
+  @override
+  String get featureManageShare => 'Guardar, organizar y compartir';
+
+  @override
+  String get featureFastScan => 'Escaneo rápido y sencillo';
+
+  @override
+  String get goPaperless => 'Usa menos papel';
+
+  @override
+  String get keepDocumentsOrganized =>
+      'Mantén organizados tus documentos importantes.';
 }

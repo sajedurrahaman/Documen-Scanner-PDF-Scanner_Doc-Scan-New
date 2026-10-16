@@ -600,4 +600,95 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get tapCameraToScanFirstDocument =>
       'İlk belgenizi taramak için aşağıdaki kamera düğmesine dokunun.';
+
+  @override
+  String get appSettingsSection => 'Uygulama Ayarları';
+
+  @override
+  String get vibrateDuringScanning => 'Tarama sırasında titreşim';
+
+  @override
+  String get soundDuringScanning => 'Tarama sırasında ses';
+
+  @override
+  String get supportSection => 'Destek';
+
+  @override
+  String get recommendApp => 'Bu uygulamayı önerin';
+
+  @override
+  String get leaveStoreReview => 'Mağazada yorum bırakın';
+
+  @override
+  String get howDataHandled => 'Verileriniz nasıl işlenir';
+
+  @override
+  String get termsOfUseSubtitle => 'Kullanım koşulları';
+
+  @override
+  String get exploreOtherApps => 'Diğer uygulamaları keşfedin';
+
+  @override
+  String get aboutSection => 'Hakkında';
+
+  @override
+  String get aboutApp => 'Uygulama Hakkında';
+
+  @override
+  String get appInfoSubtitle => 'Uygulama bilgisi, sürüm, lisanslar';
+
+  @override
+  String get chooseAppLanguage => 'Uygulama Dilini Seçin';
+
+  @override
+  String get changeAppLanguage => 'Uygulamada kullanılan dili değiştirin';
+
+  @override
+  String get appVersionLabel => 'Sürüm';
+
+  @override
+  String get aboutAppDescription =>
+      'Akıllı telefonunuzu güçlü bir taşınabilir tarayıcıya dönüştürün. Belgelerinizi mobil cihazınızdan kolayca tarayın, düzenleyin, dönüştürün ve paylaşın.';
+
+  @override
+  String get worksWith => 'Şunlarla çalışır';
+
+  @override
+  String get receiptsTag => 'Makbuzlar';
+
+  @override
+  String get notesTag => 'Notlar';
+
+  @override
+  String get certificatesTag => 'Sertifikalar';
+
+  @override
+  String get photosTag => 'Fotoğraflar';
+
+  @override
+  String get keyFeatures => 'Temel Özellikler';
+
+  @override
+  String get featureScanPdf => 'Belgeleri PDF olarak tarayın';
+
+  @override
+  String get featureClearCopies => 'Net dijital kopyalar';
+
+  @override
+  String get featureAutoCrop => 'Otomatik kırpma ve iyileştirme';
+
+  @override
+  String get featureMultiPage => 'Çok sayfalı PDF dosyaları';
+
+  @override
+  String get featureManageShare => 'Kaydedin, yönetin ve paylaşın';
+
+  @override
+  String get featureFastScan => 'Hızlı ve kolay tarama';
+
+  @override
+  String get goPaperless => 'Kâğıt kullanımını azaltın';
+
+  @override
+  String get keepDocumentsOrganized => 'Önemli belgelerinizi düzenli tutun.';
 }

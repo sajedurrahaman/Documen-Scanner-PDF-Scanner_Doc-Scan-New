@@ -1,13 +1,13 @@
 import 'package:doc_scanner/core/local_storage.dart';
 import 'package:doc_scanner/l10n/app_localizations.dart';
-import 'package:doc_scanner/localaization/language.dart';
 import 'package:doc_scanner/settings_page/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Settings uses active locale on its first frame after tab changes',
+  testWidgets(
+      'Settings uses active locale on its first frame after tab changes',
       (tester) async {
     SharedPreferences.setMockInitialValues({'languageCode': 'bn'});
     await LocalStorage().init();
@@ -23,8 +23,9 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: ValueListenableBuilder<bool>(
           valueListenable: settingsVisible,
-          builder: (_, visible, __) =>
-              visible ? const SettingsPage() : const Scaffold(body: Text('Home')),
+          builder: (_, visible, __) => visible
+              ? const SettingsPage()
+              : const Scaffold(body: Text('Home')),
         ),
       ),
     ));
@@ -34,10 +35,12 @@ void main() {
       settingsVisible.value = true;
       // Do not settle: the first frame must already show Bengali.
       await tester.pump();
-      final dropdown = tester.widget<DropdownButton<Language>>(
-        find.byType(DropdownButton<Language>),
-      );
-      expect(dropdown.value!.languageCode, 'bn');
+      expect(
+          tester
+              .widget<Text>(
+                  find.byKey(const ValueKey('settings-active-language')))
+              .data,
+          'Bengali');
       settingsVisible.value = false;
       await tester.pump();
     }
@@ -48,11 +51,11 @@ void main() {
     settingsVisible.value = true;
     await tester.pump();
     expect(
-      tester.widget<DropdownButton<Language>>(
-        find.byType(DropdownButton<Language>),
-      ).value!.languageCode,
-      'fr',
-    );
+        tester
+            .widget<Text>(
+                find.byKey(const ValueKey('settings-active-language')))
+            .data,
+        'French');
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });

@@ -595,4 +595,95 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get tapCameraToScanFirstDocument =>
       'اضغط زر الكاميرا بالأسفل لمسح أول مستند.';
+
+  @override
+  String get appSettingsSection => 'إعدادات التطبيق';
+
+  @override
+  String get vibrateDuringScanning => 'اهتزاز أثناء المسح';
+
+  @override
+  String get soundDuringScanning => 'صوت أثناء المسح';
+
+  @override
+  String get supportSection => 'الدعم';
+
+  @override
+  String get recommendApp => 'أوصِ بهذا التطبيق';
+
+  @override
+  String get leaveStoreReview => 'اكتب مراجعة في المتجر';
+
+  @override
+  String get howDataHandled => 'كيفية التعامل مع بياناتك';
+
+  @override
+  String get termsOfUseSubtitle => 'شروط الاستخدام';
+
+  @override
+  String get exploreOtherApps => 'استكشف تطبيقات أخرى';
+
+  @override
+  String get aboutSection => 'حول';
+
+  @override
+  String get aboutApp => 'حول التطبيق';
+
+  @override
+  String get appInfoSubtitle => 'معلومات التطبيق والإصدار والتراخيص';
+
+  @override
+  String get chooseAppLanguage => 'اختر لغة التطبيق';
+
+  @override
+  String get changeAppLanguage => 'غيّر اللغة المستخدمة في التطبيق';
+
+  @override
+  String get appVersionLabel => 'الإصدار';
+
+  @override
+  String get aboutAppDescription =>
+      'حوّل هاتفك الذكي إلى ماسح ضوئي محمول قوي. امسح مستنداتك ونظّمها وحوّلها وشاركها بسهولة من هاتفك.';
+
+  @override
+  String get worksWith => 'يعمل مع';
+
+  @override
+  String get receiptsTag => 'الإيصالات';
+
+  @override
+  String get notesTag => 'الملاحظات';
+
+  @override
+  String get certificatesTag => 'الشهادات';
+
+  @override
+  String get photosTag => 'الصور';
+
+  @override
+  String get keyFeatures => 'الميزات الرئيسية';
+
+  @override
+  String get featureScanPdf => 'مسح المستندات إلى PDF';
+
+  @override
+  String get featureClearCopies => 'نسخ رقمية واضحة';
+
+  @override
+  String get featureAutoCrop => 'قص وتحسين تلقائي';
+
+  @override
+  String get featureMultiPage => 'ملفات PDF متعددة الصفحات';
+
+  @override
+  String get featureManageShare => 'حفظ وتنظيم ومشاركة';
+
+  @override
+  String get featureFastScan => 'مسح سريع وبسيط';
+
+  @override
+  String get goPaperless => 'استغنِ عن الورق';
+
+  @override
+  String get keepDocumentsOrganized => 'احتفظ بمستنداتك المهمة منظمة.';
 }

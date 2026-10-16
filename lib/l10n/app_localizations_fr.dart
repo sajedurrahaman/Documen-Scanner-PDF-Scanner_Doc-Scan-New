@@ -606,4 +606,96 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tapCameraToScanFirstDocument =>
       'Appuyez sur le bouton de l\'appareil photo ci-dessous pour scanner votre premier document.';
+
+  @override
+  String get appSettingsSection => 'Réglages de l’application';
+
+  @override
+  String get vibrateDuringScanning => 'Vibrer pendant la numérisation';
+
+  @override
+  String get soundDuringScanning => 'Son pendant la numérisation';
+
+  @override
+  String get supportSection => 'Assistance';
+
+  @override
+  String get recommendApp => 'Recommandez cette application';
+
+  @override
+  String get leaveStoreReview => 'Laissez un avis sur la boutique';
+
+  @override
+  String get howDataHandled => 'Traitement de vos données';
+
+  @override
+  String get termsOfUseSubtitle => 'Conditions d’utilisation';
+
+  @override
+  String get exploreOtherApps => 'Découvrez d’autres applications';
+
+  @override
+  String get aboutSection => 'À propos';
+
+  @override
+  String get aboutApp => 'À propos de l’application';
+
+  @override
+  String get appInfoSubtitle => 'Informations, version et licences';
+
+  @override
+  String get chooseAppLanguage => 'Choisir la langue';
+
+  @override
+  String get changeAppLanguage => 'Modifier la langue de l’application';
+
+  @override
+  String get appVersionLabel => 'Version';
+
+  @override
+  String get aboutAppDescription =>
+      'Transformez votre smartphone en un puissant scanner portable. Numérisez, organisez, convertissez et partagez facilement vos documents depuis votre mobile.';
+
+  @override
+  String get worksWith => 'Compatible avec';
+
+  @override
+  String get receiptsTag => 'Reçus';
+
+  @override
+  String get notesTag => 'Notes';
+
+  @override
+  String get certificatesTag => 'Certificats';
+
+  @override
+  String get photosTag => 'Photos';
+
+  @override
+  String get keyFeatures => 'Fonctions principales';
+
+  @override
+  String get featureScanPdf => 'Numériser en PDF';
+
+  @override
+  String get featureClearCopies => 'Copies numériques nettes';
+
+  @override
+  String get featureAutoCrop => 'Recadrage et amélioration auto';
+
+  @override
+  String get featureMultiPage => 'PDF de plusieurs pages';
+
+  @override
+  String get featureManageShare => 'Enregistrer, gérer et partager';
+
+  @override
+  String get featureFastScan => 'Numérisation simple et rapide';
+
+  @override
+  String get goPaperless => 'Réduisez le papier';
+
+  @override
+  String get keepDocumentsOrganized =>
+      'Gardez vos documents importants organisés.';
 }

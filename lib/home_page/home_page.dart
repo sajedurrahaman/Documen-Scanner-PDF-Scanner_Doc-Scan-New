@@ -1,3 +1,4 @@
+import '../utils/app_color.dart';
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
@@ -141,7 +142,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  static const Color _headerBlue = Color(0xFF1E56D8);
+  static const Color _headerBlue = AppColor.headerBlue;
   static const Color _pageBackground = Color(0xFFF4F6FB);
   static const Color _titleColor = Color(0xFF1B2437);
   static const Color _mutedColor = Color(0xFF8B95A7);
@@ -543,134 +544,148 @@ class _HomePageState extends State<HomePage> {
         valueListenable: interstitialReadyNotifier,
         builder: (context, interstitialReady, _) {
           return Scaffold(
-            backgroundColor: _pageBackground,
+            backgroundColor: _headerBlue,
             body: cameraProvider.pdfConverting
                 ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _HomeHeader(
-                          onSearch: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SearchPage(),
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _HomeHeader(
+                        onSearch: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SearchPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(28)),
+                          child: ColoredBox(
+                            color: _pageBackground,
+                            child: SingleChildScrollView(
+                              // The translated recent section already leaves 74
+                              // pixels below it; only reserve the remaining inset.
+                              padding: EdgeInsets.only(
+                                bottom: (MediaQuery.paddingOf(context).bottom - 74)
+                                    .clamp(0.0, double.infinity),
                               ),
-                            );
-                          },
-                        ),
-                        Transform.translate(
-                          offset: const Offset(0, -18),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Container(
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(28),
-                                  ),
-                                ),
-                                child: _ScanOptionsCard(
-                                  items: cameraItems,
-                                  labelFor: (name) =>
-                                      getCameraModeName(name, context),
-                                  iconFor: _scanIcon,
-                                  backgroundFor: _scanBackground,
-                                  onTap: _onCameraItemTap,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Transform.translate(
-                                offset: const Offset(0, -28),
-                                child: Container(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(16, 18, 16, 64),
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFF6F9FE),
-                                    borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(28),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(28),
+                                      ),
+                                    ),
+                                    child: _ScanOptionsCard(
+                                      items: cameraItems,
+                                      labelFor: (name) =>
+                                          getCameraModeName(name, context),
+                                      iconFor: _scanIcon,
+                                      backgroundFor: _scanBackground,
+                                      onTap: _onCameraItemTap,
                                     ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      Text(
-                                        translation(context).myDocuments,
-                                        style: const TextStyle(
-                                          color: _titleColor,
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.4,
+                                  const SizedBox(height: 8),
+                                  Transform.translate(
+                                    offset: const Offset(0, -28),
+                                    child: Container(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 18, 16, 64),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFF6F9FE),
+                                        borderRadius: BorderRadius.vertical(
+                                          top: Radius.circular(28),
                                         ),
                                       ),
-                                      const SizedBox(height: 12),
-                                      _FolderRow(
-                                        directories:
-                                            homePageProvider.directories,
-                                        nameFor: (directoryName) =>
-                                            getFolderModeName(
-                                                directoryName, context),
-                                        iconFor: _folderIcon,
-                                        countFor: (directoryName) =>
-                                            _folderCount(directoryName,
-                                                homePageProvider),
-                                        onTap: (directory) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  DirectoryDetailsPage(
-                                                directoryPath: directory.path,
-                                              ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          Text(
+                                            translation(context).myDocuments,
+                                            style: const TextStyle(
+                                              color: _titleColor,
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 0.4,
                                             ),
-                                          );
-                                        },
+                                          ),
+                                          const SizedBox(height: 12),
+                                          _FolderRow(
+                                            directories:
+                                                homePageProvider.directories,
+                                            nameFor: (directoryName) =>
+                                                getFolderModeName(
+                                                    directoryName, context),
+                                            iconFor: _folderIcon,
+                                            countFor: (directoryName) =>
+                                                _folderCount(directoryName,
+                                                    homePageProvider),
+                                            onTap: (directory) {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      DirectoryDetailsPage(
+                                                    directoryPath:
+                                                        directory.path,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Transform.translate(
-                                offset: const Offset(0, -74),
-                                child: Column(
-                                  children: [
-                                    _RecentFilesSection(
-                                      timeAgo: _timeAgo,
-                                      sizeLabel: _formatBytes,
-                                      onOpen: _openRecent,
-                                      onMenu: _onRecentMenu,
-                                      onSeeAll: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                RecentFileSeeAllScreen(
+                                  const SizedBox(height: 8),
+                                  Transform.translate(
+                                    offset: const Offset(0, -74),
+                                    child: Column(
+                                      children: [
+                                        _RecentFilesSection(
+                                          timeAgo: _timeAgo,
+                                          sizeLabel: _formatBytes,
+                                          onOpen: _openRecent,
+                                          onMenu: _onRecentMenu,
+                                          onSeeAll: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    RecentFileSeeAllScreen(
                                                   onOpen: _openRecent,
                                                   onRename: _renameRecent,
                                                   onDownload: _downloadRecent,
                                                   onShare: _shareRecent,
                                                   onDelete: _deleteRecent,
-                                                  onRefresh: _refreshRecentFiles,
+                                                  onRefresh:
+                                                      _refreshRecentFiles,
                                                   timeAgo: _timeAgo,
                                                   sizeLabel: _formatBytes,
                                                 ),
-                                          ),
-                                        );
-                                      },
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(height: 20),
+                                      ],
                                     ),
-                                    const SizedBox(height: 60),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
           );
         });
@@ -712,7 +727,7 @@ class _HomeHeader extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 4, 36),
+          padding: const EdgeInsets.fromLTRB(16, 8, 4, 18),
           child: Row(
             children: [
               SvgPicture.asset(
@@ -1087,7 +1102,9 @@ class _RecentFilesCard extends StatelessWidget {
                       if (i != visible.length - 1)
                         const Divider(
                           height: 1,
-                          color: Color(0xFFE8ECF2),
+                          indent: 56,
+                          endIndent: 8,
+                          color: Color(0xFFE4EBF7),
                         ),
                     ],
                   ],

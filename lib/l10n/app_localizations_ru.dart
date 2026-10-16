@@ -602,4 +602,95 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get tapCameraToScanFirstDocument =>
       'Нажмите кнопку камеры ниже, чтобы отсканировать первый документ.';
+
+  @override
+  String get appSettingsSection => 'Настройки приложения';
+
+  @override
+  String get vibrateDuringScanning => 'Вибрация при сканировании';
+
+  @override
+  String get soundDuringScanning => 'Звук при сканировании';
+
+  @override
+  String get supportSection => 'Поддержка';
+
+  @override
+  String get recommendApp => 'Рекомендуйте приложение';
+
+  @override
+  String get leaveStoreReview => 'Оставьте отзыв в магазине';
+
+  @override
+  String get howDataHandled => 'Как используются ваши данные';
+
+  @override
+  String get termsOfUseSubtitle => 'Условия использования';
+
+  @override
+  String get exploreOtherApps => 'Другие приложения';
+
+  @override
+  String get aboutSection => 'О приложении';
+
+  @override
+  String get aboutApp => 'О приложении';
+
+  @override
+  String get appInfoSubtitle => 'Информация, версия, лицензии';
+
+  @override
+  String get chooseAppLanguage => 'Выберите язык';
+
+  @override
+  String get changeAppLanguage => 'Измените язык приложения';
+
+  @override
+  String get appVersionLabel => 'Версия';
+
+  @override
+  String get aboutAppDescription =>
+      'Превратите смартфон в мощный портативный сканер. Сканируйте, упорядочивайте, преобразуйте документы и делитесь ими прямо с телефона.';
+
+  @override
+  String get worksWith => 'Подходит для';
+
+  @override
+  String get receiptsTag => 'Чеки';
+
+  @override
+  String get notesTag => 'Заметки';
+
+  @override
+  String get certificatesTag => 'Сертификаты';
+
+  @override
+  String get photosTag => 'Фотографии';
+
+  @override
+  String get keyFeatures => 'Основные функции';
+
+  @override
+  String get featureScanPdf => 'Сканирование в PDF';
+
+  @override
+  String get featureClearCopies => 'Чёткие цифровые копии';
+
+  @override
+  String get featureAutoCrop => 'Автообрезка и улучшение';
+
+  @override
+  String get featureMultiPage => 'Многостраничные PDF';
+
+  @override
+  String get featureManageShare => 'Сохранение и обмен';
+
+  @override
+  String get featureFastScan => 'Быстрое простое сканирование';
+
+  @override
+  String get goPaperless => 'Меньше бумаги';
+
+  @override
+  String get keepDocumentsOrganized => 'Держите важные документы в порядке.';
 }

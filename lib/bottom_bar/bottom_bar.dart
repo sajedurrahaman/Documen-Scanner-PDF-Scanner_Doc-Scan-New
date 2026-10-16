@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:io';
+import 'widgets/notched_navigation_surface.dart';
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:doc_scanner/camera_screen/bar_code_camera_screen.dart';
@@ -12,9 +13,9 @@ import 'package:doc_scanner/localaization/language_constant.dart';
 import 'package:doc_scanner/settings_page/settings_page.dart';
 import 'package:doc_scanner/utils/Common.dart';
 import 'package:doc_scanner/utils/addHelper.dart';
+import 'package:doc_scanner/utils/banner_ad_widget.dart';
 import 'package:doc_scanner/utils/app_assets.dart';
 import 'package:doc_scanner/utils/app_color.dart';
-import 'package:doc_scanner/utils/banner_ad_widget.dart';
 import 'package:doc_scanner/utils/force_update_wrapper.dart';
 import 'package:doc_scanner/utils/helper.dart';
 import 'package:file_picker/file_picker.dart';
@@ -154,22 +155,22 @@ class _BottomBarState extends State<BottomBar> {
                   child: _SpeedDialGradient(
                     colors: const [Color(0xFFFF383C), Color(0xFFB5171A)],
                     child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SvgPicture.asset(AppAssets.pdf,
-                          color: Colors.white,
-                          height: size.width >= 600 ? 30 : 25,
-                          width: size.width >= 600 ? 30 : 25),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        'Import PDF',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ],
-                  ),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(AppAssets.pdf,
+                            color: Colors.white,
+                            height: size.width >= 600 ? 30 : 25,
+                            width: size.width >= 600 ? 30 : 25),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        const Text(
+                          'Import PDF',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                   onTap: () async {
                     // Request storage permission
@@ -227,22 +228,22 @@ class _BottomBarState extends State<BottomBar> {
                     child: _SpeedDialGradient(
                       colors: const [Color(0xFFF5921E), Color(0xFFDC7906)],
                       child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SvgPicture.asset(AppAssets.barCode,
-                            color: Colors.white,
-                            height: size.width >= 600 ? 30 : 25,
-                            width: size.width >= 600 ? 30 : 25),
-                        const SizedBox(
-                          width: 10,
-                        ),
-                        const Text(
-                          'Bar Code',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SvgPicture.asset(AppAssets.barCode,
+                              color: Colors.white,
+                              height: size.width >= 600 ? 30 : 25,
+                              width: size.width >= 600 ? 30 : 25),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          const Text(
+                            'Bar Code',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
                     ),
                     onTap: () async {
                       PermissionStatus status = await Permission.camera.status;
@@ -298,22 +299,22 @@ class _BottomBarState extends State<BottomBar> {
                     child: _SpeedDialGradient(
                       colors: const [Color(0xFF8B4BEA), Color(0xFF5823A6)],
                       child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SvgPicture.asset(AppAssets.qrcode,
-                            color: Colors.white,
-                            height: size.width >= 600 ? 30 : 25,
-                            width: size.width >= 600 ? 30 : 25),
-                        const SizedBox(
-                          width: 10,
-                        ),
-                        const Text(
-                          'QR Code',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SvgPicture.asset(AppAssets.qrcode,
+                              color: Colors.white,
+                              height: size.width >= 600 ? 30 : 25,
+                              width: size.width >= 600 ? 30 : 25),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          const Text(
+                            'QR Code',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
                     ),
                     onTap: () async {
                       PermissionStatus status = await Permission.camera.status;
@@ -359,22 +360,22 @@ class _BottomBarState extends State<BottomBar> {
                   child: _SpeedDialGradient(
                     colors: const [Color(0xFF22B35E), Color(0xFF00933D)],
                     child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SvgPicture.asset(AppAssets.idCard,
-                          color: Colors.white,
-                          height: size.width >= 600 ? 30 : 25,
-                          width: size.width >= 600 ? 30 : 25),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        'ID Card',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ],
-                  ),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(AppAssets.idCard,
+                            color: Colors.white,
+                            height: size.width >= 600 ? 30 : 25,
+                            width: size.width >= 600 ? 30 : 25),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        const Text(
+                          'ID Card',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                   onTap: () async {
                     // bool isGranted = await AppHelper.handlePermissions();
@@ -432,22 +433,22 @@ class _BottomBarState extends State<BottomBar> {
                   child: _SpeedDialGradient(
                     colors: const [Color(0xFF2F7BEA), Color(0xFF0060EB)],
                     child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SvgPicture.asset(AppAssets.documents,
-                          color: Colors.white,
-                          height: size.width >= 600 ? 30 : 25,
-                          width: size.width >= 600 ? 30 : 25),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      const Text(
-                        'Document',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ],
-                  ),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(AppAssets.documents,
+                            color: Colors.white,
+                            height: size.width >= 600 ? 30 : 25,
+                            width: size.width >= 600 ? 30 : 25),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        const Text(
+                          'Document',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                   onTap: () async {
                     // bool isGranted = await AppHelper.handlePermissions();
@@ -553,97 +554,96 @@ class _BottomBarState extends State<BottomBar> {
               FloatingActionButtonLocation.centerDocked,
           bottomNavigationBar: BottomBarWithBanner(
             adUnitId: AdHelper.homeSettingsBannerAdUnitId,
-            child: BottomAppBar(
-              height: AppHelper.isIpad(context) ? 90 : 68,
-              color: Colors.white,
-              elevation: 8,
-              shadowColor: Colors.black26,
-              surfaceTintColor: Colors.transparent,
-              shape: const CircularNotchedRectangle(),
-              notchMargin: 10.0,
-              clipBehavior: Clip.antiAlias,
-              child: NavigationBarTheme(
-                data: NavigationBarThemeData(
-                  labelTextStyle: WidgetStateProperty.all(
-                    const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
+            child: NotchedNavigationSurface(
+              cameraDiameter: size.width >= 600 ? 70 : 55,
+              child: BottomAppBar(
+                height: AppHelper.isIpad(context) ? 90 : 68,
+                color: Colors.white,
+                elevation: 0,
+                surfaceTintColor: Colors.transparent,
+                clipBehavior: Clip.antiAlias,
                 child: NavigationBarTheme(
                   data: NavigationBarThemeData(
-                    labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>(
-                      (Set<WidgetState> states) =>
-                          states.contains(WidgetState.selected)
-                              ? const TextStyle(color: AppColor.primaryColor)
-                              : const TextStyle(color: Colors.black),
+                    labelTextStyle: WidgetStateProperty.all(
+                      const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
-                  child: NavigationBar(
-                    backgroundColor: Colors.white,
-                    surfaceTintColor: Colors.transparent,
-                    labelBehavior:
-                        NavigationDestinationLabelBehavior.alwaysShow,
-                    indicatorColor: Colors.transparent,
-                    elevation: 0,
-                    onDestinationSelected: (int index) {
-                      final wasOnSettings = _currentIndex == 1;
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                      // Settings -> Home: show interstitial (same as Android flow).
-                      if (wasOnSettings && index == 0) {
-                        showInterstitialAd(context);
-                      }
-                      // Preload while user is on Settings.
-                      if (index == 1) {
-                        createInterstitialAd(
-                          adUnitId: AdHelper.interstitialAdUnitId1,
-                        );
-                      }
-                    },
-                    selectedIndex: _currentIndex,
-                    destinations: [
-                      Padding(
-                        padding: EdgeInsets.only(
-                            right: 40.0,
-                            top: AppHelper.isIpad(context) ? 20 : 3),
-                        child: NavigationDestination(
-                          icon: SvgPicture.asset(
-                            AppAssets.homeOutline,
-                            width: size.width >= 600 ? 40 : 30,
-                            height: size.width >= 600 ? 40 : 30,
-                            color: Colors.black,
-                          ),
-                          selectedIcon: SvgPicture.asset(
-                            AppAssets.homeFill,
-                            width: size.width >= 600 ? 40 : 25,
-                            height: size.width >= 600 ? 40 : 25,
-                            color: AppColor.primaryColor,
-                          ),
-                          label: translation(context).home,
-                        ),
+                  child: NavigationBarTheme(
+                    data: NavigationBarThemeData(
+                      labelTextStyle:
+                          WidgetStateProperty.resolveWith<TextStyle>(
+                        (Set<WidgetState> states) =>
+                            states.contains(WidgetState.selected)
+                                ? const TextStyle(color: AppColor.primaryColor)
+                                : const TextStyle(color: Colors.black),
                       ),
-                      Padding(
-                        padding: EdgeInsets.only(
-                            left: 40.0,
-                            top: AppHelper.isIpad(context) ? 20 : 3),
-                        child: NavigationDestination(
-                          icon: SvgPicture.asset(AppAssets.settingOutline,
+                    ),
+                    child: NavigationBar(
+                      backgroundColor: Colors.white,
+                      surfaceTintColor: Colors.transparent,
+                      labelBehavior:
+                          NavigationDestinationLabelBehavior.alwaysShow,
+                      indicatorColor: Colors.transparent,
+                      elevation: 0,
+                      onDestinationSelected: (int index) {
+                        final wasOnSettings = _currentIndex == 1;
+                        setState(() {
+                          _currentIndex = index;
+                        });
+                        if (wasOnSettings && index == 0) {
+                          showInterstitialAd(context);
+                        }
+                        if (index == 1) {
+                          createInterstitialAd(
+                            adUnitId: AdHelper.interstitialAdUnitId1,
+                          );
+                        }
+                      },
+                      selectedIndex: _currentIndex,
+                      destinations: [
+                        Padding(
+                          padding: EdgeInsets.only(
+                              right: 40.0,
+                              top: AppHelper.isIpad(context) ? 20 : 3),
+                          child: NavigationDestination(
+                            icon: SvgPicture.asset(
+                              AppAssets.homeOutline,
+                              width: size.width >= 600 ? 40 : 30,
+                              height: size.width >= 600 ? 40 : 30,
+                              color: Colors.black,
+                            ),
+                            selectedIcon: SvgPicture.asset(
+                              AppAssets.homeFill,
                               width: size.width >= 600 ? 40 : 25,
                               height: size.width >= 600 ? 40 : 25,
-                              color: Colors.black),
-                          selectedIcon: SvgPicture.asset(
-                            AppAssets.settingFill,
-                            width: size.width >= 600 ? 40 : 25,
-                            height: size.width >= 600 ? 40 : 25,
-                            color: AppColor.primaryColor,
+                              color: AppColor.primaryColor,
+                            ),
+                            label: translation(context).home,
                           ),
-                          label: translation(context).settings,
                         ),
-                      ),
-                    ],
+                        Padding(
+                          padding: EdgeInsets.only(
+                              left: 40.0,
+                              top: AppHelper.isIpad(context) ? 20 : 3),
+                          child: NavigationDestination(
+                            icon: SvgPicture.asset(AppAssets.settingOutline,
+                                width: size.width >= 600 ? 40 : 25,
+                                height: size.width >= 600 ? 40 : 25,
+                                color: Colors.black),
+                            selectedIcon: SvgPicture.asset(
+                              AppAssets.settingFill,
+                              width: size.width >= 600 ? 40 : 25,
+                              height: size.width >= 600 ? 40 : 25,
+                              color: AppColor.primaryColor,
+                            ),
+                            label: translation(context).settings,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

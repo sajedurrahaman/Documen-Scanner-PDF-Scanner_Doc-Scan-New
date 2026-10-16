@@ -1263,6 +1263,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap the camera button below to scan your first document.'**
   String get tapCameraToScanFirstDocument;
+
+  /// No description provided for @appSettingsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'App Settings'**
+  String get appSettingsSection;
+
+  /// No description provided for @vibrateDuringScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibrate during scanning'**
+  String get vibrateDuringScanning;
+
+  /// No description provided for @soundDuringScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound during scanning'**
+  String get soundDuringScanning;
+
+  /// No description provided for @supportSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get supportSection;
+
+  /// No description provided for @recommendApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommend this app'**
+  String get recommendApp;
+
+  /// No description provided for @leaveStoreReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a store review'**
+  String get leaveStoreReview;
+
+  /// No description provided for @howDataHandled.
+  ///
+  /// In en, this message translates to:
+  /// **'How your data is handled'**
+  String get howDataHandled;
+
+  /// No description provided for @termsOfUseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of use'**
+  String get termsOfUseSubtitle;
+
+  /// No description provided for @exploreOtherApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore other apps'**
+  String get exploreOtherApps;
+
+  /// No description provided for @aboutSection.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutSection;
+
+  /// No description provided for @aboutApp.
+  ///
+  /// In en, this message translates to:
+  /// **'About App'**
+  String get aboutApp;
+
+  /// No description provided for @appInfoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App information, version, licenses'**
+  String get appInfoSubtitle;
+
+  /// No description provided for @chooseAppLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose App Language'**
+  String get chooseAppLanguage;
+
+  /// No description provided for @changeAppLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the language used in the app'**
+  String get changeAppLanguage;
+
+  /// No description provided for @appVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get appVersionLabel;
+
+  /// No description provided for @aboutAppDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Transform your smartphone into a powerful portable scanner. Scan, organize, convert, and share your documents effortlessly from your mobile device.'**
+  String get aboutAppDescription;
+
+  /// No description provided for @worksWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Works with'**
+  String get worksWith;
+
+  /// No description provided for @receiptsTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipts'**
+  String get receiptsTag;
+
+  /// No description provided for @notesTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesTag;
+
+  /// No description provided for @certificatesTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificates'**
+  String get certificatesTag;
+
+  /// No description provided for @photosTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get photosTag;
+
+  /// No description provided for @keyFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Key Features'**
+  String get keyFeatures;
+
+  /// No description provided for @featureScanPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan docs to PDF'**
+  String get featureScanPdf;
+
+  /// No description provided for @featureClearCopies.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear digital copies'**
+  String get featureClearCopies;
+
+  /// No description provided for @featureAutoCrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto crop & enhance'**
+  String get featureAutoCrop;
+
+  /// No description provided for @featureMultiPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-page PDF files'**
+  String get featureMultiPage;
+
+  /// No description provided for @featureManageShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Save, manage & share'**
+  String get featureManageShare;
+
+  /// No description provided for @featureFastScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast & simple scanning'**
+  String get featureFastScan;
+
+  /// No description provided for @goPaperless.
+  ///
+  /// In en, this message translates to:
+  /// **'Go paperless'**
+  String get goPaperless;
+
+  /// No description provided for @keepDocumentsOrganized.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your important documents organized.'**
+  String get keepDocumentsOrganized;
 }
 
 class _AppLocalizationsDelegate

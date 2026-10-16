@@ -583,4 +583,94 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tapCameraToScanFirstDocument => '点击下方相机按钮扫描你的第一份文档。';
+
+  @override
+  String get appSettingsSection => '应用设置';
+
+  @override
+  String get vibrateDuringScanning => '扫描时振动';
+
+  @override
+  String get soundDuringScanning => '扫描时播放声音';
+
+  @override
+  String get supportSection => '支持';
+
+  @override
+  String get recommendApp => '推荐此应用';
+
+  @override
+  String get leaveStoreReview => '在商店留下评价';
+
+  @override
+  String get howDataHandled => '您的数据处理方式';
+
+  @override
+  String get termsOfUseSubtitle => '使用条款';
+
+  @override
+  String get exploreOtherApps => '探索更多应用';
+
+  @override
+  String get aboutSection => '关于';
+
+  @override
+  String get aboutApp => '关于应用';
+
+  @override
+  String get appInfoSubtitle => '应用信息、版本和许可';
+
+  @override
+  String get chooseAppLanguage => '选择应用语言';
+
+  @override
+  String get changeAppLanguage => '更改应用使用的语言';
+
+  @override
+  String get appVersionLabel => '版本';
+
+  @override
+  String get aboutAppDescription => '将您的智能手机变成强大的便携式扫描仪。通过移动设备轻松扫描、整理、转换和分享文档。';
+
+  @override
+  String get worksWith => '适用于';
+
+  @override
+  String get receiptsTag => '收据';
+
+  @override
+  String get notesTag => '笔记';
+
+  @override
+  String get certificatesTag => '证书';
+
+  @override
+  String get photosTag => '照片';
+
+  @override
+  String get keyFeatures => '主要功能';
+
+  @override
+  String get featureScanPdf => '扫描文档为 PDF';
+
+  @override
+  String get featureClearCopies => '清晰的数字副本';
+
+  @override
+  String get featureAutoCrop => '自动裁剪和增强';
+
+  @override
+  String get featureMultiPage => '多页 PDF 文件';
+
+  @override
+  String get featureManageShare => '保存、管理和分享';
+
+  @override
+  String get featureFastScan => '快速简单的扫描';
+
+  @override
+  String get goPaperless => '减少用纸';
+
+  @override
+  String get keepDocumentsOrganized => '让重要文档井井有条。';
 }
