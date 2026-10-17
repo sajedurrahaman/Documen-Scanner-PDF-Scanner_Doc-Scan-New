@@ -1,3 +1,4 @@
+import 'image_edit_unavailable.dart';
 import 'dart:typed_data';
 
 import 'package:colorfilter_generator/colorfilter_generator.dart';
@@ -40,6 +41,8 @@ class _ImageFiltersState extends State<ImageFilters> {
   @override
   Widget build(BuildContext context) {
     final imageEditProvider = context.watch<ImageEditProvider>();
+    final bytes = imageEditProvider.currentState;
+    if (bytes == null || bytes.isEmpty) return const ImageEditUnavailable();
     return Scaffold(
       backgroundColor: const Color(0xFF131314),
       appBar: AppBar(
@@ -70,7 +73,11 @@ class _ImageFiltersState extends State<ImageFilters> {
             ),
             onPressed: () async {
               Uint8List? data = await screenshotController.capture();
-              imageEditProvider.addState(data!);
+              if (!mounted ||
+                  data == null ||
+                  data.isEmpty ||
+                  imageEditProvider.currentState == null) return;
+              imageEditProvider.addState(data);
               Navigator.pop(context);
             },
           ),
@@ -81,7 +88,7 @@ class _ImageFiltersState extends State<ImageFilters> {
           controller: screenshotController,
           child: FilterAppliedImage(
             key: Key('selectedFilter:${selectedFilter.name}'),
-            image: imageEditProvider.currentState,
+            image: bytes,
             filter: selectedFilter,
             fit: BoxFit.cover,
             opacity: filterOpacity,
@@ -140,7 +147,7 @@ class _ImageFiltersState extends State<ImageFilters> {
                           ),
                           child: FilterAppliedImage(
                             key: Key('filterPreviewButton:${filter.name}'),
-                            image: imageEditProvider.currentState,
+                            image: bytes,
                             filter: filter,
                             fit: BoxFit.cover,
                           ),

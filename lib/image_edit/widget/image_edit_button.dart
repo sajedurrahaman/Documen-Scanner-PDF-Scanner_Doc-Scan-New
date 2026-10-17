@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class ImageEditButton extends StatefulWidget {
   final String title;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final String iconPath;
 
   const ImageEditButton(

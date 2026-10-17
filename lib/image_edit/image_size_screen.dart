@@ -1,3 +1,4 @@
+import 'widget/image_edit_unavailable.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -41,22 +42,36 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadOriginalRatio();
+      if (mounted) _loadOriginalRatio();
     });
   }
 
   Future<void> _loadOriginalRatio() async {
     final bytes = context.read<ImageEditProvider>().currentState;
-    final codec = await ui.instantiateImageCodec(bytes);
-    final frame = await codec.getNextFrame();
-    final image = frame.image;
-    if (!mounted) return;
-    setState(() {
-      _originalRatio = image.width / image.height;
-      _selectedRatio = _originalRatio!;
-      _selectedTitle = 'Original';
-      _isLoadingRatio = false;
-    });
+    if (bytes == null) return;
+    try {
+      final codec = await ui.instantiateImageCodec(bytes);
+      try {
+        final frame = await codec.getNextFrame();
+        final image = frame.image;
+        final ratio = image.width / image.height;
+        image.dispose();
+        if (!mounted) return;
+        setState(() {
+          _originalRatio = ratio;
+          _selectedRatio = ratio;
+          _selectedTitle = 'Original';
+          _isLoadingRatio = false;
+        });
+      } finally {
+        codec.dispose();
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(translation(context).somethingWentWrong)));
+      }
+    }
   }
 
   double _ratioFor(SizeOption size) {
@@ -69,6 +84,8 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
   @override
   Widget build(BuildContext context) {
     final imageEditProvider = context.watch<ImageEditProvider>();
+    final bytes = imageEditProvider.currentState;
+    if (bytes == null || bytes.isEmpty) return const ImageEditUnavailable();
 
     return Scaffold(
       backgroundColor: const Color(0xFF131314),
@@ -91,11 +108,17 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () async {
-              Uint8List? data = await screenshotController.capture();
-              imageEditProvider.addState(data!);
-              Navigator.pop(context);
-            },
+            onPressed: _isLoadingRatio
+                ? null
+                : () async {
+                    Uint8List? data = await screenshotController.capture();
+                    if (!mounted ||
+                        data == null ||
+                        data.isEmpty ||
+                        imageEditProvider.currentState == null) return;
+                    imageEditProvider.addState(data);
+                    Navigator.pop(context);
+                  },
             child: Text(
               translation(context).done,
               style: const TextStyle(
@@ -115,7 +138,7 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
                 child: AspectRatio(
                   aspectRatio: _selectedRatio,
                   child: Image.memory(
-                    imageEditProvider.currentState,
+                    bytes,
                     fit: BoxFit.fill,
                   ),
                 ),
@@ -124,57 +147,57 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
       bottomNavigationBar: BottomBarWithBanner(
         adUnitId: AdHelper.imageSizeScreenBannerAdUnitId,
         child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        height: 80,
-        decoration: const BoxDecoration(
-          color: Color(0xff1E1F20),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            for (var size in availableSizeOption)
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _isLoadingRatio
-                      ? null
-                      : () {
-                          setState(() {
-                            _selectedTitle = size.title!;
-                            _selectedRatio = _ratioFor(size);
-                          });
-                        },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SvgPicture.asset(
-                          AppAssets.size_preview,
-                          color: _selectedTitle == size.title
-                              ? Colors.white
-                              : Colors.grey,
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          child: Text(
-                            getTitle(size, context),
-                            style: TextStyle(
-                              color: _selectedTitle == size.title
-                                  ? Colors.white
-                                  : Colors.grey,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          height: 80,
+          decoration: const BoxDecoration(
+            color: Color(0xff1E1F20),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              for (var size in availableSizeOption)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _isLoadingRatio
+                        ? null
+                        : () {
+                            setState(() {
+                              _selectedTitle = size.title!;
+                              _selectedRatio = _ratioFor(size);
+                            });
+                          },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SvgPicture.asset(
+                            AppAssets.size_preview,
+                            color: _selectedTitle == size.title
+                                ? Colors.white
+                                : Colors.grey,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            child: Text(
+                              getTitle(size, context),
+                              style: TextStyle(
+                                color: _selectedTitle == size.title
+                                    ? Colors.white
+                                    : Colors.grey,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              )
-          ],
+                )
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

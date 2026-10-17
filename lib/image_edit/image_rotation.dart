@@ -1,3 +1,4 @@
+import 'widget/image_edit_unavailable.dart';
 import 'dart:typed_data';
 import 'package:doc_scanner/google_ads_helper/banner_ad_widget.dart';
 import 'package:doc_scanner/google_ads_helper/google_ads_helper.dart';
@@ -34,6 +35,10 @@ class _ImageRotationState extends State<ImageRotation> {
   Widget build(BuildContext context) {
     final cameraProvider = context.watch<CameraProvider>();
     final imageEditProvider = context.watch<ImageEditProvider>();
+    final bytes = widget.cameFromEdit == true
+        ? imageEditProvider.currentState
+        : widget.imageModel.imageByte;
+    if (bytes == null || bytes.isEmpty) return const ImageEditUnavailable();
     return Scaffold(
       backgroundColor: const Color(0xFF131314),
       appBar: AppBar(
@@ -68,13 +73,16 @@ class _ImageRotationState extends State<ImageRotation> {
                     image: img,
                     imageEditorOption: option,
                   );
+                  if (!mounted || result == null || result.isEmpty) return;
+                  if (widget.cameFromEdit == true &&
+                      imageEditProvider.currentState == null) return;
                   if (widget.cameFromEdit == true) {
-                    imageEditProvider.addState(result!);
+                    imageEditProvider.addState(result);
                   } else {
                     cameraProvider.updateImage(
                       index: widget.index,
                       image: ImageModel(
-                        imageByte: result!,
+                        imageByte: result,
                         name: widget.imageModel.name,
                         docType: widget.imageModel.docType,
                       ),
@@ -97,9 +105,7 @@ class _ImageRotationState extends State<ImageRotation> {
         child: ExtendedImage.memory(
           cacheRawData: true,
           extendedImageEditorKey: editorKey,
-          widget.cameFromEdit == true
-              ? imageEditProvider.currentState
-              : widget.imageModel.imageByte,
+          bytes,
           mode: ExtendedImageMode.editor,
           fit: BoxFit.contain,
           initEditorConfigHandler: (state) {
@@ -112,44 +118,44 @@ class _ImageRotationState extends State<ImageRotation> {
       bottomNavigationBar: BottomBarWithBanner(
         adUnitId: AdHelper.imageRotationBannerAdUnitId,
         child: BottomAppBar(
-        color: const Color(0xff1E1F20),
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget>[
-            Column(
-              children: [
-                IconButton(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  icon: const Icon(Icons.rotate_left, color: Colors.white),
-                  onPressed: () {
-                    editorKey.currentState!.rotate(degree: -90);
-                  },
-                ),
-                Text(
-                  translation(context).rotateLeft,
-                  style: const TextStyle(color: Colors.white),
-                )
-              ],
-            ),
-            Column(
-              children: [
-                IconButton(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  icon: const Icon(Icons.rotate_right, color: Colors.white),
-                  onPressed: () {
-                    editorKey.currentState!.rotate(degree: 90);
-                  },
-                ),
-                Text(
-                  translation(context).rotateRight,
-                  style: const TextStyle(color: Colors.white),
-                )
-              ],
-            ),
-          ],
+          color: const Color(0xff1E1F20),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              Column(
+                children: [
+                  IconButton(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    icon: const Icon(Icons.rotate_left, color: Colors.white),
+                    onPressed: () {
+                      editorKey.currentState?.rotate(degree: -90);
+                    },
+                  ),
+                  Text(
+                    translation(context).rotateLeft,
+                    style: const TextStyle(color: Colors.white),
+                  )
+                ],
+              ),
+              Column(
+                children: [
+                  IconButton(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    icon: const Icon(Icons.rotate_right, color: Colors.white),
+                    onPressed: () {
+                      editorKey.currentState?.rotate(degree: 90);
+                    },
+                  ),
+                  Text(
+                    translation(context).rotateRight,
+                    style: const TextStyle(color: Colors.white),
+                  )
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../localaization/language_constant.dart';
 import '../utils/app_color.dart';
 import 'crop_screen.dart';
+import 'widget/image_edit_unavailable.dart';
 import 'image_rotation.dart';
 
 class ImageEditScreen extends StatefulWidget {
@@ -26,22 +27,31 @@ class ImageEditScreen extends StatefulWidget {
 }
 
 class _ImageEditScreenState extends State<ImageEditScreen> {
+  bool _initialized = false;
+
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.read<ImageEditProvider>().addState(widget.image.imageByte);
-    });
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<ImageEditProvider>().startSession(widget.image.imageByte);
+      setState(() => _initialized = true);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final imageEditProvider = context.watch<ImageEditProvider>();
     final cameraProvider = context.watch<CameraProvider>();
+    final bytes = _initialized ? imageEditProvider.currentState : null;
+    if (_initialized && bytes == null) return const ImageEditUnavailable();
+    final canSave = bytes != null &&
+        widget.imageIndex >= 0 &&
+        widget.imageIndex < cameraProvider.imageList.length;
     return PopScope(
       canPop: true,
       onPopInvoked: (didPop) {
-        imageEditProvider.clearState();
+        if (didPop) imageEditProvider.clearState();
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF131314),
@@ -64,17 +74,23 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                cameraProvider.updateImage(
-                    index: widget.imageIndex,
-                    image: ImageModel(
-                      imageByte: imageEditProvider.currentState,
-                      name: widget.image.name,
-                      docType: widget.image.docType,
-                    ));
-                imageEditProvider.clearState();
-                Navigator.pop(context);
-              },
+              onPressed: !canSave
+                  ? null
+                  : () {
+                      final current = imageEditProvider.currentState;
+                      if (current == null ||
+                          widget.imageIndex < 0 ||
+                          widget.imageIndex >= cameraProvider.imageList.length)
+                        return;
+                      cameraProvider.updateImage(
+                          index: widget.imageIndex,
+                          image: ImageModel(
+                            imageByte: current,
+                            name: widget.image.name,
+                            docType: widget.image.docType,
+                          ));
+                      Navigator.pop(context);
+                    },
               child: Text(
                 translation(context).done,
                 style: const TextStyle(
@@ -89,9 +105,9 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(15.0),
-            child: imageEditProvider.currentIndex >= 0
+            child: bytes != null
                 ? Image.memory(
-                    imageEditProvider.currentState,
+                    bytes,
                     fit: BoxFit.cover,
                   )
                 : const CircularProgressIndicator(),
@@ -100,83 +116,94 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
         bottomNavigationBar: BottomBarWithBanner(
           adUnitId: AdHelper.imageEditScreenBannerAdUnitId,
           child: BottomAppBar(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          color: const Color(0xff1E1F20),
-          surfaceTintColor: const Color(0xff1E1F20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ImageEditButton(
-                title: translation(context).crop,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) {
-                      return CropScreen(
-                        imageModel: widget.image,
-                        index: widget.imageIndex,
-                        cameFromEdit: true,
-                      );
-                    },
-                  ));
-                },
-                iconPath: AppAssets.crop,
-              ),
-              ImageEditButton(
-                title: translation(context).filters,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) {
-                      return const ImageFilters();
-                    },
-                  ));
-                },
-                iconPath: AppAssets.filter,
-              ),
-              ImageEditButton(
-                title: translation(context).size,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) {
-                      return const ImageSizeScreen();
-                    },
-                  ));
-                },
-                iconPath: AppAssets.size,
-              ),
-              ImageEditButton(
-                title: translation(context).rotate,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) {
-                      return ImageRotation(
-                        imageModel: widget.image,
-                        index: widget.imageIndex,
-                        cameFromEdit: true,
-                      );
-                    },
-                  ));
-                },
-                iconPath: AppAssets.rotate,
-              ),
-              ImageEditButton(
-                title: translation(context).undo,
-                onTap: () {
-                  if (imageEditProvider.canUndo) {
-                    imageEditProvider.undo();
-                  } else {
-                    ScaffoldMessenger.of(context).clearSnackBars();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(translation(context).cannotUndoAnymore),
-                      ),
-                    );
-                  }
-                },
-                iconPath: AppAssets.undo,
-              ),
-            ],
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            color: const Color(0xff1E1F20),
+            surfaceTintColor: const Color(0xff1E1F20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ImageEditButton(
+                  title: translation(context).crop,
+                  onTap: bytes == null
+                      ? null
+                      : () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              return CropScreen(
+                                imageModel: widget.image,
+                                index: widget.imageIndex,
+                                cameFromEdit: true,
+                              );
+                            },
+                          ));
+                        },
+                  iconPath: AppAssets.crop,
+                ),
+                ImageEditButton(
+                  title: translation(context).filters,
+                  onTap: bytes == null
+                      ? null
+                      : () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              return const ImageFilters();
+                            },
+                          ));
+                        },
+                  iconPath: AppAssets.filter,
+                ),
+                ImageEditButton(
+                  title: translation(context).size,
+                  onTap: bytes == null
+                      ? null
+                      : () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              return const ImageSizeScreen();
+                            },
+                          ));
+                        },
+                  iconPath: AppAssets.size,
+                ),
+                ImageEditButton(
+                  title: translation(context).rotate,
+                  onTap: bytes == null
+                      ? null
+                      : () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              return ImageRotation(
+                                imageModel: widget.image,
+                                index: widget.imageIndex,
+                                cameFromEdit: true,
+                              );
+                            },
+                          ));
+                        },
+                  iconPath: AppAssets.rotate,
+                ),
+                ImageEditButton(
+                  title: translation(context).undo,
+                  onTap: bytes == null
+                      ? null
+                      : () {
+                          if (imageEditProvider.canUndo) {
+                            imageEditProvider.undo();
+                          } else {
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    translation(context).cannotUndoAnymore),
+                              ),
+                            );
+                          }
+                        },
+                  iconPath: AppAssets.undo,
+                ),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );

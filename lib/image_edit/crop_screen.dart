@@ -1,3 +1,4 @@
+import 'widget/image_edit_unavailable.dart';
 import 'dart:typed_data';
 import 'package:doc_scanner/camera_screen/model/image_model.dart';
 import 'package:doc_scanner/google_ads_helper/banner_ad_widget.dart';
@@ -35,6 +36,10 @@ class _CropScreenState extends State<CropScreen> {
   Widget build(BuildContext context) {
     final cameraProvider = context.watch<CameraProvider>();
     final imageEditProvider = context.watch<ImageEditProvider>();
+    final bytes = widget.cameFromEdit == true
+        ? imageEditProvider.currentState
+        : widget.imageModel.imageByte;
+    if (bytes == null || bytes.isEmpty) return const ImageEditUnavailable();
     return Scaffold(
       backgroundColor: const Color(0xFF131314),
       appBar: AppBar(
@@ -68,13 +73,16 @@ class _CropScreenState extends State<CropScreen> {
                     image: img,
                     imageEditorOption: option,
                   );
+                  if (!mounted || result == null || result.isEmpty) return;
+                  if (widget.cameFromEdit == true &&
+                      imageEditProvider.currentState == null) return;
                   if (widget.cameFromEdit == true) {
-                    imageEditProvider.addState(result!);
+                    imageEditProvider.addState(result);
                   } else {
                     cameraProvider.updateImage(
                       index: widget.index,
                       image: ImageModel(
-                          imageByte: result!,
+                          imageByte: result,
                           name: widget.imageModel.name,
                           docType: widget.imageModel.docType),
                     );
@@ -94,9 +102,7 @@ class _CropScreenState extends State<CropScreen> {
         ],
       ),
       body: ExtendedImage.memory(
-        widget.cameFromEdit == true
-            ? imageEditProvider.currentState
-            : widget.imageModel.imageByte,
+        bytes,
         cacheRawData: true,
         fit: BoxFit.contain,
         extendedImageEditorKey: _controller,
