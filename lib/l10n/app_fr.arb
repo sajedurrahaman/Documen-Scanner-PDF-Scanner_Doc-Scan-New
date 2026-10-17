@@ -104,7 +104,7 @@
   "pleaseSelectOneTextOnly": "Veuillez sélectionner un seul texte",
   "areYouSureYouWantToDeleteTheSelectedItems": "Voulez-vous supprimer les éléments sélectionnés ?",
   "no": "Non",
-  "copy" : "copie",
+  "copy": "copie",
   "pressAgainToExit": "Appuyez à nouveau pour quitter",
   "idCardImagePreview": "Prévisualisation de l'image de la carte d'identité",
   "errorReadingFile": "Erreur de lecture du fichier",
@@ -118,9 +118,9 @@
   "pdfFileSavedAtDocumentDirectory": "Fichier PDF enregistré dans le répertoire de documents",
   "vibration": "Vibration",
   "beep": "Bip",
-  "shareWithFriend":"Partage avec un ami",
-  "pleaseSelectADirectory":"Veuillez sélectionner un répertoire",
-  "pleaseEnterADirectoryName":"Veuillez entrer un nom de répertoire",
+  "shareWithFriend": "Partage avec un ami",
+  "pleaseSelectADirectory": "Veuillez sélectionner un répertoire",
+  "pleaseEnterADirectoryName": "Veuillez entrer un nom de répertoire",
   "permissionDenied": "Permission refusée",
   "pleaseAllowStoragePermissionToAccessGallery": "Veuillez autoriser la permission de stockage pour accéder à la galerie",
   "openSettings": "Ouvrir les paramètres",
@@ -158,8 +158,8 @@
   "doYouWantToMakePdf": "Voulez-vous créer un PDF ?",
   "noInternetConnection": "Pas de connexion Internet",
   "content": "Contenu",
-  "alert":"Alerte",
-  "yes":"Oui",
+  "alert": "Alerte",
+  "yes": "Oui",
   "option": "Option",
   "chooseAnAction": "Choisir une action",
   "doc": "Doc",
@@ -172,8 +172,8 @@
   "saveAtGallery": "Enregistrer dans la galerie",
   "fileSavedDownloadFolder": "Fichier enregistré dans le dossier de téléchargement",
   "searchHere": "Rechercher ici",
-  "noResultFound":"Aucun résultat trouvé",
-  "drawAlert":"Avant de terminer, veuillez vous assurer que vous avez caché la boîte interactive de signature. Pour cacher la boîte interactive, il suffit de taper dessus.",
+  "noResultFound": "Aucun résultat trouvé",
+  "drawAlert": "Avant de terminer, veuillez vous assurer que vous avez caché la boîte interactive de signature. Pour cacher la boîte interactive, il suffit de taper dessus.",
   "pleaseAddImageFirst": "Veuillez d'abord ajouter une image",
   "thisLanguageNotSupported": "Cette langue n'est pas prise en charge",
   "imageSavedAtGallery": "Image enregistrée dans la galerie",
@@ -181,15 +181,11 @@
   "folderAlreadyExists": "Le dossier existe déjà",
   "fileAlreadyExists": "Le fichier existe déjà",
   "conflictAlert": "Alerte de conflit",
-  "fileConflictAlertContent":"Certains fichiers existent déjà dans ce répertoire. Voulez-vous les dupliquer?",
+  "fileConflictAlertContent": "Certains fichiers existent déjà dans ce répertoire. Voulez-vous les dupliquer?",
   "duplicate": "Dupliquer",
-<<<<<<< ours
   "moreApps": "Plus d'applications",
-  "downloadFile": "Télécharger le fichier"
-}
-=======
-  "deleteFile": "Supprimer le fichier",
   "downloadFile": "Télécharger le fichier",
+  "deleteFile": "Supprimer le fichier",
   "documentScanner": "Scanner de documents",
   "scanSaveShare": "Scanner • Enregistrer • Partager",
   "scanOptions": "Options de scan",
@@ -198,4 +194,3 @@
   "noFilesHereYet": "Aucun fichier pour le moment",
   "tapCameraToScanFirstDocument": "Appuyez sur le bouton de l'appareil photo ci-dessous pour scanner votre premier document."
 }
->>>>>>> theirs

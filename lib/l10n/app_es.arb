@@ -74,7 +74,7 @@
   "keepYourDataPasswordProtected": "Mantén tus datos protegidos con contraseña",
   "unlimitedUse1Week199Week": "Uso ilimitado 1 semana, $1,99/semana",
   "continuee": "Continuar",
-  "copy" : "copia",
+  "copy": "copia",
   "termsOfUse": "Condiciones de uso",
   "createNewFolder": "Crear nueva carpeta",
   "folderName": "Nombre de la carpeta",
@@ -118,9 +118,9 @@
   "pdfFileSavedAtDocumentDirectory": "Archivo PDF guardado en el directorio de documentos",
   "vibration": "Vibración",
   "beep": "Bip",
-  "shareWithFriend":"Comparte con un amigo",
-  "pleaseSelectADirectory":"Por favor seleccione un directorio",
-  "pleaseEnterADirectoryName":"Por favor ingrese un nombre de directorio",
+  "shareWithFriend": "Comparte con un amigo",
+  "pleaseSelectADirectory": "Por favor seleccione un directorio",
+  "pleaseEnterADirectoryName": "Por favor ingrese un nombre de directorio",
   "permissionDenied": "Permiso denegado",
   "pleaseAllowStoragePermissionToAccessGallery": "Por favor, permita el permiso de almacenamiento para acceder a la galería",
   "openSettings": "Abrir configuración",
@@ -158,8 +158,8 @@
   "doYouWantToMakePdf": "¿Quieres crear un PDF",
   "noInternetConnection": "Pas de connexion Internet",
   "content": "Contenu",
-  "alert":"Alerta",
-  "yes":"Sí",
+  "alert": "Alerta",
+  "yes": "Sí",
   "option": "Opción",
   "chooseAnAction": "Elige una acción",
   "doc": "Documento",
@@ -172,8 +172,8 @@
   "saveAtGallery": "Guardar en la galería",
   "fileSavedDownloadFolder": "Archivo guardado en la carpeta de descargas",
   "searchHere": "Buscar aquí",
-  "noResultFound":"No se encontraron resultados",
-  "drawAlert":"Antes de terminar, asegúrese de que ha ocultado el cuadro interactivo de firma. Para ocultar el cuadro interactivo, solo toque allí.",
+  "noResultFound": "No se encontraron resultados",
+  "drawAlert": "Antes de terminar, asegúrese de que ha ocultado el cuadro interactivo de firma. Para ocultar el cuadro interactivo, solo toque allí.",
   "pleaseAddImageFirst": "Por favor, agregue una imagen primero",
   "thisLanguageNotSupported": "Este idioma no es compatible",
   "imageSavedAtGallery": "Imagen guardada en la galería",
@@ -183,13 +183,9 @@
   "conflictAlert": "Alerta de conflicto",
   "fileConflictAlertContent": "Algunos archivos ya existen en este directorio. ¿Quieres duplicarlos?",
   "duplicate": "Duplicar",
-<<<<<<< ours
   "moreApps": "Más aplicaciones",
-  "downloadFile": "Descargar archivo"
-}
-=======
-  "deleteFile": "Eliminar archivo",
   "downloadFile": "Descargar archivo",
+  "deleteFile": "Eliminar archivo",
   "documentScanner": "Escáner de documentos",
   "scanSaveShare": "Escanear • Guardar • Compartir",
   "scanOptions": "Opciones de escaneo",
@@ -198,4 +194,3 @@
   "noFilesHereYet": "Aún no hay archivos",
   "tapCameraToScanFirstDocument": "Toca el botón de la cámara de abajo para escanear tu primer documento."
 }
->>>>>>> theirs

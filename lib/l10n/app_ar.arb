@@ -118,8 +118,8 @@
   "vibration": "اهتزاز",
   "beep": "زمارة",
   "shareWithFriend": "شارك مع صديق",
-  "pleaseSelectADirectory":"الرجاء تحديد الدليل",
-  "pleaseEnterADirectoryName":"الرجاء إدخال اسم الدليل",
+  "pleaseSelectADirectory": "الرجاء تحديد الدليل",
+  "pleaseEnterADirectoryName": "الرجاء إدخال اسم الدليل",
   "permissionDenied": "تم رفض الإذن",
   "pleaseAllowStoragePermissionToAccessGallery": "يرجى السماح بإذن التخزين للوصول إلى المعرض",
   "openSettings": "افتح الإعدادات",
@@ -154,12 +154,12 @@
   "qrCodeDetected": "تم الكشف عن رمز الاستجابة السريعة",
   "exit": "خروج !",
   "areYouSureYouWantToExitApp": "هل أنت متأكد أنك تريد الخروج من التطبيق؟",
-  "copy" : "نسخ",
+  "copy": "نسخ",
   "doYouWantToMakePdf": "هل تريد إنشاء ملف بي دي إف؟",
   "noInternetConnection": "لا يوجد اتصال بالإنترنت",
   "content": "المحتوى",
-  "alert":"تنبيه",
-  "yes":"نعم",
+  "alert": "تنبيه",
+  "yes": "نعم",
   "searchHere": "ابحث هنا",
   "pleaseAddImageFirst": "الرجاء إضافة صورة أولاً",
   "option": "خيار",
@@ -173,7 +173,7 @@
   "selectAll": "اختر الكل",
   "saveAtGallery": "حفظ في المعرض",
   "fileSavedDownloadFolder": "تم حفظ الملف في مجلد التنزيلات",
-  "noResultFound":"لم يتم العثور على نتائج",
+  "noResultFound": "لم يتم العثور على نتائج",
   "thisLanguageNotSupported": "هذه اللغة غير مدعومة",
   "docScanner": "ماسح الوثائق",
   "imageSavedAtGallery": "تم حفظ الصورة في المعرض",
@@ -183,13 +183,9 @@
   "conflictAlert": "تنبيه الصراع",
   "fileConflictAlertContent": "توجد بعض الملفات بالفعل في هذا الدليل. هل تريد تكرارها؟",
   "duplicate": "ينسخ",
-<<<<<<< ours
   "moreApps": "المزيد من التطبيقات",
-  "downloadFile": "تنزيل الملف"
-}
-=======
-  "deleteFile": "حذف الملف",
   "downloadFile": "تنزيل الملف",
+  "deleteFile": "حذف الملف",
   "documentScanner": "ماسح المستندات",
   "scanSaveShare": "مسح • حفظ • مشاركة",
   "scanOptions": "خيارات المسح",
@@ -198,4 +194,3 @@
   "noFilesHereYet": "لا توجد ملفات بعد",
   "tapCameraToScanFirstDocument": "اضغط زر الكاميرا بالأسفل لمسح أول مستند."
 }
->>>>>>> theirs
