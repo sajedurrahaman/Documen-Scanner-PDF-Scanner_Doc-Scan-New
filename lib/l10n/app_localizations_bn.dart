@@ -37,7 +37,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get passport => 'পাসপোর্ট';
 
   @override
-  String get home => 'বাড়ি';
+  String get home => 'হোম';
 
   @override
   String get settings => 'সেটিংস';
