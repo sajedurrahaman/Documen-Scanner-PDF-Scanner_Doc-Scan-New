@@ -65,7 +65,7 @@ void main() {
     await tester.tap(find.text('Share'));
     await tester.pumpAndSettle();
     expect(shared, '/files/idCard.pdf');
-    await tester.tap(find.byIcon(Icons.search));
+    await tester.tap(find.byTooltip('Search'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'DOCUMENT');
     await tester.pumpAndSettle();

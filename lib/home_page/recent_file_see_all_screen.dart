@@ -110,7 +110,9 @@ class _RecentFileSeeAllScreenState extends State<RecentFileSeeAllScreen> {
         actions: [
           IconButton(
             tooltip: _searching ? labels.cancel : labels.search,
-            icon: Icon(_searching ? Icons.close : Icons.search, size: 28),
+            icon: _searching
+                ? const Icon(Icons.close, size: 28)
+                : SvgPicture.asset(AppAssets.search, width: 28, height: 28),
             onPressed: () => setState(() {
               _searching = !_searching;
               if (!_searching) {

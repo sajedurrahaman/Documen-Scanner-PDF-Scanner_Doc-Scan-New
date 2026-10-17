@@ -370,8 +370,10 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                     ),
                   IconButton(
                     tooltip: _searching ? labels.cancel : labels.search,
-                    icon:
-                        Icon(_searching ? Icons.close : Icons.search, size: 26),
+                    icon: _searching
+                        ? const Icon(Icons.close, size: 26)
+                        : SvgPicture.asset(AppAssets.search,
+                            width: 26, height: 26),
                     onPressed: () => setState(() {
                       _searching = !_searching;
                       if (!_searching) {
@@ -421,8 +423,12 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 20),
         minLeadingWidth: 24,
         horizontalTitleGap: 20,
-        leading:
-            const Icon(Icons.delete_outline, color: Colors.black, size: 24),
+        leading: SvgPicture.asset(
+          AppAssets.delete,
+          width: 24,
+          height: 24,
+          colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
+        ),
         title: Text(translation(sheetContext).delete,
             style: const TextStyle(color: Colors.black, fontSize: 16)),
         onTap: () {
