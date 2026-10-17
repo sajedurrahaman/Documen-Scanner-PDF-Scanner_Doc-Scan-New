@@ -114,7 +114,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back).last);
     await settleFiles(tester);
     expect(find.text('Document'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.search));
+    await tester.tap(find.byTooltip('Search'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'notes');
     await tester.pumpAndSettle();
@@ -327,7 +327,7 @@ void main() {
     await settleFiles(tester);
     expect(find.text('Combined.pdf'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    await tester.tap(find.byIcon(Icons.search));
+    await tester.tap(find.byTooltip('Search'));
     await tester.pumpAndSettle();
     expect(find.byType(TextField), findsOneWidget);
     expect(tester.takeException(), isNull);

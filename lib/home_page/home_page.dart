@@ -765,7 +765,7 @@ class _HomeHeader extends StatelessWidget {
               ),
               IconButton(
                 onPressed: onSearch,
-                icon: const Icon(Icons.search, color: Colors.white, size: 28),
+                icon: SvgPicture.asset(AppAssets.search, width: 28, height: 28),
               ),
             ],
           ),
