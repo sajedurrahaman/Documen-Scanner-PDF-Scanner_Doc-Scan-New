@@ -490,14 +490,34 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Rect _sharePositionOrigin() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize && box.size != Size.zero) {
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+    final size = MediaQuery.sizeOf(context);
+    return Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: 2,
+      height: 2,
+    );
+  }
+
   Future<void> _shareRecent(RecentFile file) async {
+    final origin = _sharePositionOrigin();
     if (file.path.toLowerCase().endsWith('.txt')) {
       final text = await File(file.path).readAsString();
       if (!mounted) return;
-      await Share.share(text);
+      await SharePlus.instance.share(ShareParams(
+        text: text,
+        sharePositionOrigin: origin,
+      ));
       return;
     }
-    await Share.shareXFiles([XFile(file.path)]);
+    await SharePlus.instance.share(ShareParams(
+      files: [XFile(file.path)],
+      sharePositionOrigin: origin,
+    ));
   }
 
   Future<void> _deleteRecent(RecentFile file) {

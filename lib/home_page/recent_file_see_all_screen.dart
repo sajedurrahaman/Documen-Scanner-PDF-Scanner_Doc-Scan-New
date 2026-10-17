@@ -153,19 +153,35 @@ class _RecentFileSeeAllScreenState extends State<RecentFileSeeAllScreen> {
     });
   }
 
+  Rect _sharePositionOrigin() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize && box.size != Size.zero) {
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+    final size = MediaQuery.sizeOf(context);
+    return Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: 2,
+      height: 2,
+    );
+  }
+
   Future<void> _shareSelected() async {
     final files = _selectedFiles;
-    final box = context.findRenderObject() as RenderBox?;
+    final origin = _sharePositionOrigin();
     await _runSelected(() async {
-      if (files.length == 1) {
-        await widget.onShare(files.single);
-      } else {
+      if (files.length == 1 &&
+          files.single.path.toLowerCase().endsWith('.txt')) {
         await SharePlus.instance.share(ShareParams(
-          files: files.map((file) => XFile(file.path)).toList(),
-          sharePositionOrigin:
-              box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+          text: await File(files.single.path).readAsString(),
+          sharePositionOrigin: origin,
         ));
+        return;
       }
+      await SharePlus.instance.share(ShareParams(
+        files: files.map((file) => XFile(file.path)).toList(),
+        sharePositionOrigin: origin,
+      ));
     });
   }
 
