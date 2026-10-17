@@ -732,8 +732,8 @@ class _HomeHeader extends StatelessWidget {
             children: [
               SvgPicture.asset(
                 AppAssets.homeAppBarIcon,
-                width: 46,
-                height: 46,
+                width: AppHelper.isIpad(context) ? 70 : 46,
+                height: AppHelper.isIpad(context) ? 70 : 46,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -792,6 +792,7 @@ class _ScanOptionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIpad = AppHelper.isIpad(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 22, 16, 40),
       child: Column(
@@ -819,22 +820,23 @@ class _ScanOptionsCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       onTap: () => onTap(items[i]),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: EdgeInsets.symmetric(
+                            vertical: isIpad ? 18 : 12),
                         child: Column(
                           children: [
                             SvgPicture.asset(
                               iconFor(items[i].name),
-                              width: 44,
-                              height: 44,
+                              width: isIpad ? 54 : 44,
+                              height: isIpad ? 54 : 44,
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: isIpad ? 10 : 8),
                             Text(
                               labelFor(items[i].name),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: _HomePageState._titleColor,
-                                fontSize: 12,
+                                fontSize: isIpad ? 14 : 12,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -911,6 +913,7 @@ class _FolderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final directoryName = path.basename(directory.path);
     final count = countFor(directoryName);
+    final isIpad = AppHelper.isIpad(context);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
@@ -918,7 +921,8 @@ class _FolderTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: () => onTap(directory),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          padding: EdgeInsets.symmetric(
+              vertical: isIpad ? 18 : 12, horizontal: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFE6EAF2)),
@@ -927,28 +931,28 @@ class _FolderTile extends StatelessWidget {
             children: [
               SvgPicture.asset(
                 iconFor(directoryName),
-                width: 42,
-                height: 32,
+                width: isIpad ? 52 : 42,
+                height: isIpad ? 40 : 32,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: isIpad ? 10 : 8),
               Text(
                 nameFor(directoryName),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: _HomePageState._titleColor,
-                  fontSize: 12,
+                  fontSize: isIpad ? 14 : 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: isIpad ? 4 : 2),
               Text(
                 count == 1 ? '1 file' : '$count files',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: _HomePageState._mutedColor,
-                  fontSize: 11,
+                  fontSize: isIpad ? 12 : 11,
                 ),
               ),
             ],

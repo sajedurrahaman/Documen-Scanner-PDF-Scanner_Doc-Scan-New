@@ -146,16 +146,36 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
   bool get _canCopy => !_busy && _singleText;
   bool get _canDelete => !_busy && _selectedItems.isNotEmpty;
 
+  Rect _sharePositionOrigin() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize && box.size != Size.zero) {
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+    final size = MediaQuery.sizeOf(context);
+    return Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: 2,
+      height: 2,
+    );
+  }
+
   Future<void> _shareSelected() async {
     if (!_canShare) return;
     final files = _selectedItems.toList();
     final text = _singleText;
+    final origin = _sharePositionOrigin();
     setState(() => isShareIng = true);
     try {
       if (text) {
-        await Share.share(await File(files.single).readAsString());
+        await SharePlus.instance.share(ShareParams(
+          text: await File(files.single).readAsString(),
+          sharePositionOrigin: origin,
+        ));
       } else {
-        await Share.shareXFiles(files.map(XFile.new).toList());
+        await SharePlus.instance.share(ShareParams(
+          files: files.map(XFile.new).toList(),
+          sharePositionOrigin: origin,
+        ));
       }
       if (mounted) _exitSelection();
     } catch (error) {
@@ -292,6 +312,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
     return AppBar(
       backgroundColor: AppColor.primaryColor,
       foregroundColor: Colors.white,
+      iconTheme: const IconThemeData(color: Colors.white),
+      actionsIconTheme: const IconThemeData(color: Colors.white),
       elevation: 0,
       scrolledUnderElevation: 0,
       systemOverlayStyle: SystemUiOverlayStyle.light,
@@ -300,7 +322,10 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
         tooltip: _isLongPressed
             ? labels.cancel
             : MaterialLocalizations.of(context).backButtonTooltip,
-        icon: Icon(_isLongPressed ? Icons.close : Icons.arrow_back),
+        icon: Icon(
+          _isLongPressed ? Icons.close : Icons.arrow_back,
+          color: Colors.white,
+        ),
         onPressed: () {
           if (_isLongPressed) {
             _exitSelection();
@@ -372,7 +397,7 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                   IconButton(
                     tooltip: _searching ? labels.cancel : labels.search,
                     icon: _searching
-                        ? const Icon(Icons.close, size: 26)
+                        ? const Icon(Icons.close, size: 26, color: Colors.white)
                         : SvgPicture.asset(AppAssets.search,
                             width: 26, height: 26),
                     onPressed: () => setState(() {

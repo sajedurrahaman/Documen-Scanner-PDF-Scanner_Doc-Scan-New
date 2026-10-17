@@ -10,6 +10,7 @@ import '../localaization/language_constant.dart';
 import '../main.dart';
 import '../utils/app_assets.dart';
 import '../utils/app_constant.dart';
+import '../utils/helper.dart';
 import 'about_app_screen.dart';
 import 'language_select_screen.dart';
 import 'web_view_page.dart';
@@ -80,7 +81,11 @@ class _SettingsPageState extends State<SettingsPage> {
     return SettingsScaffold(
       root: true,
       title: Row(children: [
-        SvgPicture.asset(AppAssets.homeAppBarIcon, width: 46, height: 46),
+        SvgPicture.asset(
+          AppAssets.homeAppBarIcon,
+          width: AppHelper.isIpad(context) ? 70 : 46,
+          height: AppHelper.isIpad(context) ? 70 : 46,
+        ),
         const SizedBox(width: 12),
         Expanded(
             child:

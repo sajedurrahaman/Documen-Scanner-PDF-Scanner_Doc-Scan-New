@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../utils/app_color.dart';
+import '../../utils/helper.dart';
 
 const settingsBlue = Color(0xFF1C58BE);
 const settingsInk = Color(0xFF102E68);
@@ -17,7 +18,9 @@ class SettingsScaffold extends StatelessWidget {
   final bool root;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final isIpad = AppHelper.isIpad(context);
+    return Scaffold(
         backgroundColor: AppColor.headerBlue,
         appBar: AppBar(
           automaticallyImplyLeading: !root,
@@ -27,11 +30,13 @@ class SettingsScaffold extends StatelessWidget {
           systemOverlayStyle: SystemUiOverlayStyle.light,
           elevation: 0,
           scrolledUnderElevation: 0,
-          toolbarHeight: root ? 72 : 64,
+          toolbarHeight: root
+              ? (isIpad ? 96 : 72)
+              : (isIpad ? 72 : 64),
           titleSpacing: root ? 16 : 0,
           title: root
               ? Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: EdgeInsets.only(bottom: isIpad ? 14 : 10),
                   child: title,
                 )
               : title,
@@ -46,6 +51,7 @@ class SettingsScaffold extends StatelessWidget {
           ),
         ),
       );
+  }
 }
 
 class SettingsIcon extends StatelessWidget {

@@ -380,13 +380,15 @@ class _RecentFileSeeAllScreenState extends State<RecentFileSeeAllScreen> {
               appBar: AppBar(
                 backgroundColor: _blue,
                 foregroundColor: Colors.white,
+                iconTheme: const IconThemeData(color: Colors.white),
+                actionsIconTheme: const IconThemeData(color: Colors.white),
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 systemOverlayStyle: SystemUiOverlayStyle.light,
                 leading: _selecting
                     ? IconButton(
                         tooltip: labels.cancel,
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close, color: Colors.white),
                         onPressed: _exitSelection,
                       )
                     : null,
@@ -431,7 +433,7 @@ class _RecentFileSeeAllScreenState extends State<RecentFileSeeAllScreen> {
                     IconButton(
                       tooltip: _searching ? labels.cancel : labels.search,
                       icon: _searching
-                          ? const Icon(Icons.close, size: 28)
+                          ? const Icon(Icons.close, size: 28, color: Colors.white)
                           : SvgPicture.asset(AppAssets.search,
                               width: 28, height: 28),
                       onPressed: () => setState(() {

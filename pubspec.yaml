@@ -49,7 +49,7 @@ dependencies:
   shared_preferences: ^2.2.3
   image_picker: ^1.1.1
   path_provider: ^2.1.5
-  image: ^4.1.7
+  image: 4.9.2
   extended_image: ^8.2.0
   image_editor: ^1.5.1
   hand_signature: ^3.0.2
