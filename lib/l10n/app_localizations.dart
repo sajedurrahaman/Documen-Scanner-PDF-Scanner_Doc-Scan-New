@@ -1222,6 +1222,12 @@ abstract class AppLocalizations {
   /// **'Download File'**
   String get downloadFile;
 
+  /// No description provided for @deleteFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete File'**
+  String get deleteFile;
+
   /// No description provided for @documentScanner.
   ///
   /// In en, this message translates to:

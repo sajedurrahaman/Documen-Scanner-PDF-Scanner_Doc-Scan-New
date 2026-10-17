@@ -582,6 +582,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get downloadFile => 'Скачать файл';
 
   @override
+  String get deleteFile => 'Удалить файл';
+
+  @override
   String get documentScanner => 'Сканер документов';
 
   @override

@@ -566,6 +566,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get downloadFile => 'ファイルをダウンロード';
 
   @override
+  String get deleteFile => 'ファイルを削除';
+
+  @override
   String get documentScanner => 'ドキュメントスキャナー';
 
   @override

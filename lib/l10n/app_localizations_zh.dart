@@ -564,6 +564,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get downloadFile => '下載檔案';
 
   @override
+  String get deleteFile => '刪除檔案';
+
+  @override
   String get documentScanner => '文档扫描仪';
 
   @override

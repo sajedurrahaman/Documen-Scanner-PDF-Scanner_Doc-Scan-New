@@ -577,6 +577,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get downloadFile => 'फ़ाइल डाउनलोड करें';
 
   @override
+  String get deleteFile => 'फ़ाइल हटाएँ';
+
+  @override
   String get documentScanner => 'दस्तावेज़ स्कैनर';
 
   @override

@@ -580,6 +580,9 @@ class AppLocalizationsBn extends AppLocalizations {
   String get downloadFile => 'ফাইল ডাউনলোড';
 
   @override
+  String get deleteFile => 'ফাইল মুছুন';
+
+  @override
   String get documentScanner => 'ডকুমেন্ট স্ক্যানার';
 
   @override

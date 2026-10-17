@@ -580,6 +580,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get downloadFile => 'Unduh File';
 
   @override
+  String get deleteFile => 'Hapus File';
+
+  @override
   String get documentScanner => 'Pemindai Dokumen';
 
   @override

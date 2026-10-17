@@ -565,6 +565,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get downloadFile => '파일 다운로드';
 
   @override
+  String get deleteFile => '파일 삭제';
+
+  @override
   String get documentScanner => '문서 스캐너';
 
   @override

@@ -575,6 +575,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get downloadFile => 'تنزيل الملف';
 
   @override
+  String get deleteFile => 'حذف الملف';
+
+  @override
   String get documentScanner => 'ماسح المستندات';
 
   @override

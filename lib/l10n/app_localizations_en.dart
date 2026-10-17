@@ -574,6 +574,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadFile => 'Download File';
 
   @override
+  String get deleteFile => 'Delete File';
+
+  @override
   String get documentScanner => 'Document Scanner';
 
   @override

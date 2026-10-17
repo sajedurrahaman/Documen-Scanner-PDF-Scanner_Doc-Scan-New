@@ -580,6 +580,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get downloadFile => 'Dosyayı İndir';
 
   @override
+  String get deleteFile => 'Dosyayı Sil';
+
+  @override
   String get documentScanner => 'Belge Tarayıcı';
 
   @override

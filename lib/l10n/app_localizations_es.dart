@@ -583,6 +583,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get downloadFile => 'Descargar archivo';
 
   @override
+  String get deleteFile => 'Eliminar archivo';
+
+  @override
   String get documentScanner => 'Escáner de documentos';
 
   @override
