@@ -26,6 +26,8 @@ class SettingsScaffold extends StatelessWidget {
           automaticallyImplyLeading: !root,
           backgroundColor: AppColor.headerBlue,
           foregroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: Colors.white),
+          actionsIconTheme: const IconThemeData(color: Colors.white),
           surfaceTintColor: Colors.transparent,
           systemOverlayStyle: SystemUiOverlayStyle.light,
           elevation: 0,
