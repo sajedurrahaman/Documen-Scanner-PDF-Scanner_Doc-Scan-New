@@ -15,6 +15,10 @@ class AppHelper {
     return width >= 768;
   }
 
+  static bool isTablet(BuildContext context) {
+    return MediaQuery.of(context).size.shortestSide >= 600;
+  }
+
   Future<void> createDirectories() async {
     final Directory appDirectory = await getApplicationDocumentsDirectory();
     final Directory docScannerDirectory =
