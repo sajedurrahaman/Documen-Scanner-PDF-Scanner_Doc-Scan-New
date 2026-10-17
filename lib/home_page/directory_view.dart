@@ -1510,13 +1510,11 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                         ),
                                                       ),
                                                     ),
-                                                    Divider(
-                                                      color: Colors.grey[200],
-                                                      thickness: 1,
-                                                      // Match menu row: padding 20 + icon ~24 + gap 20.
-                                                      // Screen-width % breaks on iPad.
-                                                      indent: 64,
-                                                    ),
+                                                    SizedBox(
+                                                        height: AppHelper
+                                                                .isIpad(context)
+                                                            ? 16
+                                                            : 8),
                                                     Material(
                                                       color: Colors.transparent,
                                                       child: InkWell(
@@ -2217,13 +2215,11 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                         ),
                                                       ),
                                                     ),
-                                                    Divider(
-                                                      color: Colors.grey[200],
-                                                      thickness: 1,
-                                                      // Match menu row: padding 20 + icon ~24 + gap 20.
-                                                      // Screen-width % breaks on iPad.
-                                                      indent: 64,
-                                                    ),
+                                                    SizedBox(
+                                                        height: AppHelper
+                                                                .isIpad(context)
+                                                            ? 16
+                                                            : 8),
                                                     Material(
                                                       color: Colors.transparent,
                                                       child: InkWell(
