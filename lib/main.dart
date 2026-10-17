@@ -42,6 +42,8 @@ Future<void> _initializeLocalData() async {
     LocalStorage().init(),
     initialize(),
     AppHelper().createDirectories(),
+    // Banner under BottomBar loads as soon as home opens — SDK must be ready.
+    MobileAds.instance.initialize(),
   ]);
 }
 
@@ -61,7 +63,6 @@ Future<void> _initializeHeavyServices() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    unawaited(MobileAds.instance.initialize());
 
     final localNotificationsService = LocalNotificationsService.instance();
     await localNotificationsService.init();

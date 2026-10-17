@@ -16,6 +16,7 @@ class BannerAdWidget extends StatefulWidget {
 class _BannerAdWidgetState extends State<BannerAdWidget> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
+  bool _loading = false;
 
   @override
   void initState() {
@@ -23,35 +24,57 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     _loadAd();
   }
 
-  void _loadAd() {
-    final ad = BannerAd(
-      size: AdSize.banner,
-      adUnitId: widget.adUnitId,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          log('${ad.runtimeType} loaded.');
-          if (!mounted) {
+  Future<void> _loadAd({bool retry = true}) async {
+    if (_loading) return;
+    _loading = true;
+    try {
+      // Safe if already initialized during splash.
+      await MobileAds.instance.initialize();
+      if (!mounted) return;
+
+      final ad = BannerAd(
+        size: AdSize.banner,
+        adUnitId: widget.adUnitId,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (ad) {
+            log('${ad.runtimeType} loaded: ${widget.adUnitId}');
+            if (!mounted) {
+              ad.dispose();
+              return;
+            }
+            setState(() {
+              _bannerAd = ad as BannerAd;
+              _isLoaded = true;
+            });
+          },
+          onAdFailedToLoad: (ad, error) {
+            log('${ad.runtimeType} failed to load: $error. id=${widget.adUnitId}');
             ad.dispose();
-            return;
-          }
-          setState(() {
-            _bannerAd = ad as BannerAd;
-            _isLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          log('${ad.runtimeType} failed to load: $error.');
-          ad.dispose();
-          if (!mounted) return;
-          setState(() {
-            _bannerAd = null;
-            _isLoaded = false;
-          });
-        },
-      ),
-    );
-    ad.load();
+            if (!mounted) return;
+            setState(() {
+              _bannerAd = null;
+              _isLoaded = false;
+            });
+            if (retry) {
+              Future.delayed(const Duration(seconds: 2), () {
+                if (mounted) _loadAd(retry: false);
+              });
+            }
+          },
+        ),
+      );
+      await ad.load();
+    } catch (error, stack) {
+      log('BannerAd load error: $error\n$stack');
+      if (retry && mounted) {
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) _loadAd(retry: false);
+        });
+      }
+    } finally {
+      _loading = false;
+    }
   }
 
   @override
