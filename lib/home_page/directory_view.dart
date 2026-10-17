@@ -362,13 +362,17 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                   if (!_searching)
                     IconButton(
                       tooltip: 'Create folder',
-                      icon: const Icon(Icons.create_new_folder_outlined),
+                      icon: SvgPicture.asset(
+                        'assets/icons/create_folder.svg',
+                        width: 24,
+                        height: 24,
+                      ),
                       onPressed: () => _showCenterDialog(context),
                     ),
                   IconButton(
                     tooltip: _searching ? labels.cancel : labels.search,
                     icon:
-                        Icon(_searching ? Icons.close : Icons.search, size: 27),
+                        Icon(_searching ? Icons.close : Icons.search, size: 26),
                     onPressed: () => setState(() {
                       _searching = !_searching;
                       if (!_searching) {
@@ -601,11 +605,12 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                             color: Color(0xFF7183A2), fontSize: 12)),
                   ],
                 )),
-                IconButton(
-                  tooltip: MaterialLocalizations.of(context).showMenuTooltip,
-                  icon: const Icon(Icons.more_vert, color: Color(0xFF455774)),
-                  onPressed: onMenu,
-                ),
+                if (!_isLongPressed)
+                  IconButton(
+                    tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+                    icon: const Icon(Icons.more_vert, color: Color(0xFF455774)),
+                    onPressed: onMenu,
+                  ),
               ]),
             )),
           ]),
@@ -649,131 +654,128 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
     }
   }
 
-  Future<bool> _directoryExistsWithCaseInsensitive(
-      Directory parentDirectory, String directoryName) async {
-    try {
-      final List<FileSystemEntity> entities =
-          await parentDirectory.list().toList();
-      for (final entity in entities) {
-        if (entity is Directory &&
-            entity.path.split('/').last.toLowerCase() ==
-                directoryName.toLowerCase()) {
-          return true;
-        }
-      }
-    } catch (e) {
-      log(e.toString());
-    }
-    return false;
-  }
+  bool _folderDialogOpen = false;
 
-  Future<bool> createDirectory({
-    required Directory targetDirectory,
-    required String directoryName,
-  }) async {
-    Directory rootDirectory = await getApplicationDocumentsDirectory();
-    final documentDirectory =
-        Directory('${rootDirectory.path}/Doc Scanner/Document');
-    final idCardDirectory =
-        Directory('${rootDirectory.path}/Doc Scanner/ID Card');
-    final qrCodeDirectory =
-        Directory('${rootDirectory.path}/Doc Scanner/QR Code');
-    final barCodeDirectory =
-        Directory('${rootDirectory.path}/Doc Scanner/Bar Code');
-
-    try {
-      if (await _directoryExistsWithCaseInsensitive(
-              documentDirectory, directoryName) ||
-          await _directoryExistsWithCaseInsensitive(
-              idCardDirectory, directoryName) ||
-          await _directoryExistsWithCaseInsensitive(
-              qrCodeDirectory, directoryName) ||
-          await _directoryExistsWithCaseInsensitive(
-              barCodeDirectory, directoryName)) {
-        return false;
-      } else {
-        final newCreatedDirectory =
-            Directory('${targetDirectory.path}/$directoryName');
-        await newCreatedDirectory.create(recursive: true);
-        return true;
-      }
-    } catch (e) {
-      return false;
-    }
-  }
-
-  void _showCenterDialog(BuildContext context) {
+  Future<void> _showCenterDialog(BuildContext context) async {
+    if (_folderDialogOpen) return;
+    _folderDialogOpen = true;
     _folderNameController.clear();
-    showDialog(
-      context: context,
-      barrierDismissible:
-          false, // Prevents dialog from closing by tapping outside
-      builder: (BuildContext context) {
-        return AlertDialog(
-          alignment: Alignment.center,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          content: SizedBox(
-            width: 400,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "Folder",
-                      style: TextStyle(fontSize: 15),
-                    ),
-                    IconButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        icon: Icon(
-                          Icons.close,
-                          size: AppHelper.isTablet(context) ? 15 : 12,
-                        ))
-                  ],
+    final labels = translation(context);
+    String? error;
+    bool creating = false;
+    try {
+      final created = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            Future<void> submit() async {
+              if (creating) return;
+              final name = _folderNameController.text.trim();
+              if (name.isEmpty ||
+                  name == '.' ||
+                  name == '..' ||
+                  name.contains(RegExp(r'[/\\\x00-\x1F]'))) {
+                setDialogState(() => error = labels.pleaseEnterADirectoryName);
+                return;
+              }
+              FocusScope.of(dialogContext).unfocus();
+              setDialogState(() {
+                creating = true;
+                error = null;
+              });
+              try {
+                final parent = Directory(widget.directoryPath);
+                final entries = await parent.list(followLinks: false).toList();
+                if (entries.any((entry) =>
+                    path.basename(entry.path).toLowerCase() ==
+                    name.toLowerCase())) {
+                  if (dialogContext.mounted) {
+                    setDialogState(() {
+                      creating = false;
+                      error = labels.alreadyExistsInTheDestinationDirectory;
+                    });
+                  }
+                  return;
+                }
+                await Directory(path.join(parent.path, name)).create();
+                if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+              } on FileSystemException catch (exception) {
+                log('Create folder failed', error: exception);
+                if (dialogContext.mounted) {
+                  setDialogState(() {
+                    creating = false;
+                    error = labels.somethingWentWrong;
+                  });
+                }
+              }
+            }
+
+            return PopScope(
+              canPop: !creating,
+              child: AlertDialog(
+                alignment: Alignment.center,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                TextField(
-                  controller: _folderNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Enter Name',
-                    border: OutlineInputBorder(),
+                content: SizedBox(
+                  width: 400,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Folder', style: TextStyle(fontSize: 15)),
+                          IconButton(
+                            onPressed: creating
+                                ? null
+                                : () => Navigator.pop(dialogContext),
+                            icon: Icon(Icons.close,
+                                size: AppHelper.isTablet(dialogContext)
+                                    ? 15
+                                    : 12),
+                          ),
+                        ],
+                      ),
+                      TextField(
+                        controller: _folderNameController,
+                        enabled: !creating,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => submit(),
+                        onChanged: (_) {
+                          if (error != null) setDialogState(() => error = null);
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Enter Name',
+                          border: const OutlineInputBorder(),
+                          errorText: error,
+                          errorMaxLines: 3,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: creating ? null : submit,
+                        child: creating
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('Create Folder'),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (_folderNameController.text.trim().isNotEmpty) {
-                      FocusScope.of(context).unfocus();
-                      bool created = await createDirectory(
-                          targetDirectory: Directory(widget.directoryPath),
-                          directoryName: _folderNameController.text);
-                      if (created && context.mounted) {
-                        Navigator.pop(context);
-                        await _refresh();
-                      }
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            translation(context).pleaseEnterADirectoryName,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Create Folder'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+              ),
+            );
+          },
+        ),
+      );
+      if (created == true && mounted) await _refresh();
+    } finally {
+      _folderDialogOpen = false;
+    }
   }
 
   @override

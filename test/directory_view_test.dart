@@ -143,7 +143,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
     expect(find.byType(Checkbox), findsNothing);
-    await tester.tap(find.byIcon(Icons.create_new_folder_outlined));
+    await tester.tap(find.byTooltip('Create folder'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'New folder');
     await tester.pumpAndSettle();
@@ -157,6 +157,65 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+      'create folder checks current category and reports invalid or duplicate names',
+      (tester) async {
+    await tester.runAsync(() =>
+        Directory('${root.path}/Doc Scanner/ID Card/Only there').create());
+    await mount(tester, 'Document');
+    await tester.tap(find.byTooltip('Create folder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '../outside');
+    await tester.tap(find.text('Create Folder'));
+    await tester.pumpAndSettle();
+    expect(find.text('Please enter a directory name'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'work report');
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Create Folder'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('Already exists in the destination directory'),
+        findsOneWidget);
+    await tester.enterText(find.byType(TextField), '  Only there  ');
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Create Folder'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await settleFiles(tester);
+    expect(find.text('Only there'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+      'Document and QR Code can both create shahjalal through the dialog',
+      (tester) async {
+    for (final category in ['Document', 'QR Code']) {
+      await mount(tester, category);
+      await tester.tap(find.byTooltip('Create folder'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'shahjalal');
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Create Folder'));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      await settleFiles(tester);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('shahjalal'), findsOneWidget);
+      await tester.runAsync(() async {
+        expect(
+            await Directory('${root.path}/Doc Scanner/$category/shahjalal')
+                .exists(),
+            isTrue);
+      });
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+    }
   });
 
   testWidgets('folder rename stays above the system navigation area',
