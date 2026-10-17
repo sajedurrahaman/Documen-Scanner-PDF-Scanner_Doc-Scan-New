@@ -1513,10 +1513,9 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                     Divider(
                                                       color: Colors.grey[200],
                                                       thickness: 1,
-                                                      indent: MediaQuery.sizeOf(
-                                                                  context)
-                                                              .width *
-                                                          0.15,
+                                                      // Match menu row: padding 20 + icon ~24 + gap 20.
+                                                      // Screen-width % breaks on iPad.
+                                                      indent: 64,
                                                     ),
                                                     Material(
                                                       color: Colors.transparent,
@@ -2221,10 +2220,9 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                     Divider(
                                                       color: Colors.grey[200],
                                                       thickness: 1,
-                                                      indent: MediaQuery.sizeOf(
-                                                                  context)
-                                                              .width *
-                                                          0.15,
+                                                      // Match menu row: padding 20 + icon ~24 + gap 20.
+                                                      // Screen-width % breaks on iPad.
+                                                      indent: 64,
                                                     ),
                                                     Material(
                                                       color: Colors.transparent,
