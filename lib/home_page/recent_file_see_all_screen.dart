@@ -194,6 +194,11 @@ class _RecentFileSeeAllScreenState extends State<RecentFileSeeAllScreen> {
     final name = await showDialog<String>(
         context: context,
         builder: (dialogContext) => AlertDialog(
+              constraints: BoxConstraints.tightFor(
+                width: MediaQuery.sizeOf(context).shortestSide >= 600
+                    ? 398
+                    : 348,
+              ),
               title: Text(labels.renameFile,
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.w500)),

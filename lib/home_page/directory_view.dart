@@ -199,6 +199,11 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
     final name = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        constraints: BoxConstraints.tightFor(
+          width: MediaQuery.sizeOf(context).shortestSide >= 600
+              ? 398
+              : 348,
+        ),
         title: Text(labels.renameFile,
             style: const TextStyle(
                 color: Colors.black,
@@ -1054,6 +1059,11 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                   builder: (context,
                                                                       setState) {
                                                                 return AlertDialog(
+                                                                  constraints: BoxConstraints.tightFor(
+                                                                    width: MediaQuery.sizeOf(context).shortestSide >= 600
+                                                                        ? 398
+                                                                        : 348,
+                                                                  ),
                                                                   title: Text(
                                                                     translation(
                                                                             context)
@@ -1360,6 +1370,11 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                   builder: (context,
                                                                       setState) {
                                                                 return AlertDialog(
+                                                                  constraints: BoxConstraints.tightFor(
+                                                                    width: MediaQuery.sizeOf(context).shortestSide >= 600
+                                                                        ? 398
+                                                                        : 348,
+                                                                  ),
                                                                   title: Text(
                                                                       translation(
                                                                               context)
@@ -1775,6 +1790,11 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                   builder: (context,
                                                                       setState) {
                                                                 return AlertDialog(
+                                                                  constraints: BoxConstraints.tightFor(
+                                                                    width: MediaQuery.sizeOf(context).shortestSide >= 600
+                                                                        ? 398
+                                                                        : 348,
+                                                                  ),
                                                                   title: Text(
                                                                       translation(
                                                                               context)
@@ -2074,6 +2094,11 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                                   builder: (context,
                                                                       setState) {
                                                                 return AlertDialog(
+                                                                  constraints: BoxConstraints.tightFor(
+                                                                    width: MediaQuery.sizeOf(context).shortestSide >= 600
+                                                                        ? 398
+                                                                        : 348,
+                                                                  ),
                                                                   title: Text(
                                                                     translation(
                                                                             context)

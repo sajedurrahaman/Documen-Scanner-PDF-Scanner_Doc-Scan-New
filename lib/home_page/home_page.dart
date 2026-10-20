@@ -32,6 +32,7 @@ import '../localaization/language_constant.dart';
 import '../utils/utils.dart';
 import 'directory_view.dart';
 import 'recent_file_see_all_screen.dart';
+import 'recent_file_rename_dialog.dart';
 import 'model/camera_item_model.dart';
 
 class HomePage extends StatefulWidget {
@@ -394,86 +395,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _renameRecent(RecentFile file) async {
-    final controller = TextEditingController(
-      text: path.basenameWithoutExtension(file.path),
-    );
-    final formKey = GlobalKey<FormState>();
-    var errorMessage = '';
     if (!mounted) return;
-    await showDialog<void>(
+    final renamed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return AlertDialog(
-              title: Text(
-                translation(dialogContext).renameFile,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              content: Form(
-                key: formKey,
-                child: TextFormField(
-                  controller: controller,
-                  autofocus: true,
-                  textInputAction: TextInputAction.done,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return translation(dialogContext).pleaseEnterFileName;
-                    }
-                    return null;
-                  },
-                  decoration: InputDecoration(
-                    hintText: translation(dialogContext).enterFileName,
-                    errorText: errorMessage.isEmpty ? null : errorMessage,
-                    border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text(translation(dialogContext).cancel),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    if (!formKey.currentState!.validate()) return;
-                    final parent = File(file.path).parent.path;
-                    final extension = path.extension(file.path);
-                    final newPath = path.join(
-                      parent,
-                      '${controller.text.trim()}$extension',
-                    );
-                    if (newPath == file.path) {
-                      Navigator.pop(dialogContext);
-                      return;
-                    }
-                    if (await File(newPath).exists()) {
-                      setDialogState(() {
-                        errorMessage =
-                            translation(dialogContext).fileAlreadyExists;
-                      });
-                      return;
-                    }
-                    await File(file.path).rename(newPath);
-                    if (!dialogContext.mounted) return;
-                    Navigator.pop(dialogContext);
-                    if (!mounted) return;
-                    await _refreshRecentFiles();
-                  },
-                  child: Text(translation(dialogContext).save),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (_) => RecentFileRenameDialog(filePath: file.path),
     );
-    controller.dispose();
+    if (renamed == true && mounted) await _refreshRecentFiles();
   }
 
   Future<void> _downloadRecent(RecentFile file) async {

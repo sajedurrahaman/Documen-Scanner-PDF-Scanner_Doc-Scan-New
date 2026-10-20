@@ -479,6 +479,11 @@ class _IdCardImagePreviewState extends State<IdCardImagePreview> {
                                   showDialog(
                                     context: context,
                                     builder: (context) => AlertDialog(
+                                      constraints: BoxConstraints.tightFor(
+                                        width: MediaQuery.sizeOf(context).shortestSide >= 600
+                                            ? 398
+                                            : 348,
+                                      ),
                                       title:
                                           SizedBox(
                                               width: AppHelper.isIpad(context)?350:300,
@@ -627,6 +632,9 @@ class _IdCardImagePreviewState extends State<IdCardImagePreview> {
                                       return StatefulBuilder(
                                         builder: (context, setState) {
                                           return AlertDialog(
+                                            constraints: BoxConstraints.tightFor(
+                                              width: AppHelper.isIpad(context) ? 398 : 348,
+                                            ),
                                             title: SizedBox(
                                               width: AppHelper.isIpad(context)?350:300,
 

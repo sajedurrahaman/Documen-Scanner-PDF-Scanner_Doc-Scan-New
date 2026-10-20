@@ -232,6 +232,11 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                           return StatefulBuilder(
                                               builder: (context, setState) {
                                             return AlertDialog(
+                                              constraints: BoxConstraints.tightFor(
+                                                width: MediaQuery.sizeOf(context).shortestSide >= 600
+                                                    ? 348
+                                                    : 298,
+                                              ),
                                               title: SizedBox(
                                                 width: AppHelper.isIpad(context)?300:250,
                                                 child: Text(
@@ -579,6 +584,9 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                           return StatefulBuilder(
                                             builder: (context, setState) {
                                               return AlertDialog(
+                                                constraints: BoxConstraints.tightFor(
+                                                  width: AppHelper.isIpad(context) ? 398 : 348,
+                                                ),
                                                 title: SizedBox(
                                                   width: AppHelper.isIpad(context)?350:300,
                                                   child: Text(
