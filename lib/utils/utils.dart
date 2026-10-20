@@ -1,3 +1,4 @@
+import 'package:doc_scanner/utils/copy_feedback.dart';
 import 'dart:io';
 import 'dart:ui';
 
@@ -580,10 +581,7 @@ Future<void> showQrAndBarCodeViewDialogue(
                                   text: formattedContent.toString()))
                               : Clipboard.setData(ClipboardData(text: text));
 
-                          ScaffoldMessenger.of(context).clearSnackBars();
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(
-                                  translation(context).copiedToClipboard)));
+                          showCopyFeedback(context, translation(context).copiedToClipboard);
                         },
                         icon: const Icon(
                           Icons.copy,

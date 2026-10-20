@@ -1,3 +1,4 @@
+import 'package:doc_scanner/utils/copy_feedback.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:doc_scanner/camera_screen/provider/camera_provider.dart';
 import 'package:doc_scanner/camera_screen/widget/analyzee_image.dart';
@@ -181,10 +182,7 @@ class _QRCodeCameraScreenState extends State<QRCodeCameraScreen> {
                             : Clipboard.setData(ClipboardData(
                                 text: barcode.rawValue.toString(),
                               ));
-                        ScaffoldMessenger.of(context).clearSnackBars();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Copied to Clipboard')));
+                        showCopyFeedback(context, translation(context).copiedToClipboard);
 
                         Navigator.pop(context);
 
@@ -302,10 +300,7 @@ class _QRCodeCameraScreenState extends State<QRCodeCameraScreen> {
                                     : Clipboard.setData(
                                         ClipboardData(text: rawValue));
 
-                                ScaffoldMessenger.of(context).clearSnackBars();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('Copied to Clipboard')));
+                                showCopyFeedback(context, translation(context).copiedToClipboard);
 
                                 Navigator.pop(context);
                                 await _resumeCamera();

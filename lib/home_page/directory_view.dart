@@ -1,3 +1,4 @@
+import 'package:doc_scanner/utils/copy_feedback.dart';
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously, empty_catches
 
 import 'dart:developer';
@@ -2626,24 +2627,11 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                                               ClipboardData(
                                                                   text: text))
                                                           .then((value) {
-                                                        ScaffoldMessenger.of(
-                                                                context)
-                                                            .showSnackBar(
-                                                          SnackBar(
-                                                            duration:
-                                                                const Duration(
-                                                                    seconds: 1),
-                                                            content: Text(
-                                                              translation(
-                                                                      context)
-                                                                  .textCopied,
-                                                              style:
-                                                                  const TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                              ),
-                                                            ),
-                                                          ),
+                                                        if (!context.mounted) return;
+                                                        showCopyFeedback(
+                                                          context,
+                                                          translation(context).textCopied,
+                                                          duration: const Duration(seconds: 1),
                                                         );
                                                       });
                                                     } else {
