@@ -111,22 +111,34 @@ class BottomBarWithBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      left: false,
-      right: false,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: bannerAbove
-            ? [
-                BannerAdWidget(adUnitId: adUnitId),
-                child,
-              ]
-            : [
-                child,
-                BannerAdWidget(adUnitId: adUnitId),
-              ],
-      ),
+    return Stack(
+      children: [
+        // Paint only the home-indicator inset; keep the camera notch transparent.
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: MediaQuery.paddingOf(context).bottom,
+          child: const ColoredBox(color: Colors.white),
+        ),
+        SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: bannerAbove
+                ? [
+                    BannerAdWidget(adUnitId: adUnitId),
+                    child,
+                  ]
+                : [
+                    child,
+                    BannerAdWidget(adUnitId: adUnitId),
+                  ],
+          ),
+        ),
+      ],
     );
   }
 }
