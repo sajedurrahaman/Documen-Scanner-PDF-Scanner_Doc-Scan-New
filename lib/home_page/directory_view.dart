@@ -252,6 +252,7 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
       _selectedItems.clear();
       _isLongPressed = false;
       await _refresh();
+      if (mounted) showInterstitialAd(context);
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

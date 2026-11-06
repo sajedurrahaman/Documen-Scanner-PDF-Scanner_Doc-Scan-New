@@ -6,7 +6,6 @@ import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:doc_scanner/camera_screen/bar_code_camera_screen.dart';
 import 'package:doc_scanner/camera_screen/qr_code_camera_screen.dart';
-import 'package:doc_scanner/google_ads_helper/banner_ad_widget.dart';
 import 'package:doc_scanner/google_ads_helper/google_ads_helper.dart';
 import 'package:doc_scanner/home_page/home_page.dart';
 import 'package:doc_scanner/image_edit/id_card_image_view.dart';
@@ -549,9 +548,7 @@ class _BottomBarState extends State<BottomBar> {
                   height: size.width >= 600 ? 32 : 28)),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,
-          bottomNavigationBar: BottomBarWithBanner(
-            adUnitId: AdHelper.homeSettingsBannerAdUnitId,
-            child: NotchedNavigationSurface(
+          bottomNavigationBar: NotchedNavigationSurface(
               cameraDiameter: size.width >= 600 ? 70 : 55,
               child: BottomAppBar(
                 color: Colors.white,
@@ -633,7 +630,6 @@ class _BottomBarState extends State<BottomBar> {
             ),
           ),
         ),
-      ),
     );
   }
 }

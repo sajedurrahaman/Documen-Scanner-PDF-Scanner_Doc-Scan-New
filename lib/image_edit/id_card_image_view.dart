@@ -698,6 +698,8 @@ class _IdCardImagePreviewState extends State<IdCardImagePreview> {
                                                         pageContext,
                                                         "PDF save successfully in Document Folder",
                                                       );
+                                                      showInterstitialAd(
+                                                          pageContext);
 
                                                       if (!mounted) return;
                                                       Navigator.pushAndRemoveUntil(

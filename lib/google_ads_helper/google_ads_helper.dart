@@ -142,13 +142,20 @@ void finish(BuildContext context, [Object? result]) {
   if (Navigator.canPop(context)) Navigator.pop(context, result);
 }
 
+DateTime? _lastInterstitialShown;
+
 void showInterstitialAd(BuildContext context) {
-  if (_interstitialShowing || myInterstitial == null || !interstitialReady) {
-    log('attempt to show interstitial before loaded.');
-    // Optional: just return instead of popping
-    // finish(context);
+  final last = _lastInterstitialShown;
+  if (last != null &&
+      DateTime.now().difference(last) < const Duration(minutes: 3)) {
+    log('interstitial skipped: shown recently.');
     return;
   }
+  if (_interstitialShowing || myInterstitial == null || !interstitialReady) {
+    log('attempt to show interstitial before loaded.');
+    return;
+  }
+  _lastInterstitialShown = DateTime.now();
 
   myInterstitial!.fullScreenContentCallback = FullScreenContentCallback(
     onAdShowedFullScreenContent: (InterstitialAd ad) =>

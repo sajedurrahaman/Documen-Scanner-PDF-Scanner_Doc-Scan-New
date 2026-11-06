@@ -57,7 +57,7 @@ class _HomePageState extends State<HomePage> {
       context.read<HomePageProvider>().getDirectoriesForCreate();
       context.read<RecentFilesProvider>().load();
 
-      showInterstitialAd(context);
+      createInterstitialAd();
     });
     super.initState();
   }
