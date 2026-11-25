@@ -106,6 +106,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get addPage => 'Sayfa Ekle';
 
   @override
+  String get holdAndDragToReorder =>
+      'Basılı tutup sürükleyerek yeniden sıralayın';
+
+  @override
   String get convert => 'Dönüştür';
 
   @override

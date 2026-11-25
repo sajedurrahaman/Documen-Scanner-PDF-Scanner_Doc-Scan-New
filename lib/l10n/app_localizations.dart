@@ -310,6 +310,12 @@ abstract class AppLocalizations {
   /// **'Add Page'**
   String get addPage;
 
+  /// No description provided for @holdAndDragToReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold and drag to reorder'**
+  String get holdAndDragToReorder;
+
   /// No description provided for @convert.
   ///
   /// In en, this message translates to:

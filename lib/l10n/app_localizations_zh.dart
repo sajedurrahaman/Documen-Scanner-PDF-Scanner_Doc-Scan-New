@@ -105,6 +105,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addPage => '新增頁面';
 
   @override
+  String get holdAndDragToReorder => '按住並拖曳以重新排序';
+
+  @override
   String get convert => '轉變';
 
   @override

@@ -106,6 +106,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addPage => 'Add Page';
 
   @override
+  String get holdAndDragToReorder => 'Hold and drag to reorder';
+
+  @override
   String get convert => 'Convert';
 
   @override

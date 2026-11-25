@@ -38,12 +38,74 @@ class _EditImagePreviewState extends State<EditImagePreview> {
   bool _addingPages = false;
   /// false = list (CamScanner vertical + Add below), true = grid + Add cell.
   bool _isGridView = false;
+  /// CamScanner-style: stays on after long-press until back / deselect.
+  bool _isSelectionMode = false;
+  final Set<int> _selectedIndexes = {};
   int? _draggingIndex;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _renameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   static const _addAccent = Color(0xFF8AB4F8);
+
+  void _enterSelectionMode(int index) {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedIndexes
+        ..clear()
+        ..add(index);
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedIndexes.clear();
+      _draggingIndex = null;
+    });
+  }
+
+  void _togglePageSelection(int index) {
+    setState(() {
+      if (_selectedIndexes.contains(index)) {
+        _selectedIndexes.remove(index);
+        // Stay in selection mode (CamScanner: only back exits).
+      } else {
+        _selectedIndexes.add(index);
+      }
+    });
+  }
+
+  void _toggleSelectAll(int imageCount) {
+    setState(() {
+      if (_selectedIndexes.length == imageCount && imageCount > 0) {
+        // Deselect all pages but keep selection mode active.
+        _selectedIndexes.clear();
+      } else {
+        _selectedIndexes
+          ..clear()
+          ..addAll(List.generate(imageCount, (i) => i));
+      }
+    });
+  }
+
+  void _remapSelectionAfterReorder(int fromIndex, int toIndex) {
+    final next = <int>{};
+    for (final i in _selectedIndexes) {
+      if (i == fromIndex) {
+        next.add(toIndex);
+      } else if (fromIndex < toIndex && i > fromIndex && i <= toIndex) {
+        next.add(i - 1);
+      } else if (fromIndex > toIndex && i >= toIndex && i < fromIndex) {
+        next.add(i + 1);
+      } else {
+        next.add(i);
+      }
+    }
+    _selectedIndexes
+      ..clear()
+      ..addAll(next);
+  }
 
   @override
   void dispose() {
@@ -101,6 +163,10 @@ class _EditImagePreviewState extends State<EditImagePreview> {
   }
 
   void _selectPage(int index) {
+    if (_isSelectionMode) {
+      _togglePageSelection(index);
+      return;
+    }
     if (_currentIndex == index) return;
     setState(() => _currentIndex = index);
   }
@@ -120,6 +186,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       } else if (fromIndex > _currentIndex && toIndex <= _currentIndex) {
         _currentIndex++;
       }
+      _remapSelectionAfterReorder(fromIndex, toIndex);
       _draggingIndex = null;
     });
   }
@@ -196,7 +263,9 @@ class _EditImagePreviewState extends State<EditImagePreview> {
         child: Scaffold(
           backgroundColor: const Color(0xFF131314),
           appBar: AppBar(
-            backgroundColor: const Color(0xff1E1F20),
+            backgroundColor: _isSelectionMode
+                ? AppColor.primaryColor
+                : const Color(0xff1E1F20),
             centerTitle: false,
             toolbarHeight: 49,
             titleSpacing: 0,
@@ -208,6 +277,10 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
                 onPressed: () {
+                  if (_isSelectionMode) {
+                    _exitSelectionMode();
+                    return;
+                  }
                   showGoogleAlertDialogue(
                       context: context,
                       title: 'Discard document?',
@@ -231,9 +304,9 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                   size: 23,
                   color: Color(0xffffffff),
                 )),
-            title: cameraProvider.imageList.isEmpty
+            title: _isSelectionMode
                 ? Text(
-                    translation(context).pleaseTakePhoto,
+                    '${_selectedIndexes.length.toString().padLeft(2, '0')} ${translation(context).selected}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -241,25 +314,68 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                         fontWeight: FontWeight.w500,
                         color: Colors.white),
                   )
-                : Text(
-                    cameraProvider.imageList[safeIndex].name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white),
-                  ),
+                : cameraProvider.imageList.isEmpty
+                    ? Text(
+                        translation(context).pleaseTakePhoto,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white),
+                      )
+                    : Text(
+                        cameraProvider.imageList[safeIndex].name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white),
+                      ),
             titleTextStyle: const TextStyle(
               color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.w500,
             ),
             actions: [
+              if (_isSelectionMode)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColor.primaryColor,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      minimumSize: const Size(0, 32),
+                      shape: const StadiumBorder(),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    onPressed: () => _toggleSelectAll(imageCount),
+                    child: Text(
+                      _selectedIndexes.length == imageCount && imageCount > 0
+                          ? translation(context).deselectAll
+                          : translation(context).selectAll,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                )
+              else ...[
               IconButton(
                 visualDensity: VisualDensity.compact,
                 tooltip: _isGridView ? 'List' : 'Grid',
-                onPressed: () => setState(() => _isGridView = !_isGridView),
+                onPressed: () => setState(() {
+                  _isGridView = !_isGridView;
+                  if (!_isGridView) {
+                    _isSelectionMode = false;
+                    _selectedIndexes.clear();
+                    _draggingIndex = null;
+                  }
+                }),
                 icon: Icon(
                   _isGridView
                       ? Icons.view_agenda_outlined
@@ -901,10 +1017,32 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                   ),
                 ),
               ),
+              ],
             ],
           ),
           body: Column(
             children: [
+              if (_isGridView && _isSelectionMode)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline,
+                          size: 16, color: Colors.white.withValues(alpha: 0.55)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          translation(context).holdAndDragToReorder,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               cameraProvider.imageList.isEmpty
                   ? Expanded(
                       child: Center(
@@ -1091,6 +1229,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
     final images = cameraProvider.imageList;
     final size = MediaQuery.sizeOf(context);
     final crossAxisCount = size.width >= 600 ? 3 : 2;
+    final inSelectionMode = _isSelectionMode;
     return GridView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
@@ -1100,9 +1239,10 @@ class _EditImagePreviewState extends State<EditImagePreview> {
         crossAxisSpacing: 12,
         childAspectRatio: 0.72,
       ),
-      itemCount: images.length + 1,
+      // Hide Add tile while in CamScanner-style selection/reorder mode.
+      itemCount: images.length + (inSelectionMode ? 0 : 1),
       itemBuilder: (context, index) {
-        if (index == images.length) {
+        if (!inSelectionMode && index == images.length) {
           return _GridAddTile(
             enabled: !_addingPages,
             onTap: () => _addMorePages(cameraProvider),
@@ -1122,56 +1262,118 @@ class _EditImagePreviewState extends State<EditImagePreview> {
   Widget _buildGridThumbVisual({
     required Uint8List bytes,
     required String pageLabel,
-    required bool selected,
+    required bool isPageSelected,
+    required bool selectionMode,
     double opacity = 1,
   }) {
+    final showSelectUi = selectionMode && isPageSelected;
+    final borderColor = showSelectUi
+        ? AppColor.primaryColor
+        : (selectionMode
+            ? const Color(0xFF4A4B4C)
+            : (isPageSelected ? _addAccent : Colors.transparent));
+    final borderWidth = showSelectUi ? 2.5 : 2.0;
     return Opacity(
       opacity: opacity,
       child: Column(
         children: [
           Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: selected ? _addAccent : Colors.transparent,
-                  width: 2,
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: borderColor,
+                        width: borderWidth,
+                      ),
+                      boxShadow: [
+                        if (showSelectUi)
+                          BoxShadow(
+                            color: AppColor.primaryColor.withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        else
+                          const BoxShadow(
+                            color: Color(0x33000000),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.memory(
+                        bytes,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.memory(
-                  bytes,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
                 ),
-              ),
+                if (selectionMode)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: showSelectUi
+                            ? AppColor.primaryColor
+                            : Colors.black.withValues(alpha: 0.35),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: showSelectUi
+                          ? const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            pageLabel,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+          if (showSelectUi)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColor.primaryColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                pageLabel,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            Text(
+              pageLabel,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  /// Long-press drag reorder — same pattern as PDF_Converter-New reorder grid.
+  /// Long-press enters persistent selection mode; drag reorders (CamScanner).
   Widget _buildDraggableGridThumb({
     required CameraProvider cameraProvider,
     required int index,
@@ -1181,18 +1383,42 @@ class _EditImagePreviewState extends State<EditImagePreview> {
     final images = cameraProvider.imageList;
     final page = images[index];
     final pageLabel = (index + 1).toString().padLeft(2, '0');
-    final selected = index == _currentIndex;
+    final isPageSelected = _isSelectionMode
+        ? _selectedIndexes.contains(index)
+        : index == _currentIndex;
     final isDragging = _draggingIndex == index;
 
     return LongPressDraggable<int>(
       data: index,
-      delay: const Duration(milliseconds: 150),
-      onDragStarted: () => setState(() => _draggingIndex = index),
+      delay: const Duration(milliseconds: 180),
+      onDragStarted: () {
+        setState(() {
+          if (!_isSelectionMode) {
+            _isSelectionMode = true;
+            _selectedIndexes
+              ..clear()
+              ..add(index);
+          } else if (!_selectedIndexes.contains(index)) {
+            _selectedIndexes.add(index);
+          }
+          _draggingIndex = index;
+        });
+      },
       onDragEnd: (_) {
+        // Keep selection mode — only clear active drag ghost.
         if (mounted) setState(() => _draggingIndex = null);
       },
       onDraggableCanceled: (_, __) {
-        if (mounted) setState(() => _draggingIndex = null);
+        if (!mounted) return;
+        setState(() {
+          _draggingIndex = null;
+          if (!_isSelectionMode) {
+            _isSelectionMode = true;
+            _selectedIndexes
+              ..clear()
+              ..add(index);
+          }
+        });
       },
       feedback: Material(
         color: Colors.transparent,
@@ -1203,14 +1429,16 @@ class _EditImagePreviewState extends State<EditImagePreview> {
           child: _buildGridThumbVisual(
             bytes: page.imageByte,
             pageLabel: pageLabel,
-            selected: selected,
+            isPageSelected: true,
+            selectionMode: true,
           ),
         ),
       ),
       childWhenDragging: _buildGridThumbVisual(
         bytes: page.imageByte,
         pageLabel: pageLabel,
-        selected: selected,
+        isPageSelected: true,
+        selectionMode: true,
         opacity: 0.35,
       ),
       child: DragTarget<int>(
@@ -1226,13 +1454,21 @@ class _EditImagePreviewState extends State<EditImagePreview> {
           final isTarget = candidateData.isNotEmpty;
           return GestureDetector(
             onTap: () => _selectPage(index),
+            onLongPress: () {
+              if (!_isSelectionMode) {
+                _enterSelectionMode(index);
+              } else {
+                _togglePageSelection(index);
+              }
+            },
             child: AnimatedScale(
               scale: isTarget ? 0.96 : 1,
               duration: const Duration(milliseconds: 120),
               child: _buildGridThumbVisual(
                 bytes: page.imageByte,
                 pageLabel: pageLabel,
-                selected: selected,
+                isPageSelected: isPageSelected,
+                selectionMode: _isSelectionMode,
                 opacity: isDragging ? 0.35 : 1,
               ),
             ),

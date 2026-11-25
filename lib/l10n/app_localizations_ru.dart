@@ -106,6 +106,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addPage => 'Добавить страницу';
 
   @override
+  String get holdAndDragToReorder =>
+      'Удерживайте и перетащите, чтобы изменить порядок';
+
+  @override
   String get convert => 'Конвертировать';
 
   @override

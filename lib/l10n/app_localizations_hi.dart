@@ -106,6 +106,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get addPage => 'पृष्ठ जोड़ें';
 
   @override
+  String get holdAndDragToReorder => 'होल्ड करके खींचकर क्रम बदलें';
+
+  @override
   String get convert => 'परिवर्तित करें';
 
   @override

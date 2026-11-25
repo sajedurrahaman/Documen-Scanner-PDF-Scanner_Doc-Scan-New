@@ -105,6 +105,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get addPage => '페이지 추가';
 
   @override
+  String get holdAndDragToReorder => '길게 눌러 드래그하여 순서 변경';
+
+  @override
   String get convert => '전환하다';
 
   @override

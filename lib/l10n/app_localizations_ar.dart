@@ -105,6 +105,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addPage => 'إضافة صفحة';
 
   @override
+  String get holdAndDragToReorder => 'اضغط مع الاستمرار واسحب لإعادة الترتيب';
+
+  @override
   String get convert => 'يتحول';
 
   @override
