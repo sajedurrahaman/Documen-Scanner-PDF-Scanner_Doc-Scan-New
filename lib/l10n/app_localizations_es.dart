@@ -100,6 +100,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get edit => 'Editar';
 
   @override
+  String get add => 'Añadir';
+
+  @override
   String get addPage => 'Añadir página';
 
   @override

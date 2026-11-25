@@ -99,6 +99,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get edit => 'يحرر';
 
   @override
+  String get add => 'إضافة';
+
+  @override
   String get addPage => 'إضافة صفحة';
 
   @override

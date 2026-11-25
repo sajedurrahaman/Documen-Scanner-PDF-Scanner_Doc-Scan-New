@@ -99,6 +99,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get edit => '편집하다';
 
   @override
+  String get add => '추가';
+
+  @override
   String get addPage => '페이지 추가';
 
   @override

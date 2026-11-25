@@ -99,6 +99,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get edit => '編集';
 
   @override
+  String get add => '追加';
+
+  @override
   String get addPage => 'ページを追加';
 
   @override

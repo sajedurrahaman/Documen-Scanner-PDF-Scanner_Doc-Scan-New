@@ -100,6 +100,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get edit => 'संपादित करें';
 
   @override
+  String get add => 'जोड़ें';
+
+  @override
   String get addPage => 'पृष्ठ जोड़ें';
 
   @override
