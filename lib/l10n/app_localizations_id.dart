@@ -106,6 +106,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get addPage => 'Tambah halaman';
 
   @override
+  String get holdAndDragToReorder => 'Tahan dan seret untuk menyusun ulang';
+
+  @override
   String get convert => 'Mengubah';
 
   @override

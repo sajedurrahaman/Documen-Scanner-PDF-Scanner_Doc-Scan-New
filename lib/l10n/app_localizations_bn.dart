@@ -106,6 +106,9 @@ class AppLocalizationsBn extends AppLocalizations {
   String get addPage => 'পাতা যোগ কর';
 
   @override
+  String get holdAndDragToReorder => 'ধরে টেনে ক্রম পরিবর্তন করুন';
+
+  @override
   String get convert => 'রূপান্তর করুন';
 
   @override
