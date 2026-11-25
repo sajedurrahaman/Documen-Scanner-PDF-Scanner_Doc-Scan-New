@@ -647,6 +647,10 @@ class AppLocalizationsBn extends AppLocalizations {
   String get changeAppLanguage => 'অ্যাপে ব্যবহৃত ভাষা পরিবর্তন করুন';
 
   @override
+  String get languageChangeLaterHint =>
+      'আপনি পরে সেটিংস থেকে এটি পরিবর্তন করতে পারবেন।';
+
+  @override
   String get appVersionLabel => 'সংস্করণ';
 
   @override

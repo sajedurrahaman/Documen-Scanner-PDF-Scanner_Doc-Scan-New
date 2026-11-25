@@ -642,6 +642,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get changeAppLanguage => 'غيّر اللغة المستخدمة في التطبيق';
 
   @override
+  String get languageChangeLaterHint => 'يمكنك تغيير ذلك لاحقًا من الإعدادات.';
+
+  @override
   String get appVersionLabel => 'الإصدار';
 
   @override

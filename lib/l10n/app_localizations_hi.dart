@@ -644,6 +644,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get changeAppLanguage => 'ऐप में इस्तेमाल की जाने वाली भाषा बदलें';
 
   @override
+  String get languageChangeLaterHint =>
+      'आप बाद में सेटिंग्स में इसे बदल सकते हैं।';
+
+  @override
   String get appVersionLabel => 'संस्करण';
 
   @override

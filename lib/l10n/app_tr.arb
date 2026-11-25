@@ -205,6 +205,7 @@
   "appInfoSubtitle": "Uygulama bilgisi, sürüm, lisanslar",
   "chooseAppLanguage": "Uygulama Dilini Seçin",
   "changeAppLanguage": "Uygulamada kullanılan dili değiştirin",
+  "languageChangeLaterHint": "Bunu daha sonra ayarlardan değiştirebilirsiniz.",
   "appVersionLabel": "Sürüm",
   "aboutAppDescription": "Akıllı telefonunuzu güçlü bir taşınabilir tarayıcıya dönüştürün. Belgelerinizi mobil cihazınızdan kolayca tarayın, düzenleyin, dönüştürün ve paylaşın.",
   "worksWith": "Şunlarla çalışır",

@@ -27,7 +27,14 @@ class LocalStorage {
     return _prefs.setBool(key, value);
   }
 
- bool getBool(String key) {
-    return _prefs.getBool(key)?? true;
+  bool getBool(String key) {
+    return _prefs.getBool(key) ?? true;
   }
+
+  /// Returns [defaultValue] when the key was never written.
+  bool getBoolOr(String key, {required bool defaultValue}) {
+    return _prefs.getBool(key) ?? defaultValue;
+  }
+
+  bool containsKey(String key) => _prefs.containsKey(key);
 }

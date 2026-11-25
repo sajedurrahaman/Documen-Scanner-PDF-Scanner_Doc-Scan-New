@@ -207,6 +207,7 @@
   "appInfoSubtitle": "Informasi, versi, lisensi",
   "chooseAppLanguage": "Pilih Bahasa Aplikasi",
   "changeAppLanguage": "Ubah bahasa yang digunakan di aplikasi",
+  "languageChangeLaterHint": "Anda dapat mengubahnya nanti di pengaturan.",
   "appVersionLabel": "Versi",
   "aboutAppDescription": "Ubah ponsel Anda menjadi pemindai portabel yang andal. Pindai, atur, konversi, dan bagikan dokumen dengan mudah dari perangkat seluler Anda.",
   "worksWith": "Cocok untuk",

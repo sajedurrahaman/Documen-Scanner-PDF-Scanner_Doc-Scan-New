@@ -631,6 +631,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get changeAppLanguage => '앱에서 사용하는 언어 변경';
 
   @override
+  String get languageChangeLaterHint => '나중에 설정에서 변경할 수 있습니다.';
+
+  @override
   String get appVersionLabel => '버전';
 
   @override

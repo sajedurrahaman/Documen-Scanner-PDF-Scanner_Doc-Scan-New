@@ -647,6 +647,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get changeAppLanguage => 'Uygulamada kullanılan dili değiştirin';
 
   @override
+  String get languageChangeLaterHint =>
+      'Bunu daha sonra ayarlardan değiştirebilirsiniz.';
+
+  @override
   String get appVersionLabel => 'Sürüm';
 
   @override

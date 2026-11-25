@@ -207,6 +207,7 @@
   "appInfoSubtitle": "앱 정보, 버전, 라이선스",
   "chooseAppLanguage": "앱 언어 선택",
   "changeAppLanguage": "앱에서 사용하는 언어 변경",
+  "languageChangeLaterHint": "나중에 설정에서 변경할 수 있습니다.",
   "appVersionLabel": "버전",
   "aboutAppDescription": "스마트폰을 강력한 휴대용 스캐너로 바꾸세요. 모바일 기기에서 문서를 쉽게 스캔하고 정리하고 변환하고 공유하세요.",
   "worksWith": "지원 항목",

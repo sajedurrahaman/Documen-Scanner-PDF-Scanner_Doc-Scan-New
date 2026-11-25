@@ -207,6 +207,7 @@
   "appInfoSubtitle": "アプリ情報、バージョン、ライセンス",
   "chooseAppLanguage": "アプリの言語を選択",
   "changeAppLanguage": "アプリで使う言語を変更",
+  "languageChangeLaterHint": "後で設定から変更できます。",
   "appVersionLabel": "バージョン",
   "aboutAppDescription": "スマートフォンを便利な携帯スキャナーに。モバイル端末から文書を簡単にスキャン、整理、変換、共有できます。",
   "worksWith": "対応するもの",

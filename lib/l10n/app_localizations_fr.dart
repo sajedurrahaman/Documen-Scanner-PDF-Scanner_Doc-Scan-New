@@ -653,6 +653,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get changeAppLanguage => 'Modifier la langue de l’application';
 
   @override
+  String get languageChangeLaterHint =>
+      'Vous pourrez le modifier plus tard dans les paramètres.';
+
+  @override
   String get appVersionLabel => 'Version';
 
   @override

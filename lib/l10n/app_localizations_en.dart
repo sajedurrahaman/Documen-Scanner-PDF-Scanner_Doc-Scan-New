@@ -641,6 +641,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changeAppLanguage => 'Change the language used in the app';
 
   @override
+  String get languageChangeLaterHint =>
+      'You can change this later in settings.';
+
+  @override
   String get appVersionLabel => 'Version';
 
   @override

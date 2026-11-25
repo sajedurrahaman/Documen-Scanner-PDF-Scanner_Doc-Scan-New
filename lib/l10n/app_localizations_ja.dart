@@ -633,6 +633,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get changeAppLanguage => 'アプリで使う言語を変更';
 
   @override
+  String get languageChangeLaterHint => '後で設定から変更できます。';
+
+  @override
   String get appVersionLabel => 'バージョン';
 
   @override
