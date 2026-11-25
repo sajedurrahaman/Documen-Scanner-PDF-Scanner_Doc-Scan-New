@@ -38,6 +38,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
   bool _addingPages = false;
   /// false = list (CamScanner vertical + Add below), true = grid + Add cell.
   bool _isGridView = false;
+  int? _draggingIndex;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _renameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -102,6 +103,25 @@ class _EditImagePreviewState extends State<EditImagePreview> {
   void _selectPage(int index) {
     if (_currentIndex == index) return;
     setState(() => _currentIndex = index);
+  }
+
+  void _reorderPage(
+    CameraProvider cameraProvider, {
+    required int fromIndex,
+    required int toIndex,
+  }) {
+    if (fromIndex == toIndex) return;
+    cameraProvider.reorderImages(fromIndex, toIndex);
+    setState(() {
+      if (_currentIndex == fromIndex) {
+        _currentIndex = toIndex;
+      } else if (fromIndex < _currentIndex && toIndex >= _currentIndex) {
+        _currentIndex--;
+      } else if (fromIndex > _currentIndex && toIndex <= _currentIndex) {
+        _currentIndex++;
+      }
+      _draggingIndex = null;
+    });
   }
 
   void showTopSnackbar(BuildContext context, String message) {
@@ -177,8 +197,16 @@ class _EditImagePreviewState extends State<EditImagePreview> {
           backgroundColor: const Color(0xFF131314),
           appBar: AppBar(
             backgroundColor: const Color(0xff1E1F20),
-            centerTitle: true,
+            centerTitle: false,
+            toolbarHeight: 49,
+            titleSpacing: 0,
+            leadingWidth: 40,
+            iconTheme: const IconThemeData(color: Colors.white, size: 23),
+            actionsIconTheme:
+                const IconThemeData(color: Colors.white, size: 23),
             leading: IconButton(
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
                 onPressed: () {
                   showGoogleAlertDialogue(
                       context: context,
@@ -200,40 +228,53 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                 },
                 icon: const Icon(
                   Icons.arrow_back,
+                  size: 23,
                   color: Color(0xffffffff),
                 )),
             title: cameraProvider.imageList.isEmpty
                 ? Text(
                     translation(context).pleaseTakePhoto,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 17,
                         fontWeight: FontWeight.w500,
                         color: Colors.white),
                   )
                 : Text(
-                    cameraProvider.imageList[_currentIndex].name,
+                    cameraProvider.imageList[safeIndex].name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 17,
                         fontWeight: FontWeight.w500,
                         color: Colors.white),
                   ),
             titleTextStyle: const TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w500,
             ),
             actions: [
               IconButton(
+                visualDensity: VisualDensity.compact,
                 tooltip: _isGridView ? 'List' : 'Grid',
                 onPressed: () => setState(() => _isGridView = !_isGridView),
                 icon: Icon(
                   _isGridView
                       ? Icons.view_agenda_outlined
                       : Icons.grid_view_rounded,
+                  size: 23,
                   color: Colors.white,
                 ),
               ),
               TextButton(
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  minimumSize: const Size(0, 37),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 onPressed: () async {
                   if (cameraProvider.imageList.isNotEmpty) {
                     await showGeneralDialog(
@@ -854,7 +895,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                 child: Text(
                   translation(context).option,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: AppColor.primaryColor,
                   ),
@@ -1048,7 +1089,8 @@ class _EditImagePreviewState extends State<EditImagePreview> {
 
   Widget _buildGridPages(CameraProvider cameraProvider) {
     final images = cameraProvider.imageList;
-    final crossAxisCount = MediaQuery.sizeOf(context).width >= 600 ? 3 : 2;
+    final size = MediaQuery.sizeOf(context);
+    final crossAxisCount = size.width >= 600 ? 3 : 2;
     return GridView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
@@ -1067,46 +1109,136 @@ class _EditImagePreviewState extends State<EditImagePreview> {
             label: translation(context).addPage,
           );
         }
-        final selected = index == _currentIndex;
-        final pageLabel = (index + 1).toString().padLeft(2, '0');
-        return GestureDetector(
-          onTap: () => _selectPage(index),
-          child: Column(
-            children: [
-              Expanded(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: selected ? _addAccent : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.memory(
-                      images[index].imageByte,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                pageLabel,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+        return _buildDraggableGridThumb(
+          cameraProvider: cameraProvider,
+          index: index,
+          feedbackWidth: size.width / crossAxisCount - 18,
+          feedbackHeight: (size.width / crossAxisCount - 18) / 0.72,
         );
       },
+    );
+  }
+
+  Widget _buildGridThumbVisual({
+    required Uint8List bytes,
+    required String pageLabel,
+    required bool selected,
+    double opacity = 1,
+  }) {
+    return Opacity(
+      opacity: opacity,
+      child: Column(
+        children: [
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: selected ? _addAccent : Colors.transparent,
+                  width: 2,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.memory(
+                  bytes,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            pageLabel,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Long-press drag reorder — same pattern as PDF_Converter-New reorder grid.
+  Widget _buildDraggableGridThumb({
+    required CameraProvider cameraProvider,
+    required int index,
+    required double feedbackWidth,
+    required double feedbackHeight,
+  }) {
+    final images = cameraProvider.imageList;
+    final page = images[index];
+    final pageLabel = (index + 1).toString().padLeft(2, '0');
+    final selected = index == _currentIndex;
+    final isDragging = _draggingIndex == index;
+
+    return LongPressDraggable<int>(
+      data: index,
+      delay: const Duration(milliseconds: 150),
+      onDragStarted: () => setState(() => _draggingIndex = index),
+      onDragEnd: (_) {
+        if (mounted) setState(() => _draggingIndex = null);
+      },
+      onDraggableCanceled: (_, __) {
+        if (mounted) setState(() => _draggingIndex = null);
+      },
+      feedback: Material(
+        color: Colors.transparent,
+        elevation: 8,
+        child: SizedBox(
+          width: feedbackWidth,
+          height: feedbackHeight,
+          child: _buildGridThumbVisual(
+            bytes: page.imageByte,
+            pageLabel: pageLabel,
+            selected: selected,
+          ),
+        ),
+      ),
+      childWhenDragging: _buildGridThumbVisual(
+        bytes: page.imageByte,
+        pageLabel: pageLabel,
+        selected: selected,
+        opacity: 0.35,
+      ),
+      child: DragTarget<int>(
+        onWillAcceptWithDetails: (details) => details.data != index,
+        onAcceptWithDetails: (details) {
+          _reorderPage(
+            cameraProvider,
+            fromIndex: details.data,
+            toIndex: index,
+          );
+        },
+        builder: (context, candidateData, rejectedData) {
+          final isTarget = candidateData.isNotEmpty;
+          return GestureDetector(
+            onTap: () => _selectPage(index),
+            child: AnimatedScale(
+              scale: isTarget ? 0.96 : 1,
+              duration: const Duration(milliseconds: 120),
+              child: _buildGridThumbVisual(
+                bytes: page.imageByte,
+                pageLabel: pageLabel,
+                selected: selected,
+                opacity: isDragging ? 0.35 : 1,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -1146,8 +1278,8 @@ class _DashedAddButton extends StatelessWidget {
             ),
             child: Container(
               width: double.infinity,
-              constraints: const BoxConstraints(minHeight: 48),
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+              constraints: const BoxConstraints(minHeight: 50),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 13),
               decoration: BoxDecoration(
                 color: _fill,
                 borderRadius: BorderRadius.circular(12),
