@@ -100,6 +100,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get edit => 'Düzenle';
 
   @override
+  String get add => 'Ekle';
+
+  @override
   String get addPage => 'Sayfa Ekle';
 
   @override

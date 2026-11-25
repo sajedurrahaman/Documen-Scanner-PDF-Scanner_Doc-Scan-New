@@ -100,6 +100,9 @@ class AppLocalizationsBn extends AppLocalizations {
   String get edit => 'সম্পাদনা';
 
   @override
+  String get add => 'যোগ কর';
+
+  @override
   String get addPage => 'পাতা যোগ কর';
 
   @override

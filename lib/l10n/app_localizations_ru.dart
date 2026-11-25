@@ -100,6 +100,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get edit => 'Редактировать';
 
   @override
+  String get add => 'Добавить';
+
+  @override
   String get addPage => 'Добавить страницу';
 
   @override

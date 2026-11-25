@@ -22,6 +22,7 @@ class AppAssets {
   static const String retake = "assets/icons/retake.svg";
   static const String rotate = "assets/icons/rotate.svg";
   static const String share = "assets/icons/share.svg";
+  static const String cameraIcon = "assets/icons/camera_icon.svg";
   static const String edit = "assets/icons/edit.svg";
   static const String ocr = "assets/icons/ocr.svg";
   static const String sign = "assets/icons/sign.svg";

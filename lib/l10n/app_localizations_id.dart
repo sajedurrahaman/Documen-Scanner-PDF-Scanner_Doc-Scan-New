@@ -100,6 +100,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get edit => 'Sunting';
 
   @override
+  String get add => 'Tambah';
+
+  @override
   String get addPage => 'Tambah halaman';
 
   @override

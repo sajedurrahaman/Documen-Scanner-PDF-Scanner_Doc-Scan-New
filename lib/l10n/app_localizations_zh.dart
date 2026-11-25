@@ -99,6 +99,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get edit => '編輯';
 
   @override
+  String get add => '新增';
+
+  @override
   String get addPage => '新增頁面';
 
   @override

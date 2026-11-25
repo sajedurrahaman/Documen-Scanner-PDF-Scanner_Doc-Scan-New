@@ -391,41 +391,6 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
                   ),
                 ),
               ),
-
-              // ImageEditButton(
-              //   title: translation(context).rotate,
-              //   onTap: () async {
-              //     if (cameraProvider.imageList.isNotEmpty) {
-              //       Navigator.push(
-              //         context,
-              //         MaterialPageRoute(
-              //           builder: (context) => ImageRotation(
-              //             imageModel: cameraProvider.imageList[currentIndex],
-              //             index: currentIndex,
-              //           ),
-              //         ),
-              //       );
-              //     }
-              //   },
-              //   iconPath: AppAssets.rotate,
-              // ),
-              // ImageEditButton(
-              //   title: translation(context).reframe,
-              //   onTap: () async {
-              //     if (cameraProvider.imageList.isNotEmpty) {
-              //       Navigator.push(
-              //         context,
-              //         MaterialPageRoute(
-              //           builder: (context) => CropScreen(
-              //             imageModel: cameraProvider.imageList[currentIndex],
-              //             index: currentIndex,
-              //           ),
-              //         ),
-              //       );
-              //     }
-              //   },
-              //   iconPath: AppAssets.reFrame,
-              // ),
             ],
           ),
         ),
