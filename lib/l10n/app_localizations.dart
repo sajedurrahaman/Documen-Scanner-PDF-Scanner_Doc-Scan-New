@@ -316,6 +316,18 @@ abstract class AppLocalizations {
   /// **'Hold and drag to reorder'**
   String get holdAndDragToReorder;
 
+  /// No description provided for @selectATargetDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a target document'**
+  String get selectATargetDocument;
+
+  /// No description provided for @pages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get pages;
+
   /// No description provided for @convert.
   ///
   /// In en, this message translates to:

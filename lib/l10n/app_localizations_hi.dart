@@ -109,6 +109,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get holdAndDragToReorder => 'होल्ड करके खींचकर क्रम बदलें';
 
   @override
+  String get selectATargetDocument => 'लक्ष्य दस्तावेज़ चुनें';
+
+  @override
+  String get pages => 'पृष्ठ';
+
+  @override
   String get convert => 'परिवर्तित करें';
 
   @override

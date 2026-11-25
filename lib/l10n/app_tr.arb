@@ -30,6 +30,8 @@
   "share": "Paylaş",
   "edit": "Düzenle",
   "add": "Ekle",
+  "selectATargetDocument": "Hedef belgeyi seçin",
+  "pages": "Sayfalar",
   "holdAndDragToReorder": "Basılı tutup sürükleyerek yeniden sıralayın",
   "addPage": "Sayfa Ekle",
   "convert": "Dönüştür",

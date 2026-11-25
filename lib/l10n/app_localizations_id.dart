@@ -109,6 +109,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get holdAndDragToReorder => 'Tahan dan seret untuk menyusun ulang';
 
   @override
+  String get selectATargetDocument => 'Pilih dokumen tujuan';
+
+  @override
+  String get pages => 'Halaman';
+
+  @override
   String get convert => 'Mengubah';
 
   @override

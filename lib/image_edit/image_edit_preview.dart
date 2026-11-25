@@ -1,13 +1,17 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:doc_scanner/google_ads_helper/banner_ad_widget.dart';
 import 'package:doc_scanner/google_ads_helper/google_ads_helper.dart';
+import 'package:doc_scanner/home_page/provider/recent_files_provider.dart';
+import 'package:doc_scanner/image_edit/select_target_document_screen.dart';
 import 'package:doc_scanner/image_edit/text_recognition_screen.dart';
 import 'package:doc_scanner/image_edit/widget/image_edit_button.dart';
 import 'package:doc_scanner/utils/app_color.dart';
+import 'package:doc_scanner/utils/pdf_append_helper.dart';
 import 'package:doc_scanner/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -106,6 +110,234 @@ class _EditImagePreviewState extends State<EditImagePreview> {
     _selectedIndexes
       ..clear()
       ..addAll(next);
+  }
+
+  List<int> get _sortedSelectedIndexes {
+    final indexes = _selectedIndexes.toList()..sort();
+    return indexes;
+  }
+
+  Future<void> _shareSelectedPages(CameraProvider cameraProvider) async {
+    if (_selectedIndexes.isEmpty) return;
+    final files = <XFile>[];
+    for (final index in _sortedSelectedIndexes) {
+      if (index < 0 || index >= cameraProvider.imageList.length) continue;
+      final file = await AppHelper().convertUint8ListToFile(
+        data: cameraProvider.imageList[index].imageByte,
+        extension: 'jpg',
+      );
+      files.add(XFile(file.path));
+    }
+    if (files.isEmpty || !mounted) return;
+    await Share.shareXFiles(files);
+  }
+
+  Future<void> _deleteSelectedPages(CameraProvider cameraProvider) async {
+    if (_selectedIndexes.isEmpty) return;
+    final labels = translation(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(labels.delete),
+        content: Text(labels.areYouSureYouWantToDeleteTheSelectedItems),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(labels.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(labels.delete,
+                style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final toRemove = _sortedSelectedIndexes.reversed.toList();
+    for (final index in toRemove) {
+      if (index >= 0 && index < cameraProvider.imageList.length) {
+        cameraProvider.deleteImage(index);
+      }
+    }
+    _exitSelectionMode();
+    if (cameraProvider.imageList.isEmpty && mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const BottomBar()),
+        (_) => false,
+      );
+    } else if (mounted) {
+      setState(() {
+        _currentIndex =
+            _currentIndex.clamp(0, cameraProvider.imageList.length - 1);
+      });
+    }
+  }
+
+  Future<void> _showMoveCopySheet(CameraProvider cameraProvider) async {
+    if (_selectedIndexes.isEmpty) return;
+    final labels = translation(context);
+    final choice = await showModalBottomSheet<TargetDocumentAction>(
+      context: context,
+      backgroundColor: const Color(0xff1E1F20),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        Widget option({
+          required IconData icon,
+          required String title,
+          required TargetDocumentAction action,
+        }) {
+          return ListTile(
+            leading: Icon(icon, color: Colors.white),
+            title: Text(title,
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w600)),
+            onTap: () => Navigator.pop(sheetContext, action),
+          );
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                option(
+                  icon: Icons.copy_outlined,
+                  title: labels.copy,
+                  action: TargetDocumentAction.copy,
+                ),
+                const Divider(color: Color(0xFF2A2B2C)),
+                option(
+                  icon: Icons.drive_file_move_outline,
+                  title: labels.move,
+                  action: TargetDocumentAction.move,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (choice == null || !mounted) return;
+    await _pickTargetAndTransfer(cameraProvider, choice);
+  }
+
+  Future<void> _pickTargetAndTransfer(
+    CameraProvider cameraProvider,
+    TargetDocumentAction action,
+  ) async {
+    final target = await Navigator.push<RecentFile>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SelectTargetDocumentScreen(action: action),
+      ),
+    );
+    if (target == null || !mounted) return;
+
+    final selectedSet = _selectedIndexes.toSet();
+    final selectedBytes = _sortedSelectedIndexes
+        .where((i) => i >= 0 && i < cameraProvider.imageList.length)
+        .map((i) => cameraProvider.imageList[i].imageByte)
+        .toList();
+    if (selectedBytes.isEmpty) return;
+
+    // Source doc for Recents: full doc on copy, remaining pages on move.
+    final sourceBytes = <Uint8List>[];
+    String sourceName = 'Document';
+    for (var i = 0; i < cameraProvider.imageList.length; i++) {
+      final page = cameraProvider.imageList[i];
+      if (action == TargetDocumentAction.move && selectedSet.contains(i)) {
+        continue;
+      }
+      sourceBytes.add(page.imageByte);
+      if (sourceBytes.length == 1) sourceName = page.name;
+    }
+
+    try {
+      // CamScanner-like: load target pages once, paste in memory, open grid ASAP.
+      // Disk writes happen in the background — no blocking loader.
+      final targetPages = await loadDocumentPagesFast(target.path);
+      final previewPages = <Uint8List>[...targetPages, ...selectedBytes];
+      if (!mounted) return;
+
+      final stamp = DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
+      cameraProvider.replaceImageList([
+        for (var i = 0; i < previewPages.length; i++)
+          ImageModel(
+            imageByte: previewPages[i],
+            name: 'Doc-$stamp-$i',
+            docType: 'Document',
+          ),
+      ]);
+
+      setState(() {
+        _isSelectionMode = false;
+        _selectedIndexes.clear();
+        _draggingIndex = null;
+        _isGridView = true;
+        _currentIndex = 0;
+      });
+
+      final outPath = resolvedPdfOutputPath(target.path);
+      final sourceToSave = List<Uint8List>.from(sourceBytes);
+      final pagesToPersist = List<Uint8List>.from(previewPages);
+      final recent = context.read<RecentFilesProvider>();
+      // Preserve target's place in Recents; source (moved/copied from) goes #1.
+      final targetOriginalModified = File(target.path).existsSync()
+          ? File(target.path).lastModifiedSync()
+          : null;
+
+      unawaited(() async {
+        try {
+          final targetFile = await writePdfFromImages(
+            outputPath: outPath,
+            images: pagesToPersist,
+          );
+          // Paste target keeps its previous Recent position.
+          if (await targetFile.exists()) {
+            await targetFile.setLastModified(
+              targetOriginalModified ??
+                  DateTime.now().subtract(const Duration(seconds: 5)),
+            );
+          }
+
+          if (sourceToSave.isNotEmpty) {
+            final sourceFile = await cameraProvider.saveImagesAsDocumentPdf(
+              images: sourceToSave,
+              fileName: sourceName,
+            );
+            // Source file becomes newest → Recent 1st.
+            if (sourceFile != null && await sourceFile.exists()) {
+              await sourceFile.setLastModified(DateTime.now());
+            }
+          }
+          await recent.load();
+        } catch (e) {
+          debugPrint('Background copy/move persist failed: $e');
+        }
+      }());
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${translation(context).somethingWentWrong}: $e'),
+        ),
+      );
+    }
   }
 
   @override
@@ -1102,102 +1334,138 @@ class _EditImagePreviewState extends State<EditImagePreview> {
             adUnitId: AdHelper.imageEditPreviewBannerAdUnitId,
             child: BottomAppBar(
             color: const Color(0xff1E1F20),
-            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            padding: EdgeInsets.symmetric(
+                horizontal: _isSelectionMode ? 24.0 : 10.0),
             surfaceTintColor: const Color(0xff1E1F20),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: _isSelectionMode
+                  ? MainAxisAlignment.spaceEvenly
+                  : MainAxisAlignment.spaceBetween,
               children: [
-                ImageEditButton(
-                  title: translation(context).add,
-                  onTap: _addingPages
-                      ? null
-                      : () => _addMorePages(cameraProvider),
-                  iconPath: AppAssets.cameraIcon,
-                ),
-                ImageEditButton(
-                  title: translation(context).edit,
-                  onTap: () {
-                    if (cameraProvider.imageList.isEmpty) return;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ImageEditScreen(
-                          imageIndex: _currentIndex,
-                          image: cameraProvider.imageList[_currentIndex],
-                        ),
-                      ),
-                    );
-                  },
-                  iconPath: AppAssets.edit,
-                ),
-                ImageEditButton(
-                  title: translation(context).convert,
-                  onTap: () async {
-                    final Uint8List textRecognitionImage =
-                        cameraProvider.imageList[_currentIndex].imageByte;
-                    await AppHelper()
-                        .convertUint8ListToFile(data: textRecognitionImage)
-                        .then((value) async {
-                      final inputImage = InputImage.fromFile(value);
-                      final textRecognizer =
-                          TextRecognizer(script: TextRecognitionScript.latin);
-                      await textRecognizer
-                          .processImage(inputImage)
-                          .then((recognizedText) {
-                        String text = recognizedText.text;
-                        if (text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                translation(context).thisLanguageNotSupported,
-                              ),
-                            ),
-                          );
-                        } else {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  TextRecognitionScreen(recognisedText: text),
-                            ),
-                          );
-                        }
-                      });
-                    });
-                  },
-                  iconPath: AppAssets.ocr,
-                ),
-                ImageEditButton(
-                  title: translation(context).sign,
-                  onTap: () {
-                    if (cameraProvider.imageList.isNotEmpty) {
+                if (_isSelectionMode) ...[
+                  Expanded(
+                    child: ImageEditButton(
+                      title:
+                          '${translation(context).copy}/${translation(context).move}',
+                      onTap: _selectedIndexes.isEmpty
+                          ? null
+                          : () => _showMoveCopySheet(cameraProvider),
+                      iconPath: AppAssets.moveIconGridView,
+                    ),
+                  ),
+                  Expanded(
+                    child: ImageEditButton(
+                      title: translation(context).share,
+                      onTap: _selectedIndexes.isEmpty
+                          ? null
+                          : () => _shareSelectedPages(cameraProvider),
+                      iconPath: AppAssets.shareIconGridView,
+                    ),
+                  ),
+                  Expanded(
+                    child: ImageEditButton(
+                      title: translation(context).delete,
+                      onTap: _selectedIndexes.isEmpty
+                          ? null
+                          : () => _deleteSelectedPages(cameraProvider),
+                      iconPath: AppAssets.deleteIconGridView,
+                    ),
+                  ),
+                ] else ...[
+                  ImageEditButton(
+                    title: translation(context).add,
+                    onTap: _addingPages
+                        ? null
+                        : () => _addMorePages(cameraProvider),
+                    iconPath: AppAssets.cameraIcon,
+                  ),
+                  ImageEditButton(
+                    title: translation(context).edit,
+                    onTap: () {
+                      if (cameraProvider.imageList.isEmpty) return;
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => AddSignature(
-                            imageModel: cameraProvider.imageList[_currentIndex],
+                          builder: (context) => ImageEditScreen(
                             imageIndex: _currentIndex,
+                            image: cameraProvider.imageList[_currentIndex],
                           ),
                         ),
                       );
-                    }
-                  },
-                  iconPath: AppAssets.sign,
-                ),
-                ImageEditButton(
-                  title: translation(context).share,
-                  onTap: () async {
-                    await AppHelper()
-                        .convertUint8ListToFile(
-                            data: cameraProvider
-                                .imageList[_currentIndex].imageByte,
-                            extension: 'jpg')
-                        .then((value) async {
-                      await Share.shareXFiles([XFile(value.path)]);
-                    });
-                  },
-                  iconPath: AppAssets.share,
-                ),
+                    },
+                    iconPath: AppAssets.edit,
+                  ),
+                  ImageEditButton(
+                    title: translation(context).convert,
+                    onTap: () async {
+                      final Uint8List textRecognitionImage =
+                          cameraProvider.imageList[_currentIndex].imageByte;
+                      await AppHelper()
+                          .convertUint8ListToFile(data: textRecognitionImage)
+                          .then((value) async {
+                        final inputImage = InputImage.fromFile(value);
+                        final textRecognizer = TextRecognizer(
+                            script: TextRecognitionScript.latin);
+                        await textRecognizer
+                            .processImage(inputImage)
+                            .then((recognizedText) {
+                          String text = recognizedText.text;
+                          if (text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  translation(context)
+                                      .thisLanguageNotSupported,
+                                ),
+                              ),
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TextRecognitionScreen(
+                                    recognisedText: text),
+                              ),
+                            );
+                          }
+                        });
+                      });
+                    },
+                    iconPath: AppAssets.ocr,
+                  ),
+                  ImageEditButton(
+                    title: translation(context).sign,
+                    onTap: () {
+                      if (cameraProvider.imageList.isNotEmpty) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddSignature(
+                              imageModel:
+                                  cameraProvider.imageList[_currentIndex],
+                              imageIndex: _currentIndex,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    iconPath: AppAssets.sign,
+                  ),
+                  ImageEditButton(
+                    title: translation(context).share,
+                    onTap: () async {
+                      await AppHelper()
+                          .convertUint8ListToFile(
+                              data: cameraProvider
+                                  .imageList[_currentIndex].imageByte,
+                              extension: 'jpg')
+                          .then((value) async {
+                        await Share.shareXFiles([XFile(value.path)]);
+                      });
+                    },
+                    iconPath: AppAssets.share,
+                  ),
+                ],
               ],
             ),
           ),

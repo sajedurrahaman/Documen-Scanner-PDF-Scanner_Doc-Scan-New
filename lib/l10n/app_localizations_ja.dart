@@ -108,6 +108,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get holdAndDragToReorder => '長押ししてドラッグで並べ替え';
 
   @override
+  String get selectATargetDocument => '移動先のドキュメントを選択';
+
+  @override
+  String get pages => 'ページ';
+
+  @override
   String get convert => '変換する';
 
   @override

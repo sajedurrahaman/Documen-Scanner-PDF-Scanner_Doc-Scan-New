@@ -30,6 +30,8 @@
   "share": "공유하다",
   "edit": "편집하다",
   "add": "추가",
+  "selectATargetDocument": "대상 문서 선택",
+  "pages": "페이지",
   "holdAndDragToReorder": "길게 눌러 드래그하여 순서 변경",
   "addPage": "페이지 추가",
   "convert": "전환하다",

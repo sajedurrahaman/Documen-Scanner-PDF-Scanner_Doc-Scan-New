@@ -36,6 +36,11 @@ class AppAssets {
   static const String size = "assets/icons/size.svg";
   static const String undo = "assets/icons/undo.svg";
   static const String move = "assets/icons/move.svg";
+  static const String moveIconGridView = "assets/icons/move_icon_grid_view.svg";
+  static const String shareIconGridView =
+      "assets/icons/share_icon_grid_view.svg";
+  static const String deleteIconGridView =
+      "assets/icons/delete_icon_grid_view.svg";
   static const String merge = "assets/icons/merge.svg";
   static const String pdf = "assets/icons/pdf.svg";
   static const String gallery = "assets/icons/gallery.svg";

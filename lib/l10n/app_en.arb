@@ -32,6 +32,8 @@
   "add": "Add",
   "addPage": "Add Page",
   "holdAndDragToReorder": "Hold and drag to reorder",
+  "selectATargetDocument": "Select a target document",
+  "pages": "Pages",
   "convert": "Convert",
   "sign": "Sign",
   "documentsFiles": "Documents Files",

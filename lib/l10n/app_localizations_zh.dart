@@ -108,6 +108,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get holdAndDragToReorder => '按住並拖曳以重新排序';
 
   @override
+  String get selectATargetDocument => '選擇目標文件';
+
+  @override
+  String get pages => '頁面';
+
+  @override
   String get convert => '轉變';
 
   @override
