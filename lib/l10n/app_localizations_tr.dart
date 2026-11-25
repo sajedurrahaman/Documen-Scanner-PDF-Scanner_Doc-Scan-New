@@ -110,6 +110,12 @@ class AppLocalizationsTr extends AppLocalizations {
       'Basılı tutup sürükleyerek yeniden sıralayın';
 
   @override
+  String get selectATargetDocument => 'Hedef belgeyi seçin';
+
+  @override
+  String get pages => 'Sayfalar';
+
+  @override
   String get convert => 'Dönüştür';
 
   @override

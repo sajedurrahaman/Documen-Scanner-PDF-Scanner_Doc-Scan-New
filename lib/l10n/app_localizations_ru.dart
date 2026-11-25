@@ -110,6 +110,12 @@ class AppLocalizationsRu extends AppLocalizations {
       'Удерживайте и перетащите, чтобы изменить порядок';
 
   @override
+  String get selectATargetDocument => 'Выберите целевой документ';
+
+  @override
+  String get pages => 'Страницы';
+
+  @override
   String get convert => 'Конвертировать';
 
   @override

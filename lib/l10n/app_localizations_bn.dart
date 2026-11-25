@@ -109,6 +109,12 @@ class AppLocalizationsBn extends AppLocalizations {
   String get holdAndDragToReorder => 'ধরে টেনে ক্রম পরিবর্তন করুন';
 
   @override
+  String get selectATargetDocument => 'একটি টার্গেট ডকুমেন্ট নির্বাচন করুন';
+
+  @override
+  String get pages => 'পাতা';
+
+  @override
   String get convert => 'রূপান্তর করুন';
 
   @override

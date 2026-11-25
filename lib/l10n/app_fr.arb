@@ -30,6 +30,8 @@
   "share": "Partager",
   "edit": "Modifier",
   "add": "Ajouter",
+  "selectATargetDocument": "Sélectionnez un document cible",
+  "pages": "Pages",
   "holdAndDragToReorder": "Maintenez et faites glisser pour réorganiser",
   "addPage": "Ajouter une page",
   "convert": "Convertir",

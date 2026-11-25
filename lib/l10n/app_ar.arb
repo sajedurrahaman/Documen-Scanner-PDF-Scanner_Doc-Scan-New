@@ -31,6 +31,8 @@
   "share": "يشارك",
   "edit": "يحرر",
   "add": "إضافة",
+  "selectATargetDocument": "حدد المستند الهدف",
+  "pages": "صفحات",
   "holdAndDragToReorder": "اضغط مع الاستمرار واسحب لإعادة الترتيب",
   "addPage": "إضافة صفحة",
   "convert": "يتحول",

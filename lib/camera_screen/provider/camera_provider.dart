@@ -56,6 +56,13 @@ class CameraProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void replaceImageList(List<ImageModel> images) {
+    _imageList
+      ..clear()
+      ..addAll(images);
+    notifyListeners();
+  }
+
   List<String> _idCardImages = [];
   List<String> get idCardImages => _idCardImages;
 
@@ -215,6 +222,50 @@ class CameraProvider extends ChangeNotifier {
 
   bool _pdfConverting = false;
   bool get pdfConverting => _pdfConverting;
+
+  /// Saves [images] as a PDF under Document/ so the source stays in Recents
+  /// after copy/move (CamScanner-style).
+  Future<File?> saveImagesAsDocumentPdf({
+    required List<Uint8List> images,
+    required String fileName,
+  }) async {
+    if (images.isEmpty) return null;
+    try {
+      final appDirectory = await getApplicationDocumentsDirectory();
+      final directoryPath = '${appDirectory.path}/Doc Scanner/Document';
+      await Directory(directoryPath).create(recursive: true);
+
+      final pdf = pw.Document();
+      for (final imageData in images) {
+        final pdfImage = pw.MemoryImage(imageData);
+        pdf.addPage(
+          pw.Page(
+            clip: false,
+            pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.all(0),
+            build: (pw.Context context) {
+              return pw.Center(
+                child: pw.Image(pdfImage, fit: pw.BoxFit.fill),
+              );
+            },
+          ),
+        );
+      }
+
+      var newFileName = fileName;
+      var index = 1;
+      while (File('$directoryPath/$newFileName.pdf').existsSync()) {
+        newFileName = '$fileName($index)';
+        index++;
+      }
+      final file = File('$directoryPath/$newFileName.pdf');
+      final bytes = await pdf.save();
+      return file.writeAsBytes(bytes, flush: true);
+    } catch (e) {
+      log('saveImagesAsDocumentPdf: $e');
+      return null;
+    }
+  }
 
   Future<bool> convertPdfToImage(File pdfFile) async {
     try {

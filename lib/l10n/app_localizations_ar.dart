@@ -108,6 +108,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get holdAndDragToReorder => 'اضغط مع الاستمرار واسحب لإعادة الترتيب';
 
   @override
+  String get selectATargetDocument => 'حدد المستند الهدف';
+
+  @override
+  String get pages => 'صفحات';
+
+  @override
   String get convert => 'يتحول';
 
   @override

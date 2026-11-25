@@ -108,6 +108,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get holdAndDragToReorder => '길게 눌러 드래그하여 순서 변경';
 
   @override
+  String get selectATargetDocument => '대상 문서 선택';
+
+  @override
+  String get pages => '페이지';
+
+  @override
   String get convert => '전환하다';
 
   @override

@@ -110,6 +110,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Maintenez et faites glisser pour réorganiser';
 
   @override
+  String get selectATargetDocument => 'Sélectionnez un document cible';
+
+  @override
+  String get pages => 'Pages';
+
+  @override
   String get convert => 'Convertir';
 
   @override
