@@ -40,6 +40,16 @@ class CameraProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Drag-reorder pages in the preview grid (same idea as PDF_Converter-New).
+  void reorderImages(int fromIndex, int toIndex) {
+    if (fromIndex == toIndex) return;
+    if (fromIndex < 0 || fromIndex >= _imageList.length) return;
+    if (toIndex < 0 || toIndex >= _imageList.length) return;
+    final item = _imageList.removeAt(fromIndex);
+    _imageList.insert(toIndex, item);
+    notifyListeners();
+  }
+
   void clearImageList() {
     _imageList.clear();
     notifyListeners();
