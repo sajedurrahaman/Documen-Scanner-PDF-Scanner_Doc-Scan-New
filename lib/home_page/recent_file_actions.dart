@@ -1,7 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as path;
-import 'package:pdf/widgets.dart' as pw;
+import '../utils/pdf_append_helper.dart';
 import '../utils/pdf_merge_helper.dart';
 
 /// Preserves existing files when a destination already contains the same name.
@@ -32,17 +33,13 @@ Future<File> mergeRecentFiles(List<String> files, String name) async {
   if (files.every((file) => path.extension(file).toLowerCase() == '.pdf')) {
     return mergePdfFiles(paths: files, directoryPath: directory, name: name);
   }
-  final pdf = pw.Document();
+  final images = <Uint8List>[];
   for (final file in files) {
-    final image = pw.MemoryImage(await File(file).readAsBytes());
-    pdf.addPage(pw.Page(
-        build: (_) =>
-            pw.Center(child: pw.Image(image, fit: pw.BoxFit.contain))));
+    images.add(await File(file).readAsBytes());
   }
   final output = await availableRecentFile(directory, '$name.pdf');
-  final bytes = await pdf.save();
   try {
-    return await output.writeAsBytes(bytes, flush: true);
+    return await writePdfFromImages(outputPath: output.path, images: images);
   } catch (_) {
     if (await output.exists()) await output.delete();
     rethrow;

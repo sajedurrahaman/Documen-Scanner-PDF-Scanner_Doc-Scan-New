@@ -2,12 +2,11 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:gal/gal.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:doc_scanner/home_page/provider/home_page_provider.dart';
+import 'package:doc_scanner/utils/pdf_append_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart' hide PdfDocument;
 import 'package:pdfx/pdfx.dart';
 import 'package:doc_scanner/utils/meta_events_helper.dart';
 import 'package:provider/provider.dart';
@@ -141,49 +140,27 @@ class CameraProvider extends ChangeNotifier {
     required String fileName,
   }) async {
     try {
-      String directoryPath;
       final List<Uint8List> images =
           _imageList.map((e) => e.imageByte).toList();
       final Directory appDirectory = await getApplicationDocumentsDirectory();
+      final directoryPath = '${appDirectory.path}/Doc Scanner/Document';
+      await Directory(directoryPath).create(recursive: true);
 
-      directoryPath = '${appDirectory.path}/Doc Scanner/Document';
-
-      final pdf = pw.Document();
-
-      for (var imageData in images) {
-        final pdfImage = pw.MemoryImage(imageData);
-        pdf.addPage(
-          pw.Page(
-            clip: false,
-            pageFormat: PdfPageFormat.a4,
-            margin: const pw.EdgeInsets.all(0),
-            build: (pw.Context context) {
-              return pw.Center(
-                child: pw.Image(
-                  pdfImage,
-                  fit: pw.BoxFit.fill,
-                ),
-              );
-            },
-          ),
-        );
-      }
-      int index = 1;
-      String newFileName = fileName;
+      var newFileName = fileName;
+      var index = 1;
       while (File('$directoryPath/$newFileName.pdf').existsSync()) {
         newFileName = '$fileName($index)';
         index++;
       }
-      final File file = File('$directoryPath/$newFileName.pdf');
-      final bytes = await pdf.save();
-      final pdfFile = await file.writeAsBytes(bytes, flush: true);
+      final pdfFile = await writePdfFromImages(
+        outputPath: '$directoryPath/$newFileName.pdf',
+        images: images,
+      );
+      final pdfBytes = await pdfFile.readAsBytes();
       if (Platform.isIOS) {
-        Directory iosDocumentsDirectory =
-            await getApplicationDocumentsDirectory();
-        File iOSExternalFile = File(
+        final iosDocumentsDirectory = await getApplicationDocumentsDirectory();
+        final iOSExternalFile = File(
             "${iosDocumentsDirectory.path}/Doc Scanner/Document/$fileName.pdf");
-
-        final pdfBytes = await pdf.save();
         await iOSExternalFile.writeAsBytes(pdfBytes);
         debugPrint("PDF saved to iOS: ${iOSExternalFile.path}");
       } else if (Platform.isAndroid) {
@@ -192,11 +169,8 @@ class CameraProvider extends ChangeNotifier {
         if (!await externalStorageDirectory.exists()) {
           await externalStorageDirectory.create(recursive: true);
         }
-        File externalFile =
+        final externalFile =
             File("${externalStorageDirectory.path}/$newFileName.pdf");
-
-        // Write to both locations
-        final pdfBytes = await pdf.save();
         await externalFile.writeAsBytes(pdfBytes);
       }
 
@@ -234,32 +208,16 @@ class CameraProvider extends ChangeNotifier {
       final directoryPath = '${appDirectory.path}/Doc Scanner/Document';
       await Directory(directoryPath).create(recursive: true);
 
-      final pdf = pw.Document();
-      for (final imageData in images) {
-        final pdfImage = pw.MemoryImage(imageData);
-        pdf.addPage(
-          pw.Page(
-            clip: false,
-            pageFormat: PdfPageFormat.a4,
-            margin: const pw.EdgeInsets.all(0),
-            build: (pw.Context context) {
-              return pw.Center(
-                child: pw.Image(pdfImage, fit: pw.BoxFit.fill),
-              );
-            },
-          ),
-        );
-      }
-
       var newFileName = fileName;
       var index = 1;
       while (File('$directoryPath/$newFileName.pdf').existsSync()) {
         newFileName = '$fileName($index)';
         index++;
       }
-      final file = File('$directoryPath/$newFileName.pdf');
-      final bytes = await pdf.save();
-      return file.writeAsBytes(bytes, flush: true);
+      return writePdfFromImages(
+        outputPath: '$directoryPath/$newFileName.pdf',
+        images: images,
+      );
     } catch (e) {
       log('saveImagesAsDocumentPdf: $e');
       return null;
@@ -286,7 +244,8 @@ class CameraProvider extends ChangeNotifier {
           backgroundColor: '#FFFFFFFF', // optional: white background
         );
 
-        final imageByte = pageImage!.bytes;
+        // Match CamScanner photo pages: drop empty A4 letterbox if present.
+        final imageByte = trimWhiteLetterbox(pageImage!.bytes);
 
         final fileName = DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
         _imageList.add(

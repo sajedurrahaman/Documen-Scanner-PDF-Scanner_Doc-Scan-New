@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:doc_scanner/utils/meta_events_helper.dart';
+import 'package:doc_scanner/utils/pdf_append_helper.dart';
 import 'package:path_provider/path_provider.dart';
 
 class HomePageProvider extends ChangeNotifier {
@@ -344,50 +344,34 @@ class HomePageProvider extends ChangeNotifier {
     try {
       _isCreatingPDF = true;
       notifyListeners();
-      final pdf = pw.Document();
-      for (var image in images) {
+      final compressed = <Uint8List>[];
+      for (final image in images) {
         final resizedImage = await FlutterImageCompress.compressWithFile(
           image.path,
           minHeight: 600,
           minWidth: 600,
           quality: 50,
         );
-        var pdfImage = pw.MemoryImage(resizedImage!);
-        pdf.addPage(
-          pw.Page(
-            clip: false,
-            pageFormat: PdfPageFormat.a4,
-            margin: const pw.EdgeInsets.all(0),
-            build: (pw.Context context) {
-              return pw.Center(
-                child: pw.Image(
-                  pdfImage,
-                  fit: pw.BoxFit.fill,
-                ),
-              );
-            },
-          ),
-        );
+        if (resizedImage != null) compressed.add(resizedImage);
       }
 
-      int index = 1;
-      String newFileName = fileName;
+      var newFileName = fileName;
+      var index = 1;
       while (File('$directoryPath/$newFileName.pdf').existsSync()) {
         newFileName = '$fileName($index)';
         index++;
       }
-      final File file = File('$directoryPath/$newFileName.pdf');
-      final bytes = await pdf.save();
-      File pdfFile = await file.writeAsBytes(bytes, flush: true);
+      final pdfFile = await writePdfFromImages(
+        outputPath: '$directoryPath/$newFileName.pdf',
+        images: compressed,
+      );
+      final pdfBytes = await pdfFile.readAsBytes();
 
       //Save pdf file as documents folder
       if (Platform.isIOS) {
-        Directory iosDocumentsDirectory =
-            await getApplicationDocumentsDirectory();
-        File iOSExternalFile = File(
+        final iosDocumentsDirectory = await getApplicationDocumentsDirectory();
+        final iOSExternalFile = File(
             "${iosDocumentsDirectory.path}/Doc Scanner/Document/$fileName.pdf");
-
-        final pdfBytes = await pdf.save();
         await iOSExternalFile.writeAsBytes(pdfBytes);
         debugPrint("PDF saved to iOS: ${iOSExternalFile.path}");
         _isCreatingPDF = false;
@@ -399,11 +383,8 @@ class HomePageProvider extends ChangeNotifier {
         if (!await externalStorageDirectory.exists()) {
           await externalStorageDirectory.create(recursive: true);
         }
-        File externalFile =
+        final externalFile =
             File("${externalStorageDirectory.path}/$newFileName.pdf");
-
-        // Write to both locations
-        final pdfBytes = await pdf.save();
         await externalFile.writeAsBytes(pdfBytes);
         _isCreatingPDF = false;
       }

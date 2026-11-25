@@ -17,7 +17,6 @@ import 'package:doc_scanner/main.dart';
 import 'package:doc_scanner/utils/app_assets.dart';
 import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/helper.dart';
-import 'package:doc_scanner/utils/pdf_view_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
@@ -29,6 +28,7 @@ import 'package:path/path.dart' as path;
 import 'package:url_launcher/url_launcher.dart';
 import '../camera_screen/provider/camera_provider.dart';
 import '../localaization/language_constant.dart';
+import '../utils/pdf_append_helper.dart';
 import '../utils/utils.dart';
 import 'directory_view.dart';
 import 'recent_file_see_all_screen.dart';
@@ -243,22 +243,56 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _openStoredFile(File imageFile) async {
     final lower = imageFile.path.toLowerCase();
-    if (lower.endsWith('.jpg') ||
+    final isImage = lower.endsWith('.jpg') ||
         lower.endsWith('.jpeg') ||
-        lower.endsWith('.png')) {
-      await flutterGenralDialogue(
-        context: context,
-        imageFile: imageFile,
-      );
-    } else if (lower.endsWith('.pdf')) {
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PdfViewScreen(
-            filePath: imageFile.path,
-            fileName: path.basename(imageFile.path),
+        lower.endsWith('.png');
+    final isPdf = lower.endsWith('.pdf');
+    if (!isImage && !isPdf) return;
+
+    final cameraProvider = context.read<CameraProvider>();
+    final baseName = path.basenameWithoutExtension(imageFile.path);
+
+    try {
+      List<ImageModel> pages;
+      if (isPdf) {
+        final bytesList = await loadDocumentPagesFast(imageFile.path);
+        final stamp = DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
+        pages = [
+          for (var i = 0; i < bytesList.length; i++)
+            ImageModel(
+              imageByte: bytesList[i],
+              name: '$baseName-${i + 1}-$stamp',
+              docType: 'Document',
+            ),
+        ];
+      } else {
+        pages = [
+          ImageModel(
+            imageByte: await imageFile.readAsBytes(),
+            name: baseName,
+            docType: 'Document',
           ),
+        ];
+      }
+
+      if (!mounted) return;
+      if (pages.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(translation(context).somethingWentWrong)),
+        );
+        return;
+      }
+
+      cameraProvider.replaceImageList(pages);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const EditImagePreview()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${translation(context).somethingWentWrong}: $e'),
         ),
       );
     }
