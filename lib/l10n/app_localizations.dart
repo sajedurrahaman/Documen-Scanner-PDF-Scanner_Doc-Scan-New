@@ -1354,6 +1354,12 @@ abstract class AppLocalizations {
   /// **'Change the language used in the app'**
   String get changeAppLanguage;
 
+  /// No description provided for @languageChangeLaterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change this later in settings.'**
+  String get languageChangeLaterHint;
+
   /// No description provided for @appVersionLabel.
   ///
   /// In en, this message translates to:

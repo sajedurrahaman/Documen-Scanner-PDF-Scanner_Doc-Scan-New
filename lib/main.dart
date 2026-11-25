@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:doc_scanner/bottom_bar/bottom_bar.dart';
+import 'package:doc_scanner/core/app_entry.dart';
 import 'package:doc_scanner/core/local_storage.dart';
 import 'package:doc_scanner/core/startup_gate.dart';
 import 'package:doc_scanner/home_page/provider/home_page_provider.dart';
@@ -149,7 +149,7 @@ class _MyAppState extends State<MyApp> {
               onReady: () => unawaited(_initializeBackgroundServices()),
               loadingBuilder: (_, onShown) =>
                   SplashScreen(onAnimationShown: onShown),
-              child: const BottomBar(),
+              child: AppEntry(onLocaleChanged: setLocale),
             ),
           ),
         );

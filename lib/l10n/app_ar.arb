@@ -207,6 +207,7 @@
   "appInfoSubtitle": "معلومات التطبيق والإصدار والتراخيص",
   "chooseAppLanguage": "اختر لغة التطبيق",
   "changeAppLanguage": "غيّر اللغة المستخدمة في التطبيق",
+  "languageChangeLaterHint": "يمكنك تغيير ذلك لاحقًا من الإعدادات.",
   "appVersionLabel": "الإصدار",
   "aboutAppDescription": "حوّل هاتفك الذكي إلى ماسح ضوئي محمول قوي. امسح مستنداتك ونظّمها وحوّلها وشاركها بسهولة من هاتفك.",
   "worksWith": "يعمل مع",

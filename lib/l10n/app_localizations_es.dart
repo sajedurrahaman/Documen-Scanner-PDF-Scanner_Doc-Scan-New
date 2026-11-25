@@ -650,6 +650,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get changeAppLanguage => 'Cambia el idioma de la app';
 
   @override
+  String get languageChangeLaterHint =>
+      'Puedes cambiarlo más tarde en ajustes.';
+
+  @override
   String get appVersionLabel => 'Versión';
 
   @override

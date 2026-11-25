@@ -207,6 +207,7 @@
   "appInfoSubtitle": "Informations, version et licences",
   "chooseAppLanguage": "Choisir la langue",
   "changeAppLanguage": "Modifier la langue de l’application",
+  "languageChangeLaterHint": "Vous pourrez le modifier plus tard dans les paramètres.",
   "appVersionLabel": "Version",
   "aboutAppDescription": "Transformez votre smartphone en un puissant scanner portable. Numérisez, organisez, convertissez et partagez facilement vos documents depuis votre mobile.",
   "worksWith": "Compatible avec",

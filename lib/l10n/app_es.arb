@@ -207,6 +207,7 @@
   "appInfoSubtitle": "Información, versión y licencias",
   "chooseAppLanguage": "Elige el idioma",
   "changeAppLanguage": "Cambia el idioma de la app",
+  "languageChangeLaterHint": "Puedes cambiarlo más tarde en ajustes.",
   "appVersionLabel": "Versión",
   "aboutAppDescription": "Convierte tu teléfono en un potente escáner portátil. Escanea, organiza, convierte y comparte documentos fácilmente desde tu dispositivo móvil.",
   "worksWith": "Compatible con",

@@ -647,6 +647,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get changeAppLanguage => 'Ubah bahasa yang digunakan di aplikasi';
 
   @override
+  String get languageChangeLaterHint =>
+      'Anda dapat mengubahnya nanti di pengaturan.';
+
+  @override
   String get appVersionLabel => 'Versi';
 
   @override

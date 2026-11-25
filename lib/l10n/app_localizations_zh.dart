@@ -630,6 +630,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get changeAppLanguage => '更改应用使用的语言';
 
   @override
+  String get languageChangeLaterHint => '之后可在设置中更改。';
+
+  @override
   String get appVersionLabel => '版本';
 
   @override

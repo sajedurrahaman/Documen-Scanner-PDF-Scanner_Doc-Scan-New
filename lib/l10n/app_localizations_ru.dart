@@ -649,6 +649,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get changeAppLanguage => 'Измените язык приложения';
 
   @override
+  String get languageChangeLaterHint =>
+      'Вы можете изменить это позже в настройках.';
+
+  @override
   String get appVersionLabel => 'Версия';
 
   @override
