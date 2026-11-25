@@ -28,6 +28,7 @@ import '../utils/app_assets.dart';
 import '../utils/helper.dart';
 import 'add_sgnature_screen.dart';
 import 'image_edit_screen.dart';
+import 'page_image_viewer.dart';
 
 class EditImagePreview extends StatefulWidget {
   const EditImagePreview({super.key});
@@ -394,13 +395,24 @@ class _EditImagePreviewState extends State<EditImagePreview> {
     }
   }
 
-  void _selectPage(int index) {
+  void _openPageViewer(CameraProvider cameraProvider, int index) {
     if (_isSelectionMode) {
       _togglePageSelection(index);
       return;
     }
-    if (_currentIndex == index) return;
-    setState(() => _currentIndex = index);
+    if (cameraProvider.imageList.isEmpty) return;
+    final safeIndex = index.clamp(0, cameraProvider.imageList.length - 1);
+    setState(() => _currentIndex = safeIndex);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PageImageViewer(
+          pages: cameraProvider.imageList.map((e) => e.imageByte).toList(),
+          initialIndex: safeIndex,
+          title: cameraProvider.imageList[safeIndex].name,
+        ),
+      ),
+    );
   }
 
   void _reorderPage(
@@ -1469,7 +1481,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: GestureDetector(
-            onTap: () => _selectPage(index),
+            onTap: () => _openPageViewer(cameraProvider, index),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
@@ -1721,7 +1733,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
         builder: (context, candidateData, rejectedData) {
           final isTarget = candidateData.isNotEmpty;
           return GestureDetector(
-            onTap: () => _selectPage(index),
+            onTap: () => _openPageViewer(cameraProvider, index),
             onLongPress: () {
               if (!_isSelectionMode) {
                 _enterSelectionMode(index);
