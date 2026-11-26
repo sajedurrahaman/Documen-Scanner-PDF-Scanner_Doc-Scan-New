@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:doc_scanner/image_edit/provider/image_edit_provider.dart';
 import 'package:doc_scanner/utils/addHelper.dart';
 import 'package:doc_scanner/utils/banner_ad_widget.dart';
+import 'package:doc_scanner/utils/image_bytes_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -91,11 +92,30 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () async {
-              Uint8List? data = await screenshotController.capture();
-              imageEditProvider.addState(data!);
-              Navigator.pop(context);
-            },
+            onPressed: _isLoadingRatio
+                ? null
+                : () async {
+                    try {
+                      final data = await screenshotController.capture();
+                      if (!mounted ||
+                          data == null ||
+                          data.isEmpty ||
+                          imageEditProvider.currentState == null) {
+                        return;
+                      }
+                      imageEditProvider.addState(ensureJpegBytes(data));
+                      if (mounted) Navigator.pop(context);
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${translation(context).somethingWentWrong}: $e',
+                          ),
+                        ),
+                      );
+                    }
+                  },
             child: Text(
               translation(context).done,
               style: const TextStyle(
