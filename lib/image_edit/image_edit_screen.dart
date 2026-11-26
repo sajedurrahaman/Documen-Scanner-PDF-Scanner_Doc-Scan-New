@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 import '../localaization/language_constant.dart';
 import '../utils/app_color.dart';
 import 'crop_screen.dart';
+import 'widget/full_screen_saving_overlay.dart';
 import 'widget/image_edit_unavailable.dart';
 import 'image_rotation.dart';
 
@@ -38,6 +39,7 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
   late int _pageIndex;
   bool _initialized = false;
   bool _switchingPage = false;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -106,7 +108,8 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
     }
   }
 
-  void _done() {
+  Future<void> _done() async {
+    if (_saving) return;
     final camera = context.read<CameraProvider>();
     final edit = context.read<ImageEditProvider>();
     final current = edit.currentState;
@@ -115,12 +118,19 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
         _pageIndex >= camera.imageList.length) {
       return;
     }
-    _commitPage(_pageIndex);
-    edit.clearState();
-    Navigator.pop(context);
+    setState(() => _saving = true);
+    await WidgetsBinding.instance.endOfFrame;
+    try {
+      _commitPage(_pageIndex);
+      edit.clearState();
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   void _back() {
+    if (_saving) return;
     // Discard in-progress undo stack for the visible page only; earlier
     // swiped pages were already committed in [_onPageChanged].
     context.read<ImageEditProvider>().clearState();
@@ -168,17 +178,20 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
     final canSave = bytes != null && pageCount > 0;
 
     return PopScope(
-      canPop: true,
+      canPop: !_saving,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) imageEditProvider.clearState();
       },
-      child: Scaffold(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Scaffold(
         backgroundColor: const Color(0xFF131314),
         appBar: AppBar(
           backgroundColor: const Color(0xff1E1F20),
           centerTitle: true,
           leading: IconButton(
-            onPressed: _back,
+            onPressed: _saving ? null : _back,
             icon: const Icon(Icons.arrow_back, color: Color(0xffffffff)),
           ),
           title: Text(currentModel.name),
@@ -189,7 +202,7 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: canSave ? _done : null,
+              onPressed: canSave && !_saving ? _done : null,
               child: Text(
                 translation(context).done,
                 style: const TextStyle(
@@ -355,6 +368,9 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
             ),
           ),
         ),
+          ),
+          if (_saving) const FullScreenSavingOverlay(),
+        ],
       ),
     );
   }

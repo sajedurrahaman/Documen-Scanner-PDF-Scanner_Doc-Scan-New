@@ -7,6 +7,7 @@ import 'package:doc_scanner/camera_screen/provider/camera_provider.dart';
 import 'package:doc_scanner/google_ads_helper/banner_ad_widget.dart';
 import 'package:doc_scanner/google_ads_helper/google_ads_helper.dart';
 import 'package:doc_scanner/image_edit/provider/image_edit_provider.dart';
+import 'package:doc_scanner/image_edit/widget/full_screen_saving_overlay.dart';
 import 'package:doc_scanner/utils/app_color.dart';
 import 'package:doc_scanner/utils/image_bytes_helper.dart';
 import 'package:flutter/material.dart';
@@ -170,6 +171,7 @@ class _ImageFiltersState extends State<ImageFilters> {
   Future<void> _onDone() async {
     if (_saving || _pages.isEmpty) return;
     setState(() => _saving = true);
+    await WidgetsBinding.instance.endOfFrame;
     try {
       final camera = context.read<CameraProvider>();
       final count =
@@ -220,7 +222,10 @@ class _ImageFiltersState extends State<ImageFilters> {
     final pageCount = _pages.length;
     final current = _current;
 
-    return Scaffold(
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Scaffold(
       backgroundColor: const Color(0xFF131314),
       appBar: AppBar(
         backgroundColor: const Color(0xff1E1F20),
@@ -251,9 +256,7 @@ class _ImageFiltersState extends State<ImageFilters> {
           ),
         ],
       ),
-      body: _saving
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
+      body: Stack(
               children: [
                 Positioned.fill(
                   child: Padding(
@@ -394,6 +397,9 @@ class _ImageFiltersState extends State<ImageFilters> {
           ),
         ),
       ),
+        ),
+        if (_saving) const FullScreenSavingOverlay(),
+      ],
     );
   }
 
