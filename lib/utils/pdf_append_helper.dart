@@ -105,44 +105,70 @@ Uint8List trimWhiteLetterbox(
   return Uint8List.fromList(img.encodeJpg(cropped, quality: 92));
 }
 
+Future<Uint8List?> _renderPdfPage(
+  pdfx.PdfDocument source,
+  int number, {
+  double scale = 1.5,
+}) async {
+  final page = await source.getPage(number);
+  try {
+    final rendered = await page.render(
+      width: page.width * scale,
+      height: page.height * scale,
+      format: pdfx.PdfPageImageFormat.jpeg,
+      backgroundColor: '#FFFFFF',
+    );
+    if (rendered == null) return null;
+    return trimWhiteLetterbox(rendered.bytes);
+  } finally {
+    await page.close();
+  }
+}
+
 /// Fast page load for preview (CamScanner-style — avoid heavy re-render loops).
 Future<List<Uint8List>> loadDocumentPagesFast(String path) async {
+  final pages = <Uint8List>[];
+  await loadDocumentPagesProgressive(
+    path,
+    onPage: (bytes, index, total) => pages.add(bytes),
+  );
+  return pages;
+}
+
+/// CamScanner-style: yield page 1 ASAP, then remaining pages one-by-one.
+/// [onPage] index is 0-based; [total] is known after open (1 for images).
+Future<void> loadDocumentPagesProgressive(
+  String path, {
+  required void Function(Uint8List bytes, int index, int total) onPage,
+  bool Function()? isCancelled,
+}) async {
   final lower = path.toLowerCase();
   if (lower.endsWith('.jpg') ||
       lower.endsWith('.jpeg') ||
       lower.endsWith('.png')) {
-    // Raw photos: keep as-is (no A4 canvas).
-    return [await File(path).readAsBytes()];
+    if (isCancelled?.call() == true) return;
+    onPage(await File(path).readAsBytes(), 0, 1);
+    return;
   }
   if (!lower.endsWith('.pdf') || !await File(path).exists()) {
-    return const [];
+    return;
   }
 
-  final pages = <Uint8List>[];
   final source = await pdfx.PdfDocument.openFile(path);
   try {
-    const scale = 1.5;
-    for (var number = 1; number <= source.pagesCount; number++) {
-      final page = await source.getPage(number);
-      try {
-        final rendered = await page.render(
-          width: page.width * scale,
-          height: page.height * scale,
-          format: pdfx.PdfPageImageFormat.jpeg,
-          backgroundColor: '#FFFFFF',
-        );
-        if (rendered != null) {
-          // Drop empty A4-style letterbox so preview matches CamScanner photos.
-          pages.add(trimWhiteLetterbox(rendered.bytes));
-        }
-      } finally {
-        await page.close();
-      }
+    final total = source.pagesCount;
+    for (var number = 1; number <= total; number++) {
+      if (isCancelled?.call() == true) return;
+      final bytes = await _renderPdfPage(source, number);
+      if (bytes == null) continue;
+      if (isCancelled?.call() == true) return;
+      onPage(bytes, number - 1, total);
+      // Let UI paint page 1 before continuing heavy work.
+      await Future<void>.delayed(Duration.zero);
     }
   } finally {
     await source.close();
   }
-  return pages;
 }
 
 /// Page size follows image aspect (no forced A4). Normalized to PDF points.

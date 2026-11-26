@@ -31,7 +31,13 @@ import 'image_edit_screen.dart';
 import 'page_image_viewer.dart';
 
 class EditImagePreview extends StatefulWidget {
-  const EditImagePreview({super.key});
+  const EditImagePreview({
+    super.key,
+    /// When set (Recent open), navigate immediately and load page 1 first.
+    this.openFilePath,
+  });
+
+  final String? openFilePath;
 
   @override
   State<EditImagePreview> createState() => _EditImagePreviewState();
@@ -42,6 +48,11 @@ class _EditImagePreviewState extends State<EditImagePreview> {
   int _currentIndex = 0;
   bool isSaving = false;
   bool _addingPages = false;
+  /// Waiting for first page from [openFilePath].
+  bool _openingDocument = false;
+  /// More PDF pages still decoding after page 1 is shown.
+  bool _loadingMorePages = false;
+  bool _openLoadCancelled = false;
   /// false = list (CamScanner vertical + Add below), true = grid + Add cell.
   bool _isGridView = false;
   /// CamScanner-style: stays on after long-press until back / deselect.
@@ -61,6 +72,79 @@ class _EditImagePreviewState extends State<EditImagePreview> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onListScroll);
+    final openPath = widget.openFilePath;
+    if (openPath != null && openPath.isNotEmpty) {
+      _openingDocument = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadOpenFile(openPath);
+      });
+    }
+  }
+
+  Future<void> _loadOpenFile(String filePath) async {
+    final camera = context.read<CameraProvider>();
+    camera.clearImageList();
+    final fileName = filePath.split(Platform.pathSeparator).last;
+    final dot = fileName.lastIndexOf('.');
+    final baseName = dot > 0 ? fileName.substring(0, dot) : fileName;
+    final stamp = DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
+
+    try {
+      await loadDocumentPagesProgressive(
+        filePath,
+        isCancelled: () => _openLoadCancelled || !mounted,
+        onPage: (bytes, index, total) {
+          if (_openLoadCancelled || !mounted) return;
+          camera.addImage(
+            ImageModel(
+              imageByte: bytes,
+              name: total > 1 ? '$baseName-${index + 1}-$stamp' : baseName,
+              docType: 'Document',
+            ),
+          );
+          if (!mounted) return;
+          if (index == 0) {
+            setState(() {
+              _openingDocument = false;
+              _loadingMorePages = total > 1;
+              _currentIndex = 0;
+            });
+          } else if (index >= total - 1) {
+            setState(() => _loadingMorePages = false);
+          } else {
+            setState(() {});
+          }
+        },
+      );
+      if (!mounted || _openLoadCancelled) return;
+      if (camera.imageList.isEmpty) {
+        setState(() {
+          _openingDocument = false;
+          _loadingMorePages = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(translation(context).somethingWentWrong)),
+        );
+        Navigator.pop(context);
+        return;
+      }
+      setState(() {
+        _openingDocument = false;
+        _loadingMorePages = false;
+      });
+    } catch (e) {
+      if (!mounted || _openLoadCancelled) return;
+      setState(() {
+        _openingDocument = false;
+        _loadingMorePages = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${translation(context).somethingWentWrong}: $e'),
+        ),
+      );
+      if (camera.imageList.isEmpty) Navigator.pop(context);
+    }
   }
 
   void _ensurePageKeys(int count) {
@@ -409,6 +493,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
 
   @override
   void dispose() {
+    _openLoadCancelled = true;
     _scrollController.dispose();
     _renameController.dispose();
     super.dispose();
@@ -1458,44 +1543,65 @@ class _EditImagePreviewState extends State<EditImagePreview> {
               cameraProvider.imageList.isEmpty
                   ? Expanded(
                       child: Center(
-                        child: Text(
-                          translation(context).noImageFound,
-                        ),
+                        child: _openingDocument
+                            ? const CircularProgressIndicator()
+                            : Text(translation(context).noImageFound),
                       ),
                     )
                   : Expanded(
-                      child: _isGridView
-                          ? _buildGridPages(cameraProvider)
-                          : Stack(
-                              key: _listViewportKey,
-                              children: [
-                                _buildListPages(cameraProvider),
-                                // One fixed CamScanner-style badge.
-                                Positioned(
-                                  left: 16,
-                                  top: 15,
-                                  child: IgnorePointer(
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: const BoxDecoration(
-                                        color: Color(0x8C000000),
-                                      ),
-                                      child: Text(
-                                        '${safeIndex + 1}/$imageCount',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: _isGridView
+                                ? _buildGridPages(cameraProvider)
+                                : Stack(
+                                    key: _listViewportKey,
+                                    children: [
+                                      _buildListPages(cameraProvider),
+                                      // One fixed CamScanner-style badge.
+                                      Positioned(
+                                        left: 16,
+                                        top: 15,
+                                        child: IgnorePointer(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: const BoxDecoration(
+                                              color: Color(0x8C000000),
+                                            ),
+                                            child: Text(
+                                              '${safeIndex + 1}/$imageCount',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
+                                    ],
+                                  ),
+                          ),
+                          if (_loadingMorePages)
+                            const Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 8,
+                              child: Center(
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
+                        ],
+                      ),
                     ),
             ],
           ),
