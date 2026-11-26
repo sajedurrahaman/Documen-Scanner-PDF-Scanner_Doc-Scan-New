@@ -153,9 +153,13 @@ class CameraProvider extends ChangeNotifier {
         newFileName = '$fileName($index)';
         index++;
       }
+      final pdfPath = '$directoryPath/$newFileName.pdf';
       final pdfFile = await writePdfFromImages(
-        outputPath: '$directoryPath/$newFileName.pdf',
+        outputPath: pdfPath,
         images: images,
+        rawPages: _imageList
+            .map((e) => e.rawBytes ?? e.imageByte)
+            .toList(growable: false),
       );
       // Public Documents copy is best-effort (scoped storage). App copy is source of truth.
       if (Platform.isAndroid) {
@@ -242,6 +246,7 @@ class CameraProvider extends ChangeNotifier {
         _imageList.add(
           ImageModel(
             imageByte: imageByte,
+            rawBytes: imageByte,
             name: "Doc-$fileName",
             docType: 'Document',
           ),

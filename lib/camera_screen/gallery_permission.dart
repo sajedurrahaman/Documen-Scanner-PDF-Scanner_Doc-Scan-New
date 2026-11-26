@@ -48,9 +48,11 @@ class _GalleryPermissionState extends State<GalleryPermission>
               String documentName =
                   DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
               if (image[i] != null) {
+                final bytes = await image[i]!.readAsBytes();
                 Provider.of<CameraProvider>(context, listen: false).addImage(
                   ImageModel(
-                    imageByte: await image[i]!.readAsBytes(),
+                    imageByte: bytes,
+                    rawBytes: bytes,
                     name: 'Doc-$documentName',
                     docType: 'Document',
                   ),
@@ -128,9 +130,11 @@ class _GalleryPermissionState extends State<GalleryPermission>
                     String documentName =
                         DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
                     if (image[i] != null) {
+                      final bytes = await image[i]!.readAsBytes();
                       cameraProvider.addImage(
                         ImageModel(
-                          imageByte: await image[i]!.readAsBytes(),
+                          imageByte: bytes,
+                          rawBytes: bytes,
                           name: 'Doc-$documentName',
                           docType: 'Document',
                         ),
@@ -187,9 +191,11 @@ class _GalleryPermissionState extends State<GalleryPermission>
                       String documentName =
                           DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
                       if (image[i] != null) {
+                        final bytes = await image[i]!.readAsBytes();
                         cameraProvider.addImage(
                           ImageModel(
-                            imageByte: await image[i]!.readAsBytes(),
+                            imageByte: bytes,
+                            rawBytes: bytes,
                             name: 'Doc-$documentName',
                             docType: 'Document',
                           ),
@@ -245,9 +251,11 @@ class _GalleryPermissionState extends State<GalleryPermission>
                     String documentName =
                         DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
                     if (image[i] != null) {
+                      final bytes = await image[i]!.readAsBytes();
                       cameraProvider.addImage(
                         ImageModel(
-                          imageByte: await image[i]!.readAsBytes(),
+                          imageByte: bytes,
+                          rawBytes: bytes,
                           name: 'Doc-$documentName',
                           docType: 'Document',
                         ),
@@ -300,9 +308,11 @@ class _GalleryPermissionState extends State<GalleryPermission>
                       String documentName =
                           DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
                       if (image[i] != null) {
+                        final bytes = await image[i]!.readAsBytes();
                         cameraProvider.addImage(
                           ImageModel(
-                            imageByte: await image[i]!.readAsBytes(),
+                            imageByte: bytes,
+                            rawBytes: bytes,
                             name: 'Doc-$documentName',
                             docType: 'Document',
                           ),

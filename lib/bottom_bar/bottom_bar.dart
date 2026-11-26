@@ -468,10 +468,12 @@ class _BottomBarState extends State<BottomBar> {
                           if (!mounted) return;
                           String imageName = DateFormat('yyyyMMdd_SSSS')
                               .format(DateTime.now());
+                          final bytes = await File(element).readAsBytes();
                           cameraProvider.addImage(
                             ImageModel(
                               docType: 'Document',
-                              imageByte: await File(element).readAsBytes(),
+                              imageByte: bytes,
+                              rawBytes: bytes,
                               name: "Document-$imageName",
                             ),
                           );

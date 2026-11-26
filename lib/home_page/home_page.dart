@@ -17,6 +17,7 @@ import 'package:doc_scanner/main.dart';
 import 'package:doc_scanner/utils/app_assets.dart';
 import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/helper.dart';
+import 'package:doc_scanner/utils/pdf_append_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
@@ -172,9 +173,11 @@ class _HomePageState extends State<HomePage> {
             if (!mounted) return;
             String imageName =
                 DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
+            final bytes = await File(element).readAsBytes();
             context.read<CameraProvider>().addImage(ImageModel(
                   docType: 'Document',
-                  imageByte: await File(element).readAsBytes(),
+                  imageByte: bytes,
+                  rawBytes: bytes,
                   name: "Document-$imageName",
                 ));
           }
@@ -509,6 +512,9 @@ class _HomePageState extends State<HomePage> {
       onOk: () async {
         Navigator.pop(context);
         await File(file.path).delete();
+        if (file.path.toLowerCase().endsWith('.pdf')) {
+          await deleteRawSidecarForPdf(file.path);
+        }
         if (!mounted) return;
         await _refreshRecentFiles();
       },

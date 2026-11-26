@@ -93,11 +93,14 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       await loadDocumentPagesProgressive(
         filePath,
         isCancelled: () => _openLoadCancelled || !mounted,
-        onPage: (bytes, index, total) {
+        onPage: (bytes, index, total) async {
+          if (_openLoadCancelled || !mounted) return;
+          final raw = await readRawSidecarPage(filePath, index);
           if (_openLoadCancelled || !mounted) return;
           camera.addImage(
             ImageModel(
               imageByte: bytes,
+              rawBytes: raw,
               name: total > 1 ? '$baseName-${index + 1}-$stamp' : baseName,
               docType: 'Document',
             ),
@@ -516,10 +519,12 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       for (final path in pictures) {
         final imageName =
             DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
+        final bytes = await File(path).readAsBytes();
         cameraProvider.addImage(
           ImageModel(
             docType: docType.isNotEmpty ? docType : 'Document',
-            imageByte: await File(path).readAsBytes(),
+            imageByte: bytes,
+            rawBytes: bytes,
             name: 'Document-$imageName',
           ),
         );
@@ -1050,21 +1055,15 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                           }
 
                                                           // Update image with the unique name
+                                                          final old = cameraProvider
+                                                              .imageList[
+                                                                  _currentIndex];
                                                           cameraProvider
                                                               .updateImage(
                                                             index:
                                                                 _currentIndex,
-                                                            image: ImageModel(
-                                                              imageByte:
-                                                                  cameraProvider
-                                                                      .imageList[
-                                                                          _currentIndex]
-                                                                      .imageByte,
+                                                            image: old.copyWith(
                                                               name: uniqueName,
-                                                              docType: cameraProvider
-                                                                  .imageList[
-                                                                      _currentIndex]
-                                                                  .docType,
                                                             ),
                                                           );
 
@@ -1091,23 +1090,17 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                                     .fileAlreadyExists;
                                                           });
                                                         } else {
+                                                          final old = cameraProvider
+                                                              .imageList[
+                                                                  _currentIndex];
                                                           cameraProvider
                                                               .updateImage(
                                                             index:
                                                                 _currentIndex,
-                                                            image: ImageModel(
-                                                              imageByte:
-                                                                  cameraProvider
-                                                                      .imageList[
-                                                                          _currentIndex]
-                                                                      .imageByte,
+                                                            image: old.copyWith(
                                                               name:
                                                                   _renameController
                                                                       .text,
-                                                              docType: cameraProvider
-                                                                  .imageList[
-                                                                      _currentIndex]
-                                                                  .docType,
                                                             ),
                                                           );
 
@@ -1130,23 +1123,17 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                                     .fileAlreadyExists;
                                                           });
                                                         } else {
+                                                          final old = cameraProvider
+                                                              .imageList[
+                                                                  _currentIndex];
                                                           cameraProvider
                                                               .updateImage(
                                                             index:
                                                                 _currentIndex,
-                                                            image: ImageModel(
-                                                              imageByte:
-                                                                  cameraProvider
-                                                                      .imageList[
-                                                                          _currentIndex]
-                                                                      .imageByte,
+                                                            image: old.copyWith(
                                                               name:
                                                                   _renameController
                                                                       .text,
-                                                              docType: cameraProvider
-                                                                  .imageList[
-                                                                      _currentIndex]
-                                                                  .docType,
                                                             ),
                                                           );
 
