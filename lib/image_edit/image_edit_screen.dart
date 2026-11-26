@@ -231,20 +231,20 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 12,
+                bottom: 7,
                 child: Center(
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(20),
+                      color: const Color(0xCC1E1F20),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Text(
                       '${safeIndex + 1}/$pageCount',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

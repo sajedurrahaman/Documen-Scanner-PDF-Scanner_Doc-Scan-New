@@ -281,7 +281,7 @@ class _ImageFiltersState extends State<ImageFilters> {
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: 12,
+                    bottom: 0,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -295,7 +295,7 @@ class _ImageFiltersState extends State<ImageFilters> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
+                            color: const Color(0xCC1E1F20),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(

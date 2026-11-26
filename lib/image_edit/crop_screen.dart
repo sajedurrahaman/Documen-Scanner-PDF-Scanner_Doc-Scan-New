@@ -488,7 +488,7 @@ class _CropScreenState extends State<CropScreen> {
                 // Undo (correct icon) then Redo — bottom-right of preview.
                 Positioned(
                   right: 16,
-                  bottom: 78,
+                  bottom: 73,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -538,7 +538,7 @@ class _CropScreenState extends State<CropScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
+                            color: const Color(0xCC1E1F20),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
