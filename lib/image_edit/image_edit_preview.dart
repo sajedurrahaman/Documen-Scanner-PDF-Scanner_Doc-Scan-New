@@ -52,6 +52,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
   final TextEditingController _renameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final GlobalKey _listViewportKey = GlobalKey();
+  final GlobalKey _listAddKey = GlobalKey();
   final List<GlobalKey> _pageItemKeys = [];
 
   static const _addAccent = Color(0xFF8AB4F8);
@@ -440,15 +441,13 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       }
 
       if (!mounted) return;
-      setState(() => _currentIndex = jumpTo);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_scrollController.hasClients) return;
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOut,
-        );
+      setState(() {
+        _currentIndex = jumpTo;
+        _addingPages = false;
       });
+      // Scanner Activity resume needs a beat before list layout is ready.
+      await _scrollToShowNewPageAndAdd();
+      return;
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -457,7 +456,70 @@ class _EditImagePreviewState extends State<EditImagePreview> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _addingPages = false);
+      if (mounted && _addingPages) setState(() => _addingPages = false);
+    }
+  }
+
+  /// CamScanner: scroll to end so the new page + Add button are on screen.
+  Future<void> _scrollToShowNewPageAndAdd() async {
+    // Let setState + image layout run after returning from GMS scanner.
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    if (!mounted) return;
+    await WidgetsBinding.instance.endOfFrame;
+
+    for (var i = 0; i < 24; i++) {
+      if (!mounted) return;
+      if (!_scrollController.hasClients) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        continue;
+      }
+
+      final position = _scrollController.position;
+      final max = position.maxScrollExtent;
+      // Jump first so builder/layout builds trailing items (Add + new pages).
+      if (max > 0) {
+        _scrollController.jumpTo(max);
+      }
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || !_scrollController.hasClients) return;
+
+      final settledMax = _scrollController.position.maxScrollExtent;
+      if (settledMax <= 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        continue;
+      }
+
+      if ((_scrollController.offset - settledMax).abs() > 2) {
+        await _scrollController.animateTo(
+          settledMax,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+        );
+      }
+
+      // Image decode can grow extent — pull to end again once.
+      await Future<void>.delayed(const Duration(milliseconds: 280));
+      if (!mounted || !_scrollController.hasClients) return;
+      final finalMax = _scrollController.position.maxScrollExtent;
+      if ((finalMax - _scrollController.offset).abs() > 8) {
+        await _scrollController.animateTo(
+          finalMax,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+        );
+      }
+
+      // Prefer ensuring Add is visible if its row is built.
+      final addCtx = _listAddKey.currentContext;
+      if (addCtx != null) {
+        await Scrollable.ensureVisible(
+          addCtx,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          alignment: 1.0,
+        );
+      }
+      return;
     }
   }
 
@@ -1408,10 +1470,10 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                               key: _listViewportKey,
                               children: [
                                 _buildListPages(cameraProvider),
-                                // One fixed CamScanner-style badge (not per page).
+                                // One fixed CamScanner-style badge.
                                 Positioned(
                                   left: 16,
-                                  top: 15, // AppBar gap; updates on scroll.
+                                  top: 15,
                                   child: IgnorePointer(
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
@@ -1588,6 +1650,8 @@ class _EditImagePreviewState extends State<EditImagePreview> {
     final images = cameraProvider.imageList;
     final pageCount = images.length;
     _ensurePageKeys(pageCount);
+    // Non-builder ListView so maxScrollExtent is real (builder underestimates
+    // variable-height pages, so auto-scroll after add never reached Add).
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (notification is ScrollUpdateNotification ||
@@ -1596,48 +1660,54 @@ class _EditImagePreviewState extends State<EditImagePreview> {
         }
         return false;
       },
-      child: ListView.builder(
+      child: ListView(
         controller: _scrollController,
-        // AppBar → 15px → first document (fixed badge overlays this).
         padding: const EdgeInsets.fromLTRB(0, 15, 0, 16),
-        itemCount: pageCount + 1,
-        itemBuilder: (context, index) {
-          if (index == pageCount) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: _DashedAddButton(
-                label: translation(context).add,
-                enabled: !_addingPages,
-                onTap: () => _addMorePages(cameraProvider),
+        children: [
+          for (var index = 0; index < pageCount; index++)
+            Padding(
+              key: _pageItemKeys[index],
+              padding: EdgeInsets.fromLTRB(
+                16,
+                0,
+                16,
+                index == pageCount - 1 ? 0 : 12,
               ),
-            );
-          }
-          final selected = index == _currentIndex;
-          return Padding(
-            key: _pageItemKeys[index],
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: GestureDetector(
-              onTap: () => _openPageViewer(cameraProvider, index),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: selected ? _addAccent : Colors.transparent,
-                    width: 2,
+              child: GestureDetector(
+                onTap: () => _openPageViewer(cameraProvider, index),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: index == _currentIndex
+                          ? _addAccent
+                          : Colors.transparent,
+                      width: 2,
+                    ),
                   ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.memory(
-                    images[index].imageByte,
-                    fit: BoxFit.contain,
-                    width: double.infinity,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.memory(
+                      images[index].imageByte,
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      gaplessPlayback: true,
+                    ),
                   ),
                 ),
               ),
             ),
-          );
-        },
+          // Last page → Add (same spacing/UI as before).
+          Padding(
+            key: _listAddKey,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: _DashedAddButton(
+              label: translation(context).add,
+              enabled: !_addingPages,
+              onTap: () => _addMorePages(cameraProvider),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1919,12 +1989,12 @@ class _DashedAddButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: enabled ? onTap : null,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(4),
           child: CustomPaint(
             // Stroke must paint ABOVE the fill or the dashed border disappears.
             foregroundPainter: _DashedRRectPainter(
               color: accent,
-              radius: 12,
+              radius: 4,
               strokeWidth: 1.5,
               dashWidth: 5,
               dashGap: 4,
@@ -1935,7 +2005,7 @@ class _DashedAddButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 13),
               decoration: BoxDecoration(
                 color: _fill,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
