@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/meta_events_helper.dart';
 import 'package:doc_scanner/utils/pdf_append_helper.dart';
 import 'package:path_provider/path_provider.dart';
@@ -365,29 +366,17 @@ class HomePageProvider extends ChangeNotifier {
         outputPath: '$directoryPath/$newFileName.pdf',
         images: compressed,
       );
-      final pdfBytes = await pdfFile.readAsBytes();
 
-      //Save pdf file as documents folder
-      if (Platform.isIOS) {
-        final iosDocumentsDirectory = await getApplicationDocumentsDirectory();
-        final iOSExternalFile = File(
-            "${iosDocumentsDirectory.path}/Doc Scanner/Document/$fileName.pdf");
-        await iOSExternalFile.writeAsBytes(pdfBytes);
-        debugPrint("PDF saved to iOS: ${iOSExternalFile.path}");
-        _isCreatingPDF = false;
-      } else if (Platform.isAndroid) {
-        final externalStorageDirectory =
-            directoryPath.split('/').last == 'Document'
-                ? Directory('/storage/emulated/0/Documents/Document')
-                : Directory('/storage/emulated/0/Documents/IDCard');
-        if (!await externalStorageDirectory.exists()) {
-          await externalStorageDirectory.create(recursive: true);
-        }
-        final externalFile =
-            File("${externalStorageDirectory.path}/$newFileName.pdf");
-        await externalFile.writeAsBytes(pdfBytes);
-        _isCreatingPDF = false;
+      // Public Documents copy is best-effort (scoped storage). App copy is source of truth.
+      if (Platform.isAndroid) {
+        final subfolder =
+            directoryPath.split('/').last == 'Document' ? 'Document' : 'IDCard';
+        await DownloadHelper.trySaveToPublicDocuments(
+          pdfFile.path,
+          subfolder: subfolder,
+        );
       }
+      _isCreatingPDF = false;
 
       notifyListeners();
       await MetaEventsHelper.logPdfCreated();

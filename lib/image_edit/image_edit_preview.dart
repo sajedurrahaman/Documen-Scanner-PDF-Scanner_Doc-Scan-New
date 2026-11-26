@@ -1135,8 +1135,23 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                                       .text,
                                                             )
                                                                 .then((value) {
+                                                              if (value ==
+                                                                  null) {
+                                                                if (context
+                                                                    .mounted) {
+                                                                  setState(() {
+                                                                    isSaving =
+                                                                        false;
+                                                                  });
+                                                                }
+                                                                return;
+                                                              }
                                                               cameraProvider
                                                                   .clearImageList();
+                                                              if (!context
+                                                                  .mounted) {
+                                                                return;
+                                                              }
                                                               Navigator
                                                                   .pushAndRemoveUntil(
                                                                 context,

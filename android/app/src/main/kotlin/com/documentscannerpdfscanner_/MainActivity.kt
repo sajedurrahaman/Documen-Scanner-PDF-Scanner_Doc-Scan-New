@@ -36,22 +36,44 @@ class MainActivity : FlutterActivity() {
             messenger.makeBackgroundTaskQueue(),
         )
             .setMethodCallHandler { call, result ->
-                if (call.method == "saveToDownloads") {
-                    val fileName = call.argument<String>("fileName")
-                    val sourcePath = call.argument<String>("sourcePath")
-                    val mimeType = call.argument<String>("mimeType") ?: "application/octet-stream"
-                    if (fileName.isNullOrBlank() || sourcePath.isNullOrBlank()) {
-                        result.error("invalid_args", "fileName and sourcePath are required", null)
-                        return@setMethodCallHandler
+                when (call.method) {
+                    "saveToDownloads" -> {
+                        val fileName = call.argument<String>("fileName")
+                        val sourcePath = call.argument<String>("sourcePath")
+                        val mimeType = call.argument<String>("mimeType") ?: "application/octet-stream"
+                        if (fileName.isNullOrBlank() || sourcePath.isNullOrBlank()) {
+                            result.error("invalid_args", "fileName and sourcePath are required", null)
+                            return@setMethodCallHandler
+                        }
+                        try {
+                            val savedPath = saveToDownloads(fileName, File(sourcePath), mimeType)
+                            result.success(savedPath)
+                        } catch (e: Exception) {
+                            result.error("save_failed", e.message, null)
+                        }
                     }
-                    try {
-                        val savedPath = saveToDownloads(fileName, File(sourcePath), mimeType)
-                        result.success(savedPath)
-                    } catch (e: Exception) {
-                        result.error("save_failed", e.message, null)
+                    "saveToPublicDocuments" -> {
+                        val fileName = call.argument<String>("fileName")
+                        val sourcePath = call.argument<String>("sourcePath")
+                        val mimeType = call.argument<String>("mimeType") ?: "application/pdf"
+                        val subfolder = call.argument<String>("subfolder") ?: "Document"
+                        if (fileName.isNullOrBlank() || sourcePath.isNullOrBlank()) {
+                            result.error("invalid_args", "fileName and sourcePath are required", null)
+                            return@setMethodCallHandler
+                        }
+                        try {
+                            val savedPath = saveToPublicDocuments(
+                                fileName,
+                                File(sourcePath),
+                                mimeType,
+                                subfolder,
+                            )
+                            result.success(savedPath)
+                        } catch (e: Exception) {
+                            result.error("save_failed", e.message, null)
+                        }
                     }
-                } else {
-                    result.notImplemented()
+                    else -> result.notImplemented()
                 }
             }
     }
@@ -94,6 +116,61 @@ class MainActivity : FlutterActivity() {
                 downloadsDir.mkdirs()
             }
             val outFile = File(downloadsDir, fileName)
+            if (isSameFile(outFile, source)) {
+                return outFile.absolutePath
+            }
+            FileOutputStream(outFile).use { output ->
+                source.inputStream().use { input -> input.copyTo(output) }
+            }
+            outFile.absolutePath
+        }
+    }
+
+    /// Public Documents via MediaStore (API 29+) — avoids PathAccessException on
+    /// direct `/storage/emulated/0/Documents/...` writes under scoped storage.
+    private fun saveToPublicDocuments(
+        fileName: String,
+        source: File,
+        mimeType: String,
+        subfolder: String,
+    ): String {
+        require(source.isFile) { "Source file not found" }
+        val relativePath = "${Environment.DIRECTORY_DOCUMENTS}/$subfolder"
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            val resolver = contentResolver
+            val collection = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            val uri = resolver.insert(collection, values)
+                ?: throw IllegalStateException("Failed to create documents entry")
+
+            try {
+                if (!isSameFile(uri, source)) {
+                    resolver.openOutputStream(uri)?.use { output ->
+                        source.inputStream().use { input -> input.copyTo(output) }
+                    } ?: throw IllegalStateException("Failed to open documents stream")
+                }
+                values.clear()
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+                uri.toString()
+            } catch (error: Exception) {
+                resolver.delete(uri, null, null)
+                throw error
+            }
+        } else {
+            val docsDir = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                subfolder,
+            )
+            if (!docsDir.exists()) {
+                docsDir.mkdirs()
+            }
+            val outFile = File(docsDir, fileName)
             if (isSameFile(outFile, source)) {
                 return outFile.absolutePath
             }

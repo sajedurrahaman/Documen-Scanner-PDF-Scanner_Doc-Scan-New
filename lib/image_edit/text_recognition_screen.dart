@@ -2,11 +2,11 @@
 
 import 'dart:io';
 import 'package:doc_scanner/utils/app_color.dart';
+import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/helper.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:permission_handler/permission_handler.dart';
 import '../localaization/language_constant.dart';
 
 class TextRecognitionScreen extends StatefulWidget {
@@ -157,10 +157,11 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
                                           Navigator.pop(context);
                                           await savePdfFile(uniqueSavePath,
                                               textEditingController.text);
-
-                                          // Save the PDF to Downloads folder
-                                          await saveToDownloadsFolder(uniqName!,
-                                              textEditingController.text);
+                                          await DownloadHelper
+                                              .trySaveToPublicDocuments(
+                                            uniqueSavePath,
+                                            subfolder: 'Document',
+                                          );
                                         },
                                         child: const Text("Create Duplicate"),
                                       ),
@@ -172,10 +173,10 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
                               // Save the PDF if the file doesn't exist
                               await savePdfFile(
                                   initialSavePath, textEditingController.text);
-
-                              // Save the PDF to Downloads folder
-                              await saveToDownloadsFolder(renameController.text,
-                                  textEditingController.text);
+                              await DownloadHelper.trySaveToPublicDocuments(
+                                initialSavePath,
+                                subfolder: 'Document',
+                              );
                             }
                           } else {
                             // Show an error message if the file name is empty
@@ -234,49 +235,4 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
 
     return uniqueSavePath;
   }
-
-  Future<void> saveToDownloadsFolder(String fileName, String content) async {
-    // Request storage permission
-    var status = await Permission.storage.request();
-    if (status.isGranted) {
-      final pdf = pw.Document();
-      pdf.addPage(
-        pw.Page(
-          build: (pw.Context context) => pw.Center(
-            child: pw.Text(content),
-          ),
-        ),
-      );
-      //  Get Downloads directory path
-
-      if (Platform.isIOS) {
-        Directory iosDocumentsDirectory =
-            await getApplicationDocumentsDirectory();
-        File iOSExternalFile = File(
-            "${iosDocumentsDirectory.path}/Doc Scanner/Document/$fileName.pdf");
-
-        final pdfBytes = await pdf.save();
-        await iOSExternalFile.writeAsBytes(pdfBytes);
-        debugPrint("PDF saved to iOS: ${iOSExternalFile.path}");
-      } else {
-        final externalStorageDirectory =
-            Directory('/storage/emulated/0/Documents');
-        if (!await externalStorageDirectory.exists()) {
-          await externalStorageDirectory.create(recursive: true);
-        }
-        File externalFile =
-            File("${externalStorageDirectory.path}/$fileName.pdf");
-
-        // Write to both locations
-        final pdfBytes = await pdf.save();
-
-        await externalFile.writeAsBytes(pdfBytes);
-        debugPrint("PDF saved to Downloads: $externalStorageDirectory");
-      }
-    } else {
-      debugPrint("Permission denied to access external storage");
-    }
-  }
-
-// Method to generate PDF content
 }

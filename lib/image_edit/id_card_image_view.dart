@@ -7,6 +7,7 @@ import 'package:doc_scanner/bottom_bar/bottom_bar.dart';
 import 'package:doc_scanner/google_ads_helper/banner_ad_widget.dart';
 import 'package:doc_scanner/google_ads_helper/google_ads_helper.dart';
 import 'package:doc_scanner/utils/app_color.dart';
+import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/helper.dart';
 import 'package:doc_scanner/utils/meta_events_helper.dart';
 import 'package:doc_scanner/utils/utils.dart';
@@ -156,31 +157,13 @@ class _IdCardImagePreviewState extends State<IdCardImagePreview> {
               actions: [
                 TextButton(
                   onPressed: () async {
-                    // Save with new name
-                    if (Platform.isIOS) {
-                      Directory iosDocumentsDirectory =
-                          await getApplicationDocumentsDirectory();
-                      File iOSExternalFile = File(
-                          "${iosDocumentsDirectory.path}/Doc Scanner/ID Card/$newFileName.pdf");
-
-                      final pdfBytes = await pdf.save();
-                      await iOSExternalFile.writeAsBytes(pdfBytes);
-                      debugPrint("PDF saved to iOS: ${iOSExternalFile.path}");
-                    } else if (Platform.isAndroid) {
-                      final externalStorageDirectory =
-                          Directory('/storage/emulated/0/Documents/IDCard');
-                      if (!await externalStorageDirectory.exists()) {
-                        await externalStorageDirectory.create(recursive: true);
-                      }
-                      File externalFile = File(
-                          "${externalStorageDirectory.path}/$newFileName.pdf");
-                      pdfFile = File("$appSpecificPath/$newFileName.pdf");
-                      await pdfFile.writeAsBytes(await pdf.save());
-                      // Save the PDF in the general "Documents" folder
-
-                      // Write to both locations
-                      final pdfBytes = await pdf.save();
-                      await externalFile.writeAsBytes(pdfBytes);
+                    pdfFile = File("$appSpecificPath/$newFileName.pdf");
+                    await pdfFile.writeAsBytes(await pdf.save());
+                    if (Platform.isAndroid) {
+                      await DownloadHelper.trySaveToPublicDocuments(
+                        pdfFile.path,
+                        subfolder: 'IDCard',
+                      );
                     }
 
                     await MetaEventsHelper.logPdfCreated();
@@ -209,29 +192,11 @@ class _IdCardImagePreviewState extends State<IdCardImagePreview> {
       } else {
         // Save directly if file does not exist
         await pdfFile.writeAsBytes(await pdf.save());
-
-        // Save the PDF in the general "Documents" folder
-        if (Platform.isIOS) {
-          Directory iosDocumentsDirectory =
-              await getApplicationDocumentsDirectory();
-          File iOSExternalFile = File(
-              "${iosDocumentsDirectory.path}/Doc Scanner/ID Card/$fileName.pdf");
-
-          final pdfBytes = await pdf.save();
-          await iOSExternalFile.writeAsBytes(pdfBytes);
-          debugPrint("PDF saved to iOS: ${iOSExternalFile.path}");
-        } else if (Platform.isAndroid) {
-          final externalStorageDirectory =
-              Directory('/storage/emulated/0/Documents/IDCard');
-          if (!await externalStorageDirectory.exists()) {
-            await externalStorageDirectory.create(recursive: true);
-          }
-          File externalFile =
-              File("${externalStorageDirectory.path}/$fileName.pdf");
-
-          // Write to both locations
-          final pdfBytes = await pdf.save();
-          await externalFile.writeAsBytes(pdfBytes);
+        if (Platform.isAndroid) {
+          await DownloadHelper.trySaveToPublicDocuments(
+            pdfFile.path,
+            subfolder: 'IDCard',
+          );
         }
 
         await MetaEventsHelper.logPdfCreated();
