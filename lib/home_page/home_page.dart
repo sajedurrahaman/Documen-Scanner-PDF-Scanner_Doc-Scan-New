@@ -28,7 +28,6 @@ import 'package:path/path.dart' as path;
 import 'package:url_launcher/url_launcher.dart';
 import '../camera_screen/provider/camera_provider.dart';
 import '../localaization/language_constant.dart';
-import '../utils/pdf_append_helper.dart';
 import '../utils/utils.dart';
 import 'directory_view.dart';
 import 'recent_file_see_all_screen.dart';
@@ -250,53 +249,16 @@ class _HomePageState extends State<HomePage> {
     final isPdf = lower.endsWith('.pdf');
     if (!isImage && !isPdf) return;
 
+    // CamScanner-style: open preview immediately; page 1 loads first inside.
     final cameraProvider = context.read<CameraProvider>();
-    final baseName = path.basenameWithoutExtension(imageFile.path);
-
-    try {
-      List<ImageModel> pages;
-      if (isPdf) {
-        final bytesList = await loadDocumentPagesFast(imageFile.path);
-        final stamp = DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
-        pages = [
-          for (var i = 0; i < bytesList.length; i++)
-            ImageModel(
-              imageByte: bytesList[i],
-              name: '$baseName-${i + 1}-$stamp',
-              docType: 'Document',
-            ),
-        ];
-      } else {
-        pages = [
-          ImageModel(
-            imageByte: await imageFile.readAsBytes(),
-            name: baseName,
-            docType: 'Document',
-          ),
-        ];
-      }
-
-      if (!mounted) return;
-      if (pages.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(translation(context).somethingWentWrong)),
-        );
-        return;
-      }
-
-      cameraProvider.replaceImageList(pages);
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const EditImagePreview()),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${translation(context).somethingWentWrong}: $e'),
-        ),
-      );
-    }
+    cameraProvider.clearImageList();
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditImagePreview(openFilePath: imageFile.path),
+      ),
+    );
   }
 
   Future<void> _openCodeFile(String filePath) async {
