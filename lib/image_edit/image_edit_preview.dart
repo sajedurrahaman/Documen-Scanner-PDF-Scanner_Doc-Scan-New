@@ -51,8 +51,73 @@ class _EditImagePreviewState extends State<EditImagePreview> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _renameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final GlobalKey _listViewportKey = GlobalKey();
+  final List<GlobalKey> _pageItemKeys = [];
 
   static const _addAccent = Color(0xFF8AB4F8);
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onListScroll);
+  }
+
+  void _ensurePageKeys(int count) {
+    while (_pageItemKeys.length < count) {
+      _pageItemKeys.add(GlobalKey());
+    }
+    if (_pageItemKeys.length > count) {
+      _pageItemKeys.removeRange(count, _pageItemKeys.length);
+    }
+  }
+
+  void _onListScroll() {
+    if (_isGridView) return;
+    _syncListPageIndex();
+  }
+
+  /// Fixed top badge follows whichever page sits under the list top (CamScanner).
+  void _syncListPageIndex() {
+    if (!mounted || _isGridView) return;
+    final count = context.read<CameraProvider>().imageList.length;
+    if (count == 0) return;
+
+    final viewportCtx = _listViewportKey.currentContext;
+    if (viewportCtx == null) return;
+    final viewportBox = viewportCtx.findRenderObject() as RenderBox?;
+    if (viewportBox == null || !viewportBox.hasSize) return;
+
+    final viewportTop = viewportBox.localToGlobal(Offset.zero).dy;
+    final viewportBottom = viewportTop + viewportBox.size.height;
+    final anchor = viewportTop + 15;
+
+    int? covering;
+    int closest = _currentIndex.clamp(0, count - 1);
+    var closestDist = double.infinity;
+
+    for (var i = 0; i < count && i < _pageItemKeys.length; i++) {
+      final ctx = _pageItemKeys[i].currentContext;
+      if (ctx == null) continue;
+      final box = ctx.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) continue;
+      final top = box.localToGlobal(Offset.zero).dy;
+      final bottom = top + box.size.height;
+      if (bottom <= viewportTop || top >= viewportBottom) continue;
+      if (top <= anchor && bottom > anchor) {
+        covering = i;
+      }
+      final dist = (top - anchor).abs();
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = i;
+      }
+    }
+
+    final next = covering ?? closest;
+    if (next != _currentIndex) {
+      setState(() => _currentIndex = next);
+    }
+  }
 
   void _enterSelectionMode(int index) {
     setState(() {
@@ -1339,22 +1404,37 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                   : Expanded(
                       child: _isGridView
                           ? _buildGridPages(cameraProvider)
-                          : _buildListPages(cameraProvider),
+                          : Stack(
+                              key: _listViewportKey,
+                              children: [
+                                _buildListPages(cameraProvider),
+                                // One fixed CamScanner-style badge (not per page).
+                                Positioned(
+                                  left: 16,
+                                  top: 15, // AppBar gap; updates on scroll.
+                                  child: IgnorePointer(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0x8C000000),
+                                      ),
+                                      child: Text(
+                                        '${safeIndex + 1}/$imageCount',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
-              // List keeps bottom "1/n"; grid shows count under each thumbnail.
-              if (!_isGridView && cameraProvider.imageList.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
-                  child: Text(
-                    '${safeIndex + 1}/$imageCount',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
             ],
           ),
           bottomNavigationBar: BottomBarWithBanner(
@@ -1506,47 +1586,59 @@ class _EditImagePreviewState extends State<EditImagePreview> {
 
   Widget _buildListPages(CameraProvider cameraProvider) {
     final images = cameraProvider.imageList;
-    return ListView.builder(
-      controller: _scrollController,
-      // No horizontal padding here — it was stacking with the Add button padding.
-      padding: const EdgeInsets.fromLTRB(0, 12, 0, 16),
-      itemCount: images.length + 1,
-      itemBuilder: (context, index) {
-        if (index == images.length) {
+    final pageCount = images.length;
+    _ensurePageKeys(pageCount);
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollUpdateNotification ||
+            notification is ScrollEndNotification) {
+          _syncListPageIndex();
+        }
+        return false;
+      },
+      child: ListView.builder(
+        controller: _scrollController,
+        // AppBar → 15px → first document (fixed badge overlays this).
+        padding: const EdgeInsets.fromLTRB(0, 15, 0, 16),
+        itemCount: pageCount + 1,
+        itemBuilder: (context, index) {
+          if (index == pageCount) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: _DashedAddButton(
+                label: translation(context).add,
+                enabled: !_addingPages,
+                onTap: () => _addMorePages(cameraProvider),
+              ),
+            );
+          }
+          final selected = index == _currentIndex;
           return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: _DashedAddButton(
-              label: translation(context).add,
-              enabled: !_addingPages,
-              onTap: () => _addMorePages(cameraProvider),
+            key: _pageItemKeys[index],
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: GestureDetector(
+              onTap: () => _openPageViewer(cameraProvider, index),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: selected ? _addAccent : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.memory(
+                    images[index].imageByte,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                  ),
+                ),
+              ),
             ),
           );
-        }
-        final selected = index == _currentIndex;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: GestureDetector(
-            onTap: () => _openPageViewer(cameraProvider, index),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: selected ? _addAccent : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: Image.memory(
-                  images[index].imageByte,
-                  fit: BoxFit.contain,
-                  width: double.infinity,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 
@@ -1610,7 +1702,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(4),
                       border: Border.all(
                         color: borderColor,
                         width: borderWidth,
@@ -1631,7 +1723,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                       ],
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(4),
                       child: Image.memory(
                         bytes,
                         fit: BoxFit.cover,
@@ -1900,11 +1992,11 @@ class _GridAddTile extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: enabled ? onTap : null,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(4),
               child: CustomPaint(
                 foregroundPainter: _DashedRRectPainter(
                   color: accent,
-                  radius: 12,
+                  radius: 4,
                   strokeWidth: 1.5,
                   dashWidth: 5,
                   dashGap: 4,
@@ -1913,7 +2005,7 @@ class _GridAddTile extends StatelessWidget {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: _fill,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
