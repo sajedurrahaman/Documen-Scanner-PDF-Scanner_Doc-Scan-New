@@ -6,6 +6,7 @@ import 'package:colorfilter_generator/presets.dart';
 import 'package:doc_scanner/google_ads_helper/banner_ad_widget.dart';
 import 'package:doc_scanner/google_ads_helper/google_ads_helper.dart';
 import 'package:doc_scanner/utils/app_color.dart';
+import 'package:doc_scanner/utils/image_bytes_helper.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -72,13 +73,27 @@ class _ImageFiltersState extends State<ImageFilters> {
               ),
             ),
             onPressed: () async {
-              Uint8List? data = await screenshotController.capture();
-              if (!mounted ||
-                  data == null ||
-                  data.isEmpty ||
-                  imageEditProvider.currentState == null) return;
-              imageEditProvider.addState(data);
-              Navigator.pop(context);
+              try {
+                final data = await screenshotController.capture();
+                if (!mounted ||
+                    data == null ||
+                    data.isEmpty ||
+                    imageEditProvider.currentState == null) {
+                  return;
+                }
+                // Screenshot is PNG; convert to JPEG for PDF export.
+                imageEditProvider.addState(ensureJpegBytes(data));
+                if (mounted) Navigator.pop(context);
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${translation(context).somethingWentWrong}: $e',
+                    ),
+                  ),
+                );
+              }
             },
           ),
         ],

@@ -3,16 +3,13 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:doc_scanner/utils/image_bytes_helper.dart';
 import 'package:image/image.dart' as img;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdfx/pdfx.dart' as pdfx;
 
-img.Image? _decodePageImage(Uint8List bytes) {
-  return img.decodeJpg(bytes) ??
-      img.decodePng(bytes) ??
-      img.decodeImage(bytes);
-}
+img.Image? _decodePageImage(Uint8List bytes) => decodeAnyImage(bytes);
 
 bool _isNearWhite(img.Pixel p, int threshold) {
   final luma = (0.299 * p.r) + (0.587 * p.g) + (0.114 * p.b);
@@ -174,9 +171,11 @@ Future<File> writePdfFromImages({
 }) async {
   final output = pw.Document();
   for (final raw in images) {
+    // Filter/size screens may store PNG screenshots; PDF needs JPEG.
+    final normalized = ensureJpegBytes(raw);
     // Ensure we never re-embed a previous A4 letterbox frame.
-    final bytes = trimWhiteLetterbox(raw);
-    final image = pw.MemoryImage(bytes);
+    final bytes = trimWhiteLetterbox(normalized);
+    final image = pw.MemoryImage(ensureJpegBytes(bytes));
     final pageFormat = await _pageFormatForImage(bytes);
     output.addPage(
       pw.Page(
