@@ -8,6 +8,7 @@ import 'package:doc_scanner/home_page/provider/recent_files_provider.dart';
 import 'package:doc_scanner/image_edit/select_target_document_screen.dart';
 import 'package:doc_scanner/image_edit/text_recognition_screen.dart';
 import 'package:doc_scanner/image_edit/widget/image_edit_button.dart';
+import 'package:doc_scanner/utils/Common.dart';
 import 'package:doc_scanner/utils/addHelper.dart';
 import 'package:doc_scanner/utils/app_color.dart';
 import 'package:doc_scanner/utils/banner_ad_widget.dart';
@@ -1136,25 +1137,31 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                             setState(() {
                                                               isSaving = true;
                                                             });
-                                                            try {
-                                                              await cameProvider
-                                                                  .createPDFFromByte(
-                                                                context:
-                                                                    context,
-                                                                fileName:
-                                                                    renameController
-                                                                        .text,
-                                                              );
-                                                              if (!context
-                                                                  .mounted) {
+                                                            cameProvider
+                                                                .createPDFFromByte(
+                                                              context: context,
+                                                              fileName:
+                                                                  renameController
+                                                                      .text,
+                                                            )
+                                                                .then((value) {
+                                                              if (value ==
+                                                                  null) {
+                                                                if (context
+                                                                    .mounted) {
+                                                                  setState(() {
+                                                                    isSaving =
+                                                                        false;
+                                                                  });
+                                                                }
                                                                 return;
                                                               }
                                                               cameraProvider
                                                                   .clearImageList();
-                                                              showTopSnackbar(
-                                                                context,
-                                                                "PDF save sasuccessfully in Document Folder",
-                                                              );
+                                                              if (!context
+                                                                  .mounted) {
+                                                                return;
+                                                              }
                                                               Navigator
                                                                   .pushAndRemoveUntil(
                                                                 context,
@@ -1170,15 +1177,13 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                                 (route) =>
                                                                     false,
                                                               );
-                                                            } catch (_) {
-                                                              if (context
-                                                                  .mounted) {
-                                                                setState(() {
-                                                                  isSaving =
-                                                                      false;
-                                                                });
-                                                              }
-                                                            }
+                                                              showTopSnackbar(
+                                                                context,
+                                                                "PDF save successfully in Document Folder",
+                                                              );
+                                                              showInterstitialAd(
+                                                                  context);
+                                                            });
                                                           },
                                                           style:
                                                               const ButtonStyle(

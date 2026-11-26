@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:gal/gal.dart';
 import 'package:doc_scanner/home_page/provider/home_page_provider.dart';
+import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/meta_events_helper.dart';
 import 'package:doc_scanner/utils/pdf_append_helper.dart';
 import 'package:flutter/material.dart';
@@ -156,22 +157,12 @@ class CameraProvider extends ChangeNotifier {
         outputPath: '$directoryPath/$newFileName.pdf',
         images: images,
       );
-      final pdfBytes = await pdfFile.readAsBytes();
-      if (Platform.isIOS) {
-        final iosDocumentsDirectory = await getApplicationDocumentsDirectory();
-        final iOSExternalFile = File(
-            "${iosDocumentsDirectory.path}/Doc Scanner/Document/$fileName.pdf");
-        await iOSExternalFile.writeAsBytes(pdfBytes);
-        debugPrint("PDF saved to iOS: ${iOSExternalFile.path}");
-      } else if (Platform.isAndroid) {
-        final externalStorageDirectory =
-            Directory('/storage/emulated/0/Documents/Document');
-        if (!await externalStorageDirectory.exists()) {
-          await externalStorageDirectory.create(recursive: true);
-        }
-        final externalFile =
-            File("${externalStorageDirectory.path}/$newFileName.pdf");
-        await externalFile.writeAsBytes(pdfBytes);
+      // Public Documents copy is best-effort (scoped storage). App copy is source of truth.
+      if (Platform.isAndroid) {
+        await DownloadHelper.trySaveToPublicDocuments(
+          pdfFile.path,
+          subfolder: 'Document',
+        );
       }
 
       _isCreatingPDFLoader = false;

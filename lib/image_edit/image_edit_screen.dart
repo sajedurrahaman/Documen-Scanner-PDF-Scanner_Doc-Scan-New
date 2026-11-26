@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:doc_scanner/camera_screen/model/image_model.dart';
 import 'package:doc_scanner/camera_screen/provider/camera_provider.dart';
 import 'package:doc_scanner/image_edit/provider/image_edit_provider.dart';
@@ -123,6 +125,27 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
     // swiped pages were already committed in [_onPageChanged].
     context.read<ImageEditProvider>().clearState();
     Navigator.pop(context);
+  }
+
+  /// After Filters/Size Done (all pages already saved in CameraProvider).
+  Future<void> _applyToolResult((int, Uint8List)? applied) async {
+    if (!mounted || applied == null) return;
+    final (index, jpeg) = applied;
+    final edit = context.read<ImageEditProvider>();
+    final camera = context.read<CameraProvider>();
+    if (index < 0 || index >= camera.imageList.length) return;
+    if (index != _pageIndex) {
+      // Leaving page: do not overwrite other pages already baked by the tool.
+      setState(() => _pageIndex = index);
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(index);
+      }
+      edit.startSession(jpeg);
+    } else {
+      edit.addState(jpeg);
+    }
+    // Force rebuild so off-page thumbnails pick up CameraProvider updates.
+    if (mounted) setState(() {});
   }
 
   @override
@@ -260,12 +283,17 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
                   title: translation(context).filters,
                   onTap: bytes == null
                       ? null
-                      : () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) {
-                              return const ImageFilters();
-                            },
-                          ));
+                      : () async {
+                          final applied =
+                              await Navigator.push<(int, Uint8List)>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return ImageFilters(initialIndex: safeIndex);
+                              },
+                            ),
+                          );
+                          await _applyToolResult(applied);
                         },
                   iconPath: AppAssets.filter,
                 ),
@@ -273,12 +301,17 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
                   title: translation(context).size,
                   onTap: bytes == null
                       ? null
-                      : () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) {
-                              return const ImageSizeScreen();
-                            },
-                          ));
+                      : () async {
+                          final applied =
+                              await Navigator.push<(int, Uint8List)>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return ImageSizeScreen(initialIndex: safeIndex);
+                              },
+                            ),
+                          );
+                          await _applyToolResult(applied);
                         },
                   iconPath: AppAssets.size,
                 ),

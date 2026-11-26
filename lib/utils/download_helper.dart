@@ -39,6 +39,50 @@ class DownloadHelper {
     return outFile.path;
   }
 
+  /// Best-effort copy into public Documents/{subfolder} via MediaStore.
+  /// Returns null on failure — never throws (app-private save already succeeded).
+  static Future<String?> trySaveToPublicDocuments(
+    String sourceFilePath, {
+    String subfolder = 'Document',
+  }) async {
+    try {
+      final source = File(sourceFilePath);
+      if (!await source.exists()) return null;
+
+      final fileName = sourceFilePath.split(Platform.pathSeparator).last;
+      final mimeType = _mimeTypeFor(fileName);
+
+      if (Platform.isAndroid) {
+        await _ensureAndroidStoragePermission();
+        final result =
+            await _channel.invokeMethod<String>('saveToPublicDocuments', {
+          'fileName': fileName,
+          'sourcePath': source.path,
+          'mimeType': mimeType,
+          'subfolder': subfolder,
+        });
+        if (result == null || result.isEmpty) return null;
+        return result;
+      }
+
+      // iOS: already under app Documents; nothing extra required.
+      return source.path;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<bool> _isSameFile(File source, File destination) async {
+    if (source.absolute.path == destination.absolute.path) return true;
+    if (!await destination.exists()) return false;
+    try {
+      return await source.resolveSymbolicLinks() ==
+          await destination.resolveSymbolicLinks();
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<void> _ensureAndroidStoragePermission() async {
     final sdk = (await DeviceInfoPlugin().androidInfo).version.sdkInt;
     if (sdk >= 29) return;
