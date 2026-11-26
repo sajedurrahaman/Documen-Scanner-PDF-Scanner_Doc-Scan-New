@@ -318,7 +318,7 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
+                            color: const Color(0xCC1E1F20),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
