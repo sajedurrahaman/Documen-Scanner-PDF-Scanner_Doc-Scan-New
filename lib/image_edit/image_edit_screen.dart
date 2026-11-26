@@ -12,36 +12,142 @@ import 'package:provider/provider.dart';
 import '../localaization/language_constant.dart';
 import '../utils/app_color.dart';
 import 'crop_screen.dart';
+import 'widget/image_edit_unavailable.dart';
 import 'image_rotation.dart';
 
+/// CamScanner-style editor: swipe pages horizontally; tools edit the
+/// currently visible page only (1/3, 2/3, 3/3…).
 class ImageEditScreen extends StatefulWidget {
   final ImageModel image;
   final int imageIndex;
 
-  const ImageEditScreen(
-      {super.key, required this.image, required this.imageIndex});
+  const ImageEditScreen({
+    super.key,
+    required this.image,
+    required this.imageIndex,
+  });
 
   @override
   State<ImageEditScreen> createState() => _ImageEditScreenState();
 }
 
 class _ImageEditScreenState extends State<ImageEditScreen> {
+  late final PageController _pageController;
+  late int _pageIndex;
+  bool _initialized = false;
+  bool _switchingPage = false;
+
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.read<ImageEditProvider>().addState(widget.image.imageByte);
-    });
     super.initState();
+    _pageIndex = widget.imageIndex;
+    _pageController = PageController(initialPage: _pageIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final camera = context.read<CameraProvider>();
+      final safe = _pageIndex.clamp(0, camera.imageList.length - 1);
+      _pageIndex = safe;
+      if (camera.imageList.isEmpty) {
+        setState(() => _initialized = true);
+        return;
+      }
+      context
+          .read<ImageEditProvider>()
+          .startSession(camera.imageList[safe].imageByte);
+      setState(() => _initialized = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  ImageModel _modelAt(CameraProvider camera, int index) {
+    return camera.imageList[index];
+  }
+
+  void _commitPage(int index) {
+    final edit = context.read<ImageEditProvider>();
+    final camera = context.read<CameraProvider>();
+    final current = edit.currentState;
+    if (current == null) return;
+    if (index < 0 || index >= camera.imageList.length) return;
+    final old = camera.imageList[index];
+    // Skip write if unchanged.
+    if (identical(old.imageByte, current)) return;
+    camera.updateImage(
+      index: index,
+      image: ImageModel(
+        imageByte: current,
+        name: old.name,
+        docType: old.docType,
+      ),
+    );
+  }
+
+  Future<void> _onPageChanged(int index) async {
+    if (_switchingPage || index == _pageIndex) return;
+    _switchingPage = true;
+    try {
+      // Persist edits for the page we leave (CamScanner-style).
+      _commitPage(_pageIndex);
+      final camera = context.read<CameraProvider>();
+      if (index < 0 || index >= camera.imageList.length) return;
+      context
+          .read<ImageEditProvider>()
+          .startSession(camera.imageList[index].imageByte);
+      if (mounted) setState(() => _pageIndex = index);
+    } finally {
+      _switchingPage = false;
+    }
+  }
+
+  void _done() {
+    final camera = context.read<CameraProvider>();
+    final edit = context.read<ImageEditProvider>();
+    final current = edit.currentState;
+    if (current == null ||
+        _pageIndex < 0 ||
+        _pageIndex >= camera.imageList.length) {
+      return;
+    }
+    _commitPage(_pageIndex);
+    edit.clearState();
+    Navigator.pop(context);
+  }
+
+  void _back() {
+    // Discard in-progress undo stack for the visible page only; earlier
+    // swiped pages were already committed in [_onPageChanged].
+    context.read<ImageEditProvider>().clearState();
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final imageEditProvider = context.watch<ImageEditProvider>();
     final cameraProvider = context.watch<CameraProvider>();
+    final pageCount = cameraProvider.imageList.length;
+    final bytes = _initialized ? imageEditProvider.currentState : null;
+
+    if (_initialized && pageCount == 0) {
+      return const ImageEditUnavailable();
+    }
+    if (_initialized && bytes == null && pageCount > 0) {
+      return const ImageEditUnavailable();
+    }
+
+    final safeIndex = pageCount == 0 ? 0 : _pageIndex.clamp(0, pageCount - 1);
+    final currentModel =
+        pageCount > 0 ? _modelAt(cameraProvider, safeIndex) : widget.image;
+    final canSave = bytes != null && pageCount > 0;
+
     return PopScope(
       canPop: true,
-      onPopInvoked: (didPop) {
-        imageEditProvider.clearState();
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) imageEditProvider.clearState();
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF131314),
@@ -49,14 +155,10 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
           backgroundColor: const Color(0xff1E1F20),
           centerTitle: true,
           leading: IconButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: const Icon(
-                Icons.arrow_back,
-                color: Color(0xffffffff),
-              )),
-          title: Text(widget.image.name),
+            onPressed: _back,
+            icon: const Icon(Icons.arrow_back, color: Color(0xffffffff)),
+          ),
+          title: Text(currentModel.name),
           titleTextStyle: const TextStyle(
             color: Colors.white,
             fontSize: 20,
@@ -64,17 +166,7 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                cameraProvider.updateImage(
-                    index: widget.imageIndex,
-                    image: ImageModel(
-                      imageByte: imageEditProvider.currentState,
-                      name: widget.image.name,
-                      docType: widget.image.docType,
-                    ));
-                imageEditProvider.clearState();
-                Navigator.pop(context);
-              },
+              onPressed: canSave ? _done : null,
               child: Text(
                 translation(context).done,
                 style: const TextStyle(
@@ -86,97 +178,149 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
             ),
           ],
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: imageEditProvider.currentIndex >= 0
-                ? Image.memory(
-                    imageEditProvider.currentState,
-                    fit: BoxFit.cover,
-                  )
-                : const CircularProgressIndicator(),
-          ),
+        body: Stack(
+          children: [
+            if (!_initialized || bytes == null)
+              const Center(child: CircularProgressIndicator())
+            else
+              PageView.builder(
+                controller: _pageController,
+                itemCount: pageCount,
+                onPageChanged: _onPageChanged,
+                itemBuilder: (context, index) {
+                  final pageBytes = index == _pageIndex
+                      ? (imageEditProvider.currentState ??
+                          cameraProvider.imageList[index].imageByte)
+                      : cameraProvider.imageList[index].imageByte;
+                  return Padding(
+                    padding: const EdgeInsets.all(15),
+                    child: Center(
+                      child: Image.memory(
+                        pageBytes,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.high,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            if (pageCount > 1)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 12,
+                child: Center(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${safeIndex + 1}/$pageCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
         bottomNavigationBar: BottomBarWithBanner(
           adUnitId: AdHelper.imageEditScreenBannerAdUnitId,
           child: BottomAppBar(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          color: const Color(0xff1E1F20),
-          surfaceTintColor: const Color(0xff1E1F20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ImageEditButton(
-                title: translation(context).crop,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) {
-                      return CropScreen(
-                        imageModel: widget.image,
-                        index: widget.imageIndex,
-                        cameFromEdit: true,
-                      );
-                    },
-                  ));
-                },
-                iconPath: AppAssets.crop,
-              ),
-              ImageEditButton(
-                title: translation(context).filters,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) {
-                      return const ImageFilters();
-                    },
-                  ));
-                },
-                iconPath: AppAssets.filter,
-              ),
-              ImageEditButton(
-                title: translation(context).size,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) {
-                      return const ImageSizeScreen();
-                    },
-                  ));
-                },
-                iconPath: AppAssets.size,
-              ),
-              ImageEditButton(
-                title: translation(context).rotate,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) {
-                      return ImageRotation(
-                        imageModel: widget.image,
-                        index: widget.imageIndex,
-                        cameFromEdit: true,
-                      );
-                    },
-                  ));
-                },
-                iconPath: AppAssets.rotate,
-              ),
-              ImageEditButton(
-                title: translation(context).undo,
-                onTap: () {
-                  if (imageEditProvider.canUndo) {
-                    imageEditProvider.undo();
-                  } else {
-                    ScaffoldMessenger.of(context).clearSnackBars();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(translation(context).cannotUndoAnymore),
-                      ),
-                    );
-                  }
-                },
-                iconPath: AppAssets.undo,
-              ),
-            ],
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            color: const Color(0xff1E1F20),
+            surfaceTintColor: const Color(0xff1E1F20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ImageEditButton(
+                  title: translation(context).crop,
+                  onTap: bytes == null
+                      ? null
+                      : () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              return CropScreen(
+                                imageModel: currentModel,
+                                index: safeIndex,
+                                cameFromEdit: true,
+                              );
+                            },
+                          ));
+                        },
+                  iconPath: AppAssets.crop,
+                ),
+                ImageEditButton(
+                  title: translation(context).filters,
+                  onTap: bytes == null
+                      ? null
+                      : () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              return const ImageFilters();
+                            },
+                          ));
+                        },
+                  iconPath: AppAssets.filter,
+                ),
+                ImageEditButton(
+                  title: translation(context).size,
+                  onTap: bytes == null
+                      ? null
+                      : () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              return const ImageSizeScreen();
+                            },
+                          ));
+                        },
+                  iconPath: AppAssets.size,
+                ),
+                ImageEditButton(
+                  title: translation(context).rotate,
+                  onTap: bytes == null
+                      ? null
+                      : () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              return ImageRotation(
+                                imageModel: currentModel,
+                                index: safeIndex,
+                                cameFromEdit: true,
+                              );
+                            },
+                          ));
+                        },
+                  iconPath: AppAssets.rotate,
+                ),
+                ImageEditButton(
+                  title: translation(context).undo,
+                  onTap: bytes == null
+                      ? null
+                      : () {
+                          if (imageEditProvider.canUndo) {
+                            imageEditProvider.undo();
+                          } else {
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    translation(context).cannotUndoAnymore),
+                              ),
+                            );
+                          }
+                        },
+                  iconPath: AppAssets.undo,
+                ),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );

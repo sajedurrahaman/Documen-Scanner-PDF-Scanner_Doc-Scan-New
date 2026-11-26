@@ -1369,12 +1369,16 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                     title: translation(context).edit,
                     onTap: () {
                       if (cameraProvider.imageList.isEmpty) return;
+                      // CamScanner-style: open swipeable editor on the
+                      // currently focused page (user can scroll 1/n … n/n).
+                      final start = _currentIndex.clamp(
+                          0, cameraProvider.imageList.length - 1);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => ImageEditScreen(
-                            imageIndex: _currentIndex,
-                            image: cameraProvider.imageList[_currentIndex],
+                            imageIndex: start,
+                            image: cameraProvider.imageList[start],
                           ),
                         ),
                       );
