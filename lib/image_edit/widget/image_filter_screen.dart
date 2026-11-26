@@ -42,7 +42,7 @@ class ImageFilters extends StatefulWidget {
 }
 
 class _ImageFiltersState extends State<ImageFilters> {
-  late final PageController _pageController;
+  late PageController _pageController;
   late List<_PageFilterState> _pages;
   late int _pageIndex;
   late final List<ColorFilterGenerator> _filters;
@@ -58,9 +58,9 @@ class _ImageFiltersState extends State<ImageFilters> {
   void initState() {
     super.initState();
     _filters = [PresetFilters.none, ...presetFiltersList.sublist(1)];
-    _pageIndex = 0;
+    _pageIndex = widget.initialIndex;
     _pages = [];
-    _pageController = PageController(initialPage: 0);
+    _pageController = PageController(initialPage: widget.initialIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _bootstrapPages();
     });
@@ -85,13 +85,19 @@ class _ImageFiltersState extends State<ImageFilters> {
       }
       pages.add(_PageFilterState(bytes: bytes));
     }
+    // Recreate so first PageView attach opens on [start], not page 0.
+    _pageController.dispose();
+    _pageController = PageController(initialPage: start);
     setState(() {
       _pages = pages;
       _pageIndex = start;
     });
-    if (_pageController.hasClients) {
-      _pageController.jumpToPage(start);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients) return;
+      if (_pageController.page?.round() != start) {
+        _pageController.jumpToPage(start);
+      }
+    });
   }
 
   @override

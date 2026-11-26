@@ -54,7 +54,7 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
     SizeOption(title: 'Legal', radio: 8.5 / 14),
   ];
 
-  late final PageController _pageController;
+  late PageController _pageController;
   late List<_PageSizeState> _pages;
   late int _pageIndex;
   bool _loading = true;
@@ -69,9 +69,9 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
   @override
   void initState() {
     super.initState();
-    _pageIndex = 0;
+    _pageIndex = widget.initialIndex;
     _pages = [];
-    _pageController = PageController(initialPage: 0);
+    _pageController = PageController(initialPage: widget.initialIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _bootstrapPages();
     });
@@ -111,14 +111,21 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
         pages.add(_PageSizeState(bytes: bytes, originalRatio: ratio));
       }
       if (!mounted) return;
+      // Recreate controller so PageView first attach lands on [start]
+      // (jumpToPage during loading misses — no clients yet → badge 5/5, page 1 shown).
+      _pageController.dispose();
+      _pageController = PageController(initialPage: start);
       setState(() {
         _pages = pages;
         _pageIndex = start;
         _loading = false;
       });
-      if (_pageController.hasClients) {
-        _pageController.jumpToPage(start);
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_pageController.hasClients) return;
+        if (_pageController.page?.round() != start) {
+          _pageController.jumpToPage(start);
+        }
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);

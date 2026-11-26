@@ -127,7 +127,7 @@ class CropScreen extends StatefulWidget {
 }
 
 class _CropScreenState extends State<CropScreen> {
-  late final PageController _pageController;
+  late PageController _pageController;
   late List<_PageCropState> _pages;
   late int _pageIndex;
 
@@ -196,13 +196,18 @@ class _CropScreenState extends State<CropScreen> {
       );
     }
 
+    _pageController.dispose();
+    _pageController = PageController(initialPage: start);
     setState(() {
       _pages = pages;
       _pageIndex = start;
     });
-    if (_pageController.hasClients) {
-      _pageController.jumpToPage(start);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients) return;
+      if (_pageController.page?.round() != start) {
+        _pageController.jumpToPage(start);
+      }
+    });
   }
 
   @override
