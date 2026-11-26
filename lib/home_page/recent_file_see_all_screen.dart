@@ -11,6 +11,7 @@ import 'package:path/path.dart' as path;
 
 import '../localaization/language_constant.dart';
 import '../utils/app_assets.dart';
+import '../utils/pdf_append_helper.dart';
 import 'provider/recent_files_provider.dart';
 
 /// Uses the same files and actions as Home, without limiting the list length.
@@ -149,6 +150,9 @@ class _RecentFileSeeAllScreenState extends State<RecentFileSeeAllScreen> {
     await _runSelected(() async {
       for (final file in files) {
         if (await File(file).exists()) await File(file).delete();
+        if (file.toLowerCase().endsWith('.pdf')) {
+          await deleteRawSidecarForPdf(file);
+        }
       }
     });
   }

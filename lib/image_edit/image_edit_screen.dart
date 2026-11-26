@@ -83,11 +83,7 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
     if (identical(old.imageByte, current)) return;
     camera.updateImage(
       index: index,
-      image: ImageModel(
-        imageByte: current,
-        name: old.name,
-        docType: old.docType,
-      ),
+      image: old.withDisplayBytes(current),
     );
   }
 

@@ -214,11 +214,7 @@ class _ImageSizeScreenState extends State<ImageSizeScreen> {
         final old = camera.imageList[i];
         camera.updateImage(
           index: i,
-          image: ImageModel(
-            imageByte: jpeg,
-            name: old.name,
-            docType: old.docType,
-          ),
+          image: old.withDisplayBytes(jpeg),
         );
         if (i == currentIndex) currentJpeg = jpeg;
       }

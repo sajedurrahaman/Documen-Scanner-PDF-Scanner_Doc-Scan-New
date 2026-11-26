@@ -71,6 +71,11 @@ class RecentFilesProvider extends ChangeNotifier {
         in directory.list(recursive: true, followLinks: false)) {
       if (entity is! File) continue;
       final lower = entity.path.toLowerCase();
+      // Crop-source sidecars live in `{pdfStem}.raw/` — never show in Recents.
+      if (lower.contains('.raw${Platform.pathSeparator}') ||
+          lower.contains('.raw/')) {
+        continue;
+      }
       final matches = images
           ? lower.endsWith('.jpg') ||
               lower.endsWith('.jpeg') ||

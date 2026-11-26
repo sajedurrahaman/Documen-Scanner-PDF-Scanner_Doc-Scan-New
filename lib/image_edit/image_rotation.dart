@@ -73,11 +73,7 @@ class _ImageRotationState extends State<ImageRotation> {
                   } else {
                     cameraProvider.updateImage(
                       index: widget.index,
-                      image: ImageModel(
-                        imageByte: result!,
-                        name: widget.imageModel.name,
-                        docType: widget.imageModel.docType,
-                      ),
+                      image: widget.imageModel.withDisplayBytes(result),
                     );
                   }
                   Navigator.pop(context);

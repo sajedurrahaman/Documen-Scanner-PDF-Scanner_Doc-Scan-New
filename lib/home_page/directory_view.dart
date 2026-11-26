@@ -12,6 +12,7 @@ import 'package:doc_scanner/utils/app_assets.dart';
 import 'package:doc_scanner/utils/app_color.dart';
 import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/helper.dart';
+import 'package:doc_scanner/utils/pdf_append_helper.dart';
 import 'package:doc_scanner/utils/pdf_view_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -505,6 +506,9 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
         await Directory(filePath).delete(recursive: true);
       } else if (type == FileSystemEntityType.file) {
         await File(filePath).delete();
+        if (filePath.toLowerCase().endsWith('.pdf')) {
+          await deleteRawSidecarForPdf(filePath);
+        }
       }
       // Re-read storage so folder contents disappear from Home and Recents too.
       home.clearDocumentImageFiles();
@@ -2948,7 +2952,12 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
         final subdirectories = [directory.path];
         final entities = directory.listSync();
         subdirectories.addAll(
-          entities.whereType<Directory>().map((dir) => dir.path).toList(),
+          entities
+              .whereType<Directory>()
+              // Crop-source sidecars (`foo.raw/`) are not user folders.
+              .where((dir) => !dir.path.toLowerCase().endsWith('.raw'))
+              .map((dir) => dir.path)
+              .toList(),
         );
         return subdirectories;
       } catch (e) {

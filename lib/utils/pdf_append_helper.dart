@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -139,7 +140,7 @@ Future<List<Uint8List>> loadDocumentPagesFast(String path) async {
 /// [onPage] index is 0-based; [total] is known after open (1 for images).
 Future<void> loadDocumentPagesProgressive(
   String path, {
-  required void Function(Uint8List bytes, int index, int total) onPage,
+  required FutureOr<void> Function(Uint8List bytes, int index, int total) onPage,
   bool Function()? isCancelled,
 }) async {
   final lower = path.toLowerCase();
@@ -147,7 +148,7 @@ Future<void> loadDocumentPagesProgressive(
       lower.endsWith('.jpeg') ||
       lower.endsWith('.png')) {
     if (isCancelled?.call() == true) return;
-    onPage(await File(path).readAsBytes(), 0, 1);
+    await onPage(await File(path).readAsBytes(), 0, 1);
     return;
   }
   if (!lower.endsWith('.pdf') || !await File(path).exists()) {
@@ -162,7 +163,7 @@ Future<void> loadDocumentPagesProgressive(
       final bytes = await _renderPdfPage(source, number);
       if (bytes == null) continue;
       if (isCancelled?.call() == true) return;
-      onPage(bytes, number - 1, total);
+      await onPage(bytes, number - 1, total);
       // Let UI paint page 1 before continuing heavy work.
       await Future<void>.delayed(Duration.zero);
     }
@@ -190,10 +191,67 @@ Future<PdfPageFormat> _pageFormatForImage(Uint8List bytes) async {
   }
 }
 
+/// Directory beside PDF: `foo.pdf` → `foo.raw/` with `page_000.jpg`, …
+String rawSidecarDirForPdf(String pdfPath) {
+  final lower = pdfPath.toLowerCase();
+  if (lower.endsWith('.pdf')) {
+    return '${pdfPath.substring(0, pdfPath.length - 4)}.raw';
+  }
+  return '$pdfPath.raw';
+}
+
+String rawSidecarPagePath(String pdfPath, int index) {
+  final name = 'page_${index.toString().padLeft(3, '0')}.jpg';
+  return '${rawSidecarDirForPdf(pdfPath)}${Platform.pathSeparator}$name';
+}
+
+/// Persist per-page raw crop sources next to [pdfPath]. Null/empty pages skipped.
+Future<void> writeRawSidecars({
+  required String pdfPath,
+  required List<Uint8List?> rawPages,
+}) async {
+  final dirPath = rawSidecarDirForPdf(pdfPath);
+  final dir = Directory(dirPath);
+  if (await dir.exists()) {
+    await dir.delete(recursive: true);
+  }
+  var wroteAny = false;
+  for (var i = 0; i < rawPages.length; i++) {
+    final raw = rawPages[i];
+    if (raw == null || raw.isEmpty) continue;
+    if (!wroteAny) {
+      await dir.create(recursive: true);
+      wroteAny = true;
+    }
+    await File(rawSidecarPagePath(pdfPath, i)).writeAsBytes(
+      ensureJpegBytes(raw),
+      flush: true,
+    );
+  }
+  if (!wroteAny && await dir.exists()) {
+    await dir.delete(recursive: true);
+  }
+}
+
+Future<Uint8List?> readRawSidecarPage(String pdfPath, int index) async {
+  final file = File(rawSidecarPagePath(pdfPath, index));
+  if (!await file.exists()) return null;
+  return file.readAsBytes();
+}
+
+/// Removes crop-source sidecar dir next to a PDF (if any).
+Future<void> deleteRawSidecarForPdf(String pdfPath) async {
+  final dir = Directory(rawSidecarDirForPdf(pdfPath));
+  if (await dir.exists()) {
+    await dir.delete(recursive: true);
+  }
+}
+
 /// CamScanner-like PDF: each page = image aspect, full-bleed, no white pad.
 Future<File> writePdfFromImages({
   required String outputPath,
   required List<Uint8List> images,
+  List<Uint8List?>? rawPages,
 }) async {
   final output = pw.Document();
   for (final raw in images) {
@@ -211,7 +269,11 @@ Future<File> writePdfFromImages({
     );
   }
   final outBytes = await output.save();
-  return File(outputPath).writeAsBytes(outBytes, flush: true);
+  final file = await File(outputPath).writeAsBytes(outBytes, flush: true);
+  if (rawPages != null && rawPages.isNotEmpty) {
+    await writeRawSidecars(pdfPath: outputPath, rawPages: rawPages);
+  }
+  return file;
 }
 
 String resolvedPdfOutputPath(String targetPath) {

@@ -182,6 +182,8 @@ class HomePageProvider extends ChangeNotifier {
           Directory('${appDir.path}/Doc Scanner/Document');
       await for (FileSystemEntity entity in documentDirectory.list()) {
         if (entity is Directory) {
+          // Skip crop-source sidecars (`foo.raw/`).
+          if (entity.path.toLowerCase().endsWith('.raw')) continue;
           await for (FileSystemEntity subEntity in entity.list()) {
             if (subEntity is File) {
               String filePath = subEntity.path;
@@ -219,6 +221,7 @@ class HomePageProvider extends ChangeNotifier {
           Directory('${appDir.path}/Doc Scanner/ID Card');
       await for (FileSystemEntity entity in documentDirectory.list()) {
         if (entity is Directory) {
+          if (entity.path.toLowerCase().endsWith('.raw')) continue;
           await for (FileSystemEntity subEntity in entity.list()) {
             if (subEntity is File) {
               String filePath = subEntity.path;

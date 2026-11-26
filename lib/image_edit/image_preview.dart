@@ -226,10 +226,12 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
                           pictures.forEach((element) async {
                             String imageName = DateFormat('yyyyMMdd_SSSS')
                                 .format(DateTime.now());
+                            final bytes = await File(element).readAsBytes();
                             cameraProvider.updateImage(
                                 image: ImageModel(
                                     docType: 'Document',
-                                    imageByte: File(element).readAsBytesSync(),
+                                    imageByte: bytes,
+                                    rawBytes: bytes,
                                     name: "Document-$imageName"),
                                 index: currentIndex);
                           });
@@ -273,9 +275,11 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
                               String documentName = DateFormat('yyyyMMdd_SSSS')
                                   .format(DateTime.now());
                               if (image[i] != null) {
+                                final bytes = await image[i]!.readAsBytes();
                                 imageList.add(
                                   ImageModel(
-                                    imageByte: await image[i]!.readAsBytes(),
+                                    imageByte: bytes,
+                                    rawBytes: bytes,
                                     name: 'Doc-$documentName',
                                     docType: 'Document',
                                   ),

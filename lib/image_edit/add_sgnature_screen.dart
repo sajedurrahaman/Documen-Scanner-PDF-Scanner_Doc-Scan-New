@@ -76,10 +76,7 @@ class _AddSignatureState extends State<AddSignature> {
                 var image = await captureImage();
                 if (image != null) {
                   cameraProvider.updateImage(
-                      image: ImageModel(
-                          imageByte: image,
-                          name: widget.imageModel.name,
-                          docType: widget.imageModel.docType),
+                      image: widget.imageModel.withDisplayBytes(image),
                       index: widget.imageIndex);
                   await MetaEventsHelper.logPdfSigned();
                   if (mounted) Navigator.pop(context);

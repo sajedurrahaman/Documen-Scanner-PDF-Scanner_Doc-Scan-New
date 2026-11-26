@@ -173,20 +173,14 @@ class _CropScreenState extends State<CropScreen> {
 
   void _bootstrapPages() {
     final camera = context.read<CameraProvider>();
-    final edit = context.read<ImageEditProvider>();
     final list = camera.imageList;
     if (list.isEmpty) return;
 
     final start = widget.index.clamp(0, list.length - 1);
     final pages = <_PageCropState>[];
     for (var i = 0; i < list.length; i++) {
-      var bytes = Uint8List.fromList(list[i].imageByte);
-      if (widget.cameFromEdit == true &&
-          i == start &&
-          edit.currentState != null &&
-          edit.currentState!.isNotEmpty) {
-        bytes = Uint8List.fromList(edit.currentState!);
-      }
+      // Always crop from frozen raw (CamScanner-style), never display/edit stack.
+      final bytes = Uint8List.fromList(list[i].cropSource);
       pages.add(
         _PageCropState(
           bytes: bytes,
@@ -355,11 +349,7 @@ class _CropScreenState extends State<CropScreen> {
         final old = camera.imageList[i];
         camera.updateImage(
           index: i,
-          image: ImageModel(
-            imageByte: out,
-            name: old.name,
-            docType: old.docType,
-          ),
+          image: old.withDisplayBytes(out),
         );
         if (i == currentIndex) currentOut = out;
       }

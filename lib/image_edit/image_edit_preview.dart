@@ -93,11 +93,14 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       await loadDocumentPagesProgressive(
         filePath,
         isCancelled: () => _openLoadCancelled || !mounted,
-        onPage: (bytes, index, total) {
+        onPage: (bytes, index, total) async {
+          if (_openLoadCancelled || !mounted) return;
+          final raw = await readRawSidecarPage(filePath, index);
           if (_openLoadCancelled || !mounted) return;
           camera.addImage(
             ImageModel(
               imageByte: bytes,
+              rawBytes: raw,
               name: total > 1 ? '$baseName-${index + 1}-$stamp' : baseName,
               docType: 'Document',
             ),
@@ -516,10 +519,12 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       for (final path in pictures) {
         final imageName =
             DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
+        final bytes = await File(path).readAsBytes();
         cameraProvider.addImage(
           ImageModel(
             docType: docType.isNotEmpty ? docType : 'Document',
-            imageByte: await File(path).readAsBytes(),
+            imageByte: bytes,
+            rawBytes: bytes,
             name: 'Document-$imageName',
           ),
         );
@@ -1043,125 +1048,106 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                                   false;
 
                                                           if (allowDuplicate) {
-                                                            // Generate a unique name
-                                                            String uniqueName =
-                                                                _renameController
-                                                                    .text;
-                                                            int counter = 1;
-                                                            while (cameraProvider
-                                                                .imageList
-                                                                .any((image) =>
-                                                                    image.name ==
-                                                                    uniqueName)) {
-                                                              uniqueName =
-                                                                  "${_renameController.text}$counter";
-                                                              counter++;
-                                                            }
-
-                                                            // Update image with the unique name
-                                                            cameraProvider
-                                                                .updateImage(
-                                                              index:
-                                                                  _currentIndex,
-                                                              image: ImageModel(
-                                                                imageByte:
-                                                                    cameraProvider
-                                                                        .imageList[
-                                                                            _currentIndex]
-                                                                        .imageByte,
-                                                                name: uniqueName,
-                                                                docType: cameraProvider
-                                                                    .imageList[
-                                                                        _currentIndex]
-                                                                    .docType,
-                                                              ),
-                                                            );
-
-                                                            Navigator.pop(
-                                                                context);
+                                                          // Generate a unique name
+                                                          String uniqueName =
+                                                              _renameController
+                                                                  .text;
+                                                          int counter = 1;
+                                                          while (cameraProvider
+                                                              .imageList
+                                                              .any((image) =>
+                                                                  image.name ==
+                                                                  uniqueName)) {
+                                                            uniqueName =
+                                                                "${_renameController.text}$counter";
+                                                            counter++;
                                                           }
-                                                        } else if (cameraProvider
-                                                                .imageList
-                                                                .first
-                                                                .docType ==
-                                                            "ID Card") {
-                                                          Directory
-                                                              rootDirectory =
-                                                              await getApplicationDocumentsDirectory();
-                                                          String path =
-                                                              "${rootDirectory.path}/Doc Scanner/ID Card";
-                                                          File file = File(
-                                                              "$path/${_renameController.text}.jpg");
-                                                          if (file.existsSync()) {
-                                                            setState(() {
-                                                              errorMessage =
-                                                                  translation(
-                                                                          context)
-                                                                      .fileAlreadyExists;
-                                                            });
-                                                          } else {
-                                                            cameraProvider
-                                                                .updateImage(
-                                                              index:
-                                                                  _currentIndex,
-                                                              image: ImageModel(
-                                                                imageByte:
-                                                                    cameraProvider
-                                                                        .imageList[
-                                                                            _currentIndex]
-                                                                        .imageByte,
-                                                                name:
-                                                                    _renameController
-                                                                        .text,
-                                                                docType: cameraProvider
-                                                                    .imageList[
-                                                                        _currentIndex]
-                                                                    .docType,
-                                                              ),
-                                                            );
 
-                                                            Navigator.pop(
-                                                                context);
-                                                          }
+                                                          // Update image with the unique name
+                                                          final old = cameraProvider
+                                                              .imageList[
+                                                                  _currentIndex];
+                                                          cameraProvider
+                                                              .updateImage(
+                                                            index:
+                                                                _currentIndex,
+                                                            image: old.copyWith(
+                                                              name: uniqueName,
+                                                            ),
+                                                          );
+
+                                                          Navigator.pop(
+                                                              context);
+                                                        }
+                                                      } else if (cameraProvider
+                                                              .imageList
+                                                              .first
+                                                              .docType ==
+                                                          "ID Card") {
+                                                        Directory
+                                                            rootDirectory =
+                                                            await getApplicationDocumentsDirectory();
+                                                        String path =
+                                                            "${rootDirectory.path}/Doc Scanner/ID Card";
+                                                        File file = File(
+                                                            "$path/${_renameController.text}.jpg");
+                                                        if (file.existsSync()) {
+                                                          setState(() {
+                                                            errorMessage =
+                                                                translation(
+                                                                        context)
+                                                                    .fileAlreadyExists;
+                                                          });
                                                         } else {
-                                                          Directory
-                                                              rootDirectory =
-                                                              await getApplicationDocumentsDirectory();
-                                                          String path =
-                                                              "${rootDirectory.path}/Doc Scanner/Document";
-                                                          File file = File(
-                                                              "$path/${_renameController.text}.jpg");
-                                                          if (file.existsSync()) {
-                                                            setState(() {
-                                                              errorMessage =
-                                                                  translation(
-                                                                          context)
-                                                                      .fileAlreadyExists;
-                                                            });
-                                                          } else {
-                                                            cameraProvider
-                                                                .updateImage(
-                                                              index:
-                                                                  _currentIndex,
-                                                              image: ImageModel(
-                                                                imageByte:
-                                                                    cameraProvider
-                                                                        .imageList[
-                                                                            _currentIndex]
-                                                                        .imageByte,
-                                                                name:
-                                                                    _renameController
-                                                                        .text,
-                                                                docType: cameraProvider
-                                                                    .imageList[
-                                                                        _currentIndex]
-                                                                    .docType,
-                                                              ),
-                                                            );
+                                                          final old = cameraProvider
+                                                              .imageList[
+                                                                  _currentIndex];
+                                                          cameraProvider
+                                                              .updateImage(
+                                                            index:
+                                                                _currentIndex,
+                                                            image: old.copyWith(
+                                                              name:
+                                                                  _renameController
+                                                                      .text,
+                                                            ),
+                                                          );
 
-                                                            Navigator.pop(
-                                                                context);
-                                                          }
+                                                          Navigator.pop(
+                                                              context);
+                                                        }
+                                                      } else {
+                                                        Directory
+                                                            rootDirectory =
+                                                            await getApplicationDocumentsDirectory();
+                                                        String path =
+                                                            "${rootDirectory.path}/Doc Scanner/Document";
+                                                        File file = File(
+                                                            "$path/${_renameController.text}.jpg");
+                                                        if (file.existsSync()) {
+                                                          setState(() {
+                                                            errorMessage =
+                                                                translation(
+                                                                        context)
+                                                                    .fileAlreadyExists;
+                                                          });
+                                                        } else {
+                                                          final old = cameraProvider
+                                                              .imageList[
+                                                                  _currentIndex];
+                                                          cameraProvider
+                                                              .updateImage(
+                                                            index:
+                                                                _currentIndex,
+                                                            image: old.copyWith(
+                                                              name:
+                                                                  _renameController
+                                                                      .text,
+                                                            ),
+                                                          );
+
+                                                          Navigator.pop(
+                                                              context);
                                                         }
                                                       }
                                                     },
