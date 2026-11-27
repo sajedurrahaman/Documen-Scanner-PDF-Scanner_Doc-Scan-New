@@ -66,6 +66,10 @@ class _EditImagePreviewState extends State<EditImagePreview> {
   final GlobalKey _listAddKey = GlobalKey();
   final List<GlobalKey> _pageItemKeys = [];
 
+  /// Recent/Document open path — Export as PDF overwrites this file.
+  String? _openedDocumentPath;
+  String? _openedDocumentBaseName;
+
   static const _addAccent = Color(0xFF8AB4F8);
 
   @override
@@ -75,6 +79,11 @@ class _EditImagePreviewState extends State<EditImagePreview> {
     final openPath = widget.openFilePath;
     if (openPath != null && openPath.isNotEmpty) {
       _openingDocument = true;
+      _openedDocumentPath = openPath;
+      final fileName = openPath.split(Platform.pathSeparator).last;
+      final dot = fileName.lastIndexOf('.');
+      _openedDocumentBaseName =
+          dot > 0 ? fileName.substring(0, dot) : fileName;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _loadOpenFile(openPath);
       });
@@ -1266,7 +1275,9 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                           final cameProvider =
                                               context.watch<CameraProvider>();
                                           TextEditingController renameController =
-                                              TextEditingController();
+                                              TextEditingController(
+                                            text: _openedDocumentBaseName ?? '',
+                                          );
                                           return StatefulBuilder(
                                             builder: (context, setState) {
                                               return AlertDialog(
@@ -1274,7 +1285,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                   width: AppHelper.isIpad(context) ? 398 : 348,
                                                 ),
                                                 title: SizedBox(
-                                                  width: AppHelper.isIpad(context)?350:300,
+                                                  width: AppHelper.isIpad(context) ? 350 : 300,
                                                   child: Text(
                                                       translation(context).savePdf),
                                                 ),
@@ -1335,12 +1346,24 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                             setState(() {
                                                               isSaving = true;
                                                             });
+                                                            final name =
+                                                                renameController
+                                                                    .text
+                                                                    .trim();
+                                                            // Same doc from Recent → update in place.
+                                                            final overwrite =
+                                                                _openedDocumentPath !=
+                                                                        null &&
+                                                                    name ==
+                                                                        _openedDocumentBaseName
+                                                                    ? _openedDocumentPath
+                                                                    : null;
                                                             cameProvider
                                                                 .createPDFFromByte(
                                                               context: context,
-                                                              fileName:
-                                                                  renameController
-                                                                      .text,
+                                                              fileName: name,
+                                                              overwritePath:
+                                                                  overwrite,
                                                             )
                                                                 .then((value) {
                                                               if (value ==
@@ -1386,7 +1409,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                           style:
                                                               const ButtonStyle(
                                                             splashFactory: InkSparkle
-                                                                .splashFactory, // Disable splash effect
+                                                                .splashFactory,
                                                           ),
                                                           child: Text(
                                                               translation(context)
@@ -1434,6 +1457,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                     ),
                                   ),
                                 ),
+
 
                               ],
                             ),
