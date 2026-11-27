@@ -42,18 +42,48 @@ class _IdCardImagePreviewState extends State<IdCardImagePreview> {
   List<Map<String, dynamic>> imageProperties = [];
   String fileName =
       "IDCard_${DateFormat('yyyyMMdd_SSSS').format(DateTime.now())}";
+  bool _layoutReady = false;
+
   @override
   void initState() {
     super.initState();
-    final cameraProvider = context.read<CameraProvider>();
-    imageProperties = cameraProvider.idCardImages.map((imagePath) {
-      int index = cameraProvider.idCardImages.indexOf(imagePath);
-      return {
-        'path': imagePath,
-        'position': Offset(25 + (index * 150), 150),
-        'size': const Size(150, 150), // Initial size
-      };
-    }).toList();
+    // Paths only here — MediaQuery must wait for didChangeDependencies.
+    final images = context.read<CameraProvider>().idCardImages;
+    imageProperties = images
+        .map((path) => {
+              'path': path,
+              'position': Offset.zero,
+              'size': const Size(150, 150),
+            })
+        .toList();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_layoutReady) return;
+    _layoutReady = true;
+    _applyColumnLayout();
+  }
+
+  /// Stack ID card pages vertically (column), not side-by-side.
+  void _applyColumnLayout() {
+    final screen = MediaQuery.sizeOf(context);
+    final count = imageProperties.isEmpty ? 1 : imageProperties.length;
+    const gap = 36.0;
+    // Smaller cards so front/back fit comfortably on the preview sheet.
+    final cardW = screen.width * 0.72;
+    final cardH = (cardW * 0.62).clamp(110.0, 170.0);
+    final horizontalPad = (screen.width - cardW) / 2;
+    final totalH = count * cardH + (count - 1) * gap;
+    final canvasH = screen.height * 0.665;
+    final topPad = ((canvasH - totalH) / 2).clamp(gap, canvasH);
+
+    for (var index = 0; index < imageProperties.length; index++) {
+      imageProperties[index]['position'] =
+          Offset(horizontalPad, topPad + index * (cardH + gap));
+      imageProperties[index]['size'] = Size(cardW, cardH);
+    }
   }
 
   final GlobalKey _globalKey = GlobalKey();
