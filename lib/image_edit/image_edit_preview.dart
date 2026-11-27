@@ -298,6 +298,128 @@ class _EditImagePreviewState extends State<EditImagePreview> {
     await Share.shareXFiles(files);
   }
 
+  /// CamScanner-style: Share as PDF | Share as Images (all pages).
+  Future<void> _showShareSheet(CameraProvider cameraProvider) async {
+    if (cameraProvider.imageList.isEmpty) return;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xff1E1F20),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        Widget option({
+          required IconData icon,
+          required String title,
+          required String value,
+        }) {
+          return ListTile(
+            leading: Icon(icon, color: Colors.white),
+            title: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            onTap: () => Navigator.pop(sheetContext, value),
+          );
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                option(
+                  icon: Icons.picture_as_pdf_outlined,
+                  title: 'Share as PDF',
+                  value: 'pdf',
+                ),
+                const Divider(color: Color(0xFF2A2B2C)),
+                option(
+                  icon: Icons.image_outlined,
+                  title: 'Share as Images',
+                  value: 'images',
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (choice == null || !mounted) return;
+    if (choice == 'pdf') {
+      await _shareAsPdf(cameraProvider);
+    } else {
+      await _shareAsImages(cameraProvider);
+    }
+  }
+
+  Future<void> _shareAsPdf(CameraProvider cameraProvider) async {
+    if (cameraProvider.imageList.isEmpty) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColor.primaryColor),
+      ),
+    );
+    try {
+      final images =
+          cameraProvider.imageList.map((e) => e.imageByte).toList();
+      final rawName = (_openedDocumentBaseName ??
+              cameraProvider.imageList.first.name)
+          .trim();
+      final safeName = rawName.isEmpty
+          ? 'Document'
+          : rawName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final tempDir = await getTemporaryDirectory();
+      final pdfPath = '${tempDir.path}/$safeName.pdf';
+      final opened = _openedDocumentPath;
+      final isIdCard = (opened != null && isIdCardStoragePath(opened)) ||
+          cameraProvider.imageList.any((e) => e.docType == 'ID Card');
+      final file = await writePdfFromImages(
+        outputPath: pdfPath,
+        images: images,
+        trimLetterbox: !isIdCard,
+      );
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      await Share.shareXFiles([XFile(file.path)]);
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to share PDF: $e')),
+      );
+    }
+  }
+
+  Future<void> _shareAsImages(CameraProvider cameraProvider) async {
+    if (cameraProvider.imageList.isEmpty) return;
+    final files = <XFile>[];
+    for (var i = 0; i < cameraProvider.imageList.length; i++) {
+      final file = await AppHelper().convertUint8ListToFile(
+        data: cameraProvider.imageList[i].imageByte,
+        extension: 'jpg',
+      );
+      files.add(XFile(file.path));
+    }
+    if (files.isEmpty || !mounted) return;
+    await Share.shareXFiles(files);
+  }
+
   Future<void> _deleteSelectedPages(CameraProvider cameraProvider) async {
     if (_selectedIndexes.isEmpty) return;
     final labels = translation(context);
@@ -1820,16 +1942,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                   ),
                   ImageEditButton(
                     title: translation(context).share,
-                    onTap: () async {
-                      await AppHelper()
-                          .convertUint8ListToFile(
-                              data: cameraProvider
-                                  .imageList[_currentIndex].imageByte,
-                              extension: 'jpg')
-                          .then((value) async {
-                        await Share.shareXFiles([XFile(value.path)]);
-                      });
-                    },
+                    onTap: () => _showShareSheet(cameraProvider),
                     iconPath: AppAssets.share,
                   ),
                 ],
