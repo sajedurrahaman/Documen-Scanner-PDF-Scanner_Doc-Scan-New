@@ -139,6 +139,9 @@ class CameraProvider extends ChangeNotifier {
   Future<File?> createPDFFromByte({
     required BuildContext context,
     required String fileName,
+    /// When set (Recent reopen → edit → save), overwrite this PDF instead of
+    /// creating `name(1).pdf`.
+    String? overwritePath,
   }) async {
     try {
       final List<Uint8List> images =
@@ -147,13 +150,19 @@ class CameraProvider extends ChangeNotifier {
       final directoryPath = '${appDirectory.path}/Doc Scanner/Document';
       await Directory(directoryPath).create(recursive: true);
 
-      var newFileName = fileName;
-      var index = 1;
-      while (File('$directoryPath/$newFileName.pdf').existsSync()) {
-        newFileName = '$fileName($index)';
-        index++;
+      late final String pdfPath;
+      if (overwritePath != null &&
+          overwritePath.toLowerCase().endsWith('.pdf')) {
+        pdfPath = overwritePath;
+      } else {
+        var newFileName = fileName;
+        var index = 1;
+        while (File('$directoryPath/$newFileName.pdf').existsSync()) {
+          newFileName = '$fileName($index)';
+          index++;
+        }
+        pdfPath = '$directoryPath/$newFileName.pdf';
       }
-      final pdfPath = '$directoryPath/$newFileName.pdf';
       final pdfFile = await writePdfFromImages(
         outputPath: pdfPath,
         images: images,
