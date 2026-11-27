@@ -8,6 +8,8 @@ import 'package:doc_scanner/utils/addHelper.dart';
 import 'package:doc_scanner/utils/app_color.dart';
 import 'package:doc_scanner/utils/banner_ad_widget.dart';
 import 'package:doc_scanner/utils/baseurl.dart';
+import 'package:doc_scanner/utils/helper.dart';
+import 'package:doc_scanner/utils/image_bytes_helper.dart';
 import 'package:doc_scanner/utils/meta_events_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -67,21 +69,21 @@ class _AddSignatureState extends State<AddSignature> {
         centerTitle: true,
         actions: [
           TextButton(
-            onPressed: () {
-              setState(() {
-                isScaleView = true;
-              });
-
-              Future.delayed(const Duration(milliseconds: 500), () async {
-                var image = await captureImage();
-                if (image != null) {
-                  cameraProvider.updateImage(
-                      image: widget.imageModel.withDisplayBytes(image),
-                      index: widget.imageIndex);
-                  await MetaEventsHelper.logPdfSigned();
-                  if (mounted) Navigator.pop(context);
-                }
-              });
+            onPressed: () async {
+              // Hide sticker border/handles, then capture only the page
+              // bounds (no body letterbox → no extra top/bottom pad).
+              setState(() => isScaleView = true);
+              await WidgetsBinding.instance.endOfFrame;
+              await Future<void>.delayed(const Duration(milliseconds: 32));
+              if (!mounted) return;
+              final image = await captureImage();
+              if (image == null || !mounted) return;
+              cameraProvider.updateImage(
+                image: widget.imageModel.withDisplayBytes(image),
+                index: widget.imageIndex,
+              );
+              await MetaEventsHelper.logPdfSigned();
+              if (mounted) Navigator.pop(context);
             },
             child: Text(
               translation(context).done,
@@ -96,44 +98,60 @@ class _AddSignatureState extends State<AddSignature> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(10.0),
-        child: RepaintBoundary(
-          key: _globalKey,
-          child: Stack(
-            children: [
-              Center(
-                child: Image.memory(
-                  widget.imageModel.imageByte,
-                  fit: BoxFit.cover,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Center outside RepaintBoundary so padding/empty space is not
+            // baked into the page (was causing top/bottom letterbox).
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: constraints.maxWidth,
+                  maxHeight: constraints.maxHeight,
+                ),
+                child: RepaintBoundary(
+                  key: _globalKey,
+                  child: Stack(
+                    fit: StackFit.passthrough,
+                    children: [
+                      Image.memory(
+                        widget.imageModel.imageByte,
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                      ),
+                      if (processedImageBytes != null)
+                        SignatureStickerWidget(
+                          key: ValueKey(
+                            'processed_signature_${processedImageBytes.hashCode}',
+                          ),
+                          isScaleView: isScaleView,
+                          onDelete: () =>
+                              setState(() => processedImageBytes = null),
+                          child: Image.memory(
+                            processedImageBytes!,
+                            width: 100,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      if (signaturePath != null)
+                        SignatureStickerWidget(
+                          key: const ValueKey('drawn_signature'),
+                          isScaleView: isScaleView,
+                          onDelete: () => setState(() => signaturePath = null),
+                          child: drawSignature
+                              ? SvgPicture.string(signaturePath!, width: 100)
+                              : Image.memory(
+                                  Uint8List.fromList(
+                                      signaturePath!.codeUnits),
+                                  width: 100,
+                                  fit: BoxFit.contain,
+                                ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-              if (processedImageBytes != null)
-                SignatureStickerWidget(
-                  key: ValueKey(
-                    'processed_signature_${processedImageBytes.hashCode}',
-                  ),
-                  isScaleView: isScaleView,
-                  onDelete: () => setState(() => processedImageBytes = null),
-                  child: Image.memory(
-                    processedImageBytes!,
-                    width: 100,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              if (signaturePath != null)
-                SignatureStickerWidget(
-                  key: const ValueKey('drawn_signature'),
-                  isScaleView: isScaleView,
-                  onDelete: () => setState(() => signaturePath = null),
-                  child: drawSignature
-                      ? SvgPicture.string(signaturePath!, width: 100)
-                      : Image.memory(
-                          Uint8List.fromList(signaturePath!.codeUnits),
-                          width: 100,
-                          fit: BoxFit.contain,
-                        ),
-                ),
-            ],
-          ),
+            );
+          },
         ),
       ),
       bottomNavigationBar: BottomBarWithBanner(
@@ -188,15 +206,18 @@ class _AddSignatureState extends State<AddSignature> {
 
   Future<Uint8List?> captureImage() async {
     try {
-      RenderRepaintBoundary boundary = _globalKey.currentContext!
-          .findRenderObject() as RenderRepaintBoundary;
+      final boundary = _globalKey.currentContext!.findRenderObject()
+          as RenderRepaintBoundary;
       log(boundary.size.toString());
-      double pixelRatio = MediaQuery.of(context).devicePixelRatio;
-      ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
-      ByteData? byteData =
+      // Keep capture sharp but avoid huge bitmaps on high-DPI devices.
+      final pixelRatio =
+          MediaQuery.of(context).devicePixelRatio.clamp(1.0, 3.0);
+      final image = await boundary.toImage(pixelRatio: pixelRatio);
+      final byteData =
           await image.toByteData(format: ui.ImageByteFormat.png);
-
-      return byteData!.buffer.asUint8List();
+      if (byteData == null) return null;
+      // Match other edit tools — JPEG page, no PNG alpha letterbox edges.
+      return ensureJpegBytes(byteData.buffer.asUint8List());
     } catch (e) {
       return null;
     }
