@@ -99,8 +99,11 @@ class _EditImagePreviewState extends State<EditImagePreview> {
     final stamp = DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
 
     try {
+      final isIdCard = isIdCardStoragePath(filePath);
       await loadDocumentPagesProgressive(
         filePath,
+        // Keep full A4 canvas for ID Card PDFs (match other PDF apps).
+        trimLetterbox: !isIdCard,
         isCancelled: () => _openLoadCancelled || !mounted,
         onPage: (bytes, index, total) async {
           if (_openLoadCancelled || !mounted) return;
@@ -111,7 +114,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
               imageByte: bytes,
               rawBytes: raw,
               name: total > 1 ? '$baseName-${index + 1}-$stamp' : baseName,
-              docType: 'Document',
+              docType: isIdCard ? 'ID Card' : 'Document',
             ),
           );
           if (!mounted) return;
