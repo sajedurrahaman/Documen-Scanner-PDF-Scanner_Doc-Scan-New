@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:doc_scanner/camera_screen/model/image_model.dart';
 import 'package:doc_scanner/camera_screen/provider/camera_provider.dart';
 import 'package:doc_scanner/google_ads_helper/banner_ad_widget.dart';
@@ -9,14 +11,15 @@ import 'package:doc_scanner/image_edit/image_size_screen.dart';
 import 'package:doc_scanner/image_edit/widget/image_edit_button.dart';
 import 'package:doc_scanner/image_edit/widget/image_filter_screen.dart';
 import 'package:doc_scanner/utils/app_assets.dart';
+import 'package:doc_scanner/utils/helper.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../localaization/language_constant.dart';
 import '../utils/app_color.dart';
 import 'crop_screen.dart';
 import 'widget/full_screen_saving_overlay.dart';
 import 'widget/image_edit_unavailable.dart';
-import 'image_rotation.dart';
 
 /// CamScanner-style editor: swipe pages horizontally; tools edit the
 /// currently visible page only (1/3, 2/3, 3/3…).
@@ -152,6 +155,78 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
     }
     // Force rebuild so off-page thumbnails pick up CameraProvider updates.
     if (mounted) setState(() {});
+  }
+
+  Future<void> _retakeCurrentPage() async {
+    final camera = context.read<CameraProvider>();
+    final edit = context.read<ImageEditProvider>();
+    if (camera.imageList.isEmpty) return;
+    final index = _pageIndex.clamp(0, camera.imageList.length - 1);
+    await AppHelper.handlePermissions();
+    if (!mounted) return;
+    final pictures = await CunningDocumentScanner.getPictures(
+      isGalleryImportAllowed: true,
+      noOfPages: 1,
+    );
+    if (!mounted || pictures == null || pictures.isEmpty) return;
+    final path = pictures.first;
+    final bytes = await File(path).readAsBytes();
+    if (!mounted) return;
+    final old = camera.imageList[index];
+    final name = old.name.isNotEmpty
+        ? old.name
+        : 'Document-${DateFormat('yyyyMMdd_SSSS').format(DateTime.now())}';
+    camera.updateImage(
+      index: index,
+      image: ImageModel(
+        imageByte: bytes,
+        rawBytes: bytes,
+        name: name,
+        docType: old.docType.isNotEmpty ? old.docType : 'Document',
+      ),
+    );
+    edit.startSession(bytes);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _deleteCurrentPage() async {
+    final camera = context.read<CameraProvider>();
+    final edit = context.read<ImageEditProvider>();
+    if (camera.imageList.isEmpty) return;
+    final index = _pageIndex.clamp(0, camera.imageList.length - 1);
+    final labels = translation(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(labels.deleteImage),
+        content: Text(labels.doYouWantToDeleteThisImage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(labels.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(labels.delete,
+                style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    camera.deleteImage(index);
+    if (camera.imageList.isEmpty) {
+      edit.clearState();
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+    final next = index.clamp(0, camera.imageList.length - 1);
+    setState(() => _pageIndex = next);
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(next);
+    }
+    edit.startSession(camera.imageList[next].imageByte);
   }
 
   @override
@@ -325,41 +400,16 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
                   iconPath: AppAssets.size,
                 ),
                 ImageEditButton(
-                  title: translation(context).rotate,
-                  onTap: bytes == null
-                      ? null
-                      : () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) {
-                              return ImageRotation(
-                                imageModel: currentModel,
-                                index: safeIndex,
-                                cameFromEdit: true,
-                              );
-                            },
-                          ));
-                        },
-                  iconPath: AppAssets.rotate,
+                  title: translation(context).retake,
+                  onTap: bytes == null ? null : _retakeCurrentPage,
+                  iconPath: AppAssets.retake,
                 ),
-                ImageEditButton(
-                  title: translation(context).undo,
-                  onTap: bytes == null
-                      ? null
-                      : () {
-                          if (imageEditProvider.canUndo) {
-                            imageEditProvider.undo();
-                          } else {
-                            ScaffoldMessenger.of(context).clearSnackBars();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    translation(context).cannotUndoAnymore),
-                              ),
-                            );
-                          }
-                        },
-                  iconPath: AppAssets.undo,
-                ),
+                if (pageCount > 1)
+                  ImageEditButton(
+                    title: translation(context).delete,
+                    onTap: bytes == null ? null : _deleteCurrentPage,
+                    iconPath: AppAssets.delete,
+                  ),
               ],
             ),
           ),
