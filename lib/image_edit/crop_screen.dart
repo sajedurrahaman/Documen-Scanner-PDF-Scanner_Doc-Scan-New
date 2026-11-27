@@ -88,11 +88,16 @@ class _PageCropState {
     required this.bytes,
     required this.crop,
     this.autoCrop = true,
+    this.dirty = false,
   });
 
   Uint8List bytes;
   CropRectNorm crop;
   bool autoCrop;
+
+  /// User actually changed this page (drag / rotate / Auto|All). Untouched
+  /// pages must not be baked on Done — otherwise page 1 gets default Auto.
+  bool dirty;
 }
 
 class _CropSnapshot {
@@ -270,6 +275,7 @@ class _CropScreenState extends State<CropScreen> {
     if (!mounted || rotated == null) return;
     setState(() {
       _current.bytes = rotated;
+      _current.dirty = true;
       // Keep auto/manual crop mode after rotate.
       _current.crop =
           _current.autoCrop ? CropRectNorm.auto : CropRectNorm.full;
@@ -284,6 +290,7 @@ class _CropScreenState extends State<CropScreen> {
     setState(() {
       _current.autoCrop = true;
       _current.crop = CropRectNorm.auto;
+      _current.dirty = true;
     });
   }
 
@@ -295,6 +302,7 @@ class _CropScreenState extends State<CropScreen> {
     setState(() {
       _current.autoCrop = false;
       _current.crop = CropRectNorm.full;
+      _current.dirty = true;
     });
   }
 
@@ -323,7 +331,6 @@ class _CropScreenState extends State<CropScreen> {
     await WidgetsBinding.instance.endOfFrame;
     try {
       final camera = context.read<CameraProvider>();
-      final edit = context.read<ImageEditProvider>();
       final fromEdit = widget.cameFromEdit == true;
       final count =
           _pages.length < camera.imageList.length
@@ -332,9 +339,12 @@ class _CropScreenState extends State<CropScreen> {
       final currentIndex = _pageIndex.clamp(0, count - 1);
       Uint8List? currentOut;
 
-      // Apply crop on every page (full select = keep bytes, no re-crop).
+      // Bake only the visible page + pages the user actually edited.
+      // Untouched pages keep their previous display (no default Auto on page 1).
       for (var i = 0; i < count; i++) {
         final page = _pages[i];
+        if (i != currentIndex && !page.dirty) continue;
+
         final isFull = page.crop.left <= 0.001 &&
             page.crop.top <= 0.001 &&
             page.crop.right >= 0.999 &&
@@ -346,6 +356,7 @@ class _CropScreenState extends State<CropScreen> {
         page.bytes = out;
         page.crop = CropRectNorm.full;
         page.autoCrop = false;
+        page.dirty = false;
         final old = camera.imageList[i];
         camera.updateImage(
           index: i,
@@ -354,11 +365,14 @@ class _CropScreenState extends State<CropScreen> {
         if (i == currentIndex) currentOut = out;
       }
 
+      if (!mounted) return;
+      // Return page index so Edit can sync 1/n (Filters/Size style).
+      // Do not edit.addState here — that attached crop to the wrong page.
       if (fromEdit && currentOut != null) {
-        edit.addState(currentOut);
+        Navigator.pop(context, (currentIndex, currentOut));
+      } else {
+        Navigator.pop(context);
       }
-
-      if (mounted) Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -458,6 +472,7 @@ class _CropScreenState extends State<CropScreen> {
                               page.crop = rect;
                               // Manual drag leaves auto mode.
                               page.autoCrop = false;
+                              page.dirty = true;
                             });
                           },
                           onDragStart: () {
