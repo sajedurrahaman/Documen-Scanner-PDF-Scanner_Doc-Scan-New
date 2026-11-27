@@ -864,9 +864,25 @@ class _IdCardImagePreviewState extends State<IdCardImagePreview> {
                                     }
                                   });
                                 },
-                                child: Image.file(
-                                  File(imageProps['path']),
-                                  fit: BoxFit.contain,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(2),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Color(0x1A000000),
+                                        blurRadius: 6,
+                                        spreadRadius: 0,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(2),
+                                    child: Image.file(
+                                      File(imageProps['path']),
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
                                 ),
                               );
                             }).toList(),
