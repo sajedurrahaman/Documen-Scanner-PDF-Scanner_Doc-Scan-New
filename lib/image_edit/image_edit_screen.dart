@@ -350,16 +350,21 @@ class _ImageEditScreenState extends State<ImageEditScreen> {
                   title: translation(context).crop,
                   onTap: bytes == null
                       ? null
-                      : () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) {
-                              return CropScreen(
-                                imageModel: currentModel,
-                                index: safeIndex,
-                                cameFromEdit: true,
-                              );
-                            },
-                          ));
+                      : () async {
+                          final applied =
+                              await Navigator.push<(int, Uint8List)>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return CropScreen(
+                                  imageModel: currentModel,
+                                  index: safeIndex,
+                                  cameFromEdit: true,
+                                );
+                              },
+                            ),
+                          );
+                          await _applyToolResult(applied);
                         },
                   iconPath: AppAssets.crop,
                 ),
