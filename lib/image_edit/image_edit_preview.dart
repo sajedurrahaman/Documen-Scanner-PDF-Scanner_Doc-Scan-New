@@ -1969,7 +1969,9 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       },
       child: ListView(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(0, 15, 0, 16),
+        // Extra bottom inset so last page can scroll up to the current-page
+        // anchor (Add alone was not enough for n/n).
+        padding: const EdgeInsets.fromLTRB(0, 15, 0, 96),
         children: [
           for (var index = 0; index < pageCount; index++)
             Padding(
@@ -2004,10 +2006,10 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                 ),
               ),
             ),
-          // Last page → Add (same spacing/UI as before).
+          // Last page → Add; keep space under Add so last page can become n/n.
           Padding(
             key: _listAddKey,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
             child: _DashedAddButton(
               label: translation(context).add,
               enabled: !_addingPages,
