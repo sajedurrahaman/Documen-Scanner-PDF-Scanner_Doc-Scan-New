@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 
 import '../localaization/language_constant.dart';
+import '../utils/pdf_append_helper.dart';
 
 class RecentFileRenameDialog extends StatefulWidget {
   const RecentFileRenameDialog({super.key, required this.filePath});
@@ -52,6 +53,13 @@ class _RecentFileRenameDialogState extends State<RecentFileRenameDialog> {
         return;
       }
       await File(widget.filePath).rename(newPath);
+      // Keep crop-source sidecar next to the renamed PDF.
+      if (widget.filePath.toLowerCase().endsWith('.pdf')) {
+        final oldRaw = Directory(rawSidecarDirForPdf(widget.filePath));
+        if (await oldRaw.exists()) {
+          await oldRaw.rename(rawSidecarDirForPdf(newPath));
+        }
+      }
       if (mounted) Navigator.pop(context, true);
     } on FileSystemException catch (error) {
       if (mounted) setState(() => _errorMessage = error.message);

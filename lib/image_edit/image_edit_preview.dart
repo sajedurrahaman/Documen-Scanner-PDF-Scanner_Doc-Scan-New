@@ -463,6 +463,15 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       final targetOriginalModified = File(target.path).existsSync()
           ? File(target.path).lastModifiedSync()
           : null;
+      final openedSourcePath = _openedDocumentPath;
+      final isMove = action == TargetDocumentAction.move;
+
+      // After paste, preview shows the target document.
+      _openedDocumentPath = outPath;
+      final outName = outPath.split(Platform.pathSeparator).last;
+      final outDot = outName.lastIndexOf('.');
+      _openedDocumentBaseName =
+          outDot > 0 ? outName.substring(0, outDot) : outName;
 
       unawaited(() async {
         try {
@@ -478,14 +487,45 @@ class _EditImagePreviewState extends State<EditImagePreview> {
             );
           }
 
-          if (sourceToSave.isNotEmpty) {
-            final sourceFile = await cameraProvider.saveImagesAsDocumentPdf(
-              images: sourceToSave,
-              fileName: sourceName,
-            );
-            // Source file becomes newest → Recent 1st.
-            if (sourceFile != null && await sourceFile.exists()) {
-              await sourceFile.setLastModified(DateTime.now());
+          // Source persistence — never invent an extra PDF when Recent file
+          // was opened (overwrite / leave alone / delete instead).
+          final openedPdf = openedSourcePath != null &&
+              openedSourcePath.toLowerCase().endsWith('.pdf');
+          if (isMove) {
+            if (sourceToSave.isEmpty) {
+              if (openedPdf) {
+                final f = File(openedSourcePath!);
+                if (await f.exists()) await f.delete();
+                await deleteRawSidecarForPdf(openedSourcePath);
+              }
+            } else if (openedPdf) {
+              final sourceFile = await writePdfFromImages(
+                outputPath: openedSourcePath!,
+                images: sourceToSave,
+              );
+              if (await sourceFile.exists()) {
+                await sourceFile.setLastModified(DateTime.now());
+              }
+            } else {
+              final sourceFile = await cameraProvider.saveImagesAsDocumentPdf(
+                images: sourceToSave,
+                fileName: sourceName,
+              );
+              if (sourceFile != null && await sourceFile.exists()) {
+                await sourceFile.setLastModified(DateTime.now());
+              }
+            }
+          } else {
+            // Copy: source file on disk stays unchanged when opened from Recent.
+            // Only create a source PDF for an unsaved new scan session.
+            if (!openedPdf && sourceToSave.isNotEmpty) {
+              final sourceFile = await cameraProvider.saveImagesAsDocumentPdf(
+                images: sourceToSave,
+                fileName: sourceName,
+              );
+              if (sourceFile != null && await sourceFile.exists()) {
+                await sourceFile.setLastModified(DateTime.now());
+              }
             }
           }
           await recent.load();
