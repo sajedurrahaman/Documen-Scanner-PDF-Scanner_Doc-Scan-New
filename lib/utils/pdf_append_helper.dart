@@ -200,6 +200,16 @@ String rawSidecarDirForPdf(String pdfPath) {
   return '$pdfPath.raw';
 }
 
+/// True if [filePath] is inside (or is) a crop-source `{name}.raw` folder.
+/// Does not match normal PDFs like `crop_test.pdf`.
+bool isRawSidecarPath(String filePath) {
+  final parts = filePath.split(RegExp(r'[/\\]'));
+  for (final part in parts) {
+    if (part.toLowerCase().endsWith('.raw')) return true;
+  }
+  return false;
+}
+
 String rawSidecarPagePath(String pdfPath, int index) {
   final name = 'page_${index.toString().padLeft(3, '0')}.jpg';
   return '${rawSidecarDirForPdf(pdfPath)}${Platform.pathSeparator}$name';

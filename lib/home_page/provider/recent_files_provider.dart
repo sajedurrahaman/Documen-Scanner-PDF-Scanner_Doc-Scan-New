@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:doc_scanner/utils/pdf_append_helper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -70,12 +71,9 @@ class RecentFilesProvider extends ChangeNotifier {
     await for (final entity
         in directory.list(recursive: true, followLinks: false)) {
       if (entity is! File) continue;
-      final lower = entity.path.toLowerCase();
       // Crop-source sidecars live in `{pdfStem}.raw/` — never show in Recents.
-      if (lower.contains('.raw${Platform.pathSeparator}') ||
-          lower.contains('.raw/')) {
-        continue;
-      }
+      if (isRawSidecarPath(entity.path)) continue;
+      final lower = entity.path.toLowerCase();
       final matches = images
           ? lower.endsWith('.jpg') ||
               lower.endsWith('.jpeg') ||

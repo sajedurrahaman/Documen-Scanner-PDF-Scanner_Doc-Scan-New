@@ -2,16 +2,17 @@
 
 import 'dart:developer';
 import 'dart:io';
+import 'package:doc_scanner/camera_screen/provider/camera_provider.dart';
 import 'package:doc_scanner/google_ads_helper/google_ads_helper.dart';
 import 'package:doc_scanner/home_page/provider/home_page_provider.dart';
 import 'provider/recent_files_provider.dart';
+import 'package:doc_scanner/image_edit/image_edit_preview.dart';
 import 'package:doc_scanner/localaization/language_constant.dart';
 import 'package:doc_scanner/utils/app_assets.dart';
 import 'package:doc_scanner/utils/app_color.dart';
 import 'package:doc_scanner/utils/download_helper.dart';
 import 'package:doc_scanner/utils/helper.dart';
 import 'package:doc_scanner/utils/pdf_append_helper.dart';
-import 'package:doc_scanner/utils/pdf_view_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -97,6 +98,24 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
       allFiles = next;
     });
     await next;
+  }
+
+  /// Same as Home Recent: open document in EditImagePreview (progressive load).
+  Future<void> _openDocumentInPreview(String filePath) async {
+    final lower = filePath.toLowerCase();
+    final isImage = lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png');
+    final isPdf = lower.endsWith('.pdf');
+    if (!isImage && !isPdf) return;
+    context.read<CameraProvider>().clearImageList();
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditImagePreview(openFilePath: filePath),
+      ),
+    );
   }
 
   void _exitSelection() {
@@ -1207,10 +1226,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                             _toggleItemSelection(filePath);
                                             return;
                                           }
-                                          await flutterGenralDialogue(
-                                            context: context,
-                                            imageFile: File(filePath),
-                                          );
+                                          await _openDocumentInPreview(
+                                              filePath);
                                         },
                                         onLongPress: () =>
                                             _enterSelectionMode(filePath),
@@ -1917,17 +1934,8 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
                                             _toggleItemSelection(filePath);
                                             return;
                                           }
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  PdfViewScreen(
-                                                filePath: filePath,
-                                                fileName:
-                                                    filePath.split('/').last,
-                                              ),
-                                            ),
-                                          );
+                                          await _openDocumentInPreview(
+                                              filePath);
                                         },
                                         onLongPress: () =>
                                             _enterSelectionMode(filePath),
@@ -2923,7 +2931,7 @@ class _DirectoryDetailsPageState extends State<DirectoryDetailsPage> {
           entities
               .whereType<Directory>()
               // Crop-source sidecars (`foo.raw/`) are not user folders.
-              .where((dir) => !dir.path.toLowerCase().endsWith('.raw'))
+              .where((dir) => !isRawSidecarPath(dir.path))
               .map((dir) => dir.path)
               .toList(),
         );
