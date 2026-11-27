@@ -183,7 +183,7 @@ class HomePageProvider extends ChangeNotifier {
       await for (FileSystemEntity entity in documentDirectory.list()) {
         if (entity is Directory) {
           // Skip crop-source sidecars (`foo.raw/`).
-          if (entity.path.toLowerCase().endsWith('.raw')) continue;
+          if (isRawSidecarPath(entity.path)) continue;
           await for (FileSystemEntity subEntity in entity.list()) {
             if (subEntity is File) {
               String filePath = subEntity.path;
@@ -221,7 +221,7 @@ class HomePageProvider extends ChangeNotifier {
           Directory('${appDir.path}/Doc Scanner/ID Card');
       await for (FileSystemEntity entity in documentDirectory.list()) {
         if (entity is Directory) {
-          if (entity.path.toLowerCase().endsWith('.raw')) continue;
+          if (isRawSidecarPath(entity.path)) continue;
           await for (FileSystemEntity subEntity in entity.list()) {
             if (subEntity is File) {
               String filePath = subEntity.path;
@@ -303,6 +303,8 @@ class HomePageProvider extends ChangeNotifier {
     Future<void> traverseDirectory(Directory directory) async {
       await for (FileSystemEntity entity in directory.list()) {
         if (entity is Directory) {
+          // Crop-source sidecars (`foo.raw/`) are internal — never list as folders.
+          if (isRawSidecarPath(entity.path)) continue;
           subdirectoryPaths.add(entity.path);
         } else if (entity is File) {
           String filePath = entity.path;
@@ -480,10 +482,12 @@ class HomePageProvider extends ChangeNotifier {
     Future<void> traverseDirectory(Directory directory) async {
       await for (FileSystemEntity entity in directory.list()) {
         if (entity is Directory) {
+          if (isRawSidecarPath(entity.path)) continue;
           await traverseDirectory(entity);
           subdirectoryPaths.add(entity.path);
         } else if (entity is File) {
           String filePath = entity.path;
+          if (isRawSidecarPath(filePath)) continue;
           if (filePath.toLowerCase().endsWith('.jpg') ||
               filePath.toLowerCase().endsWith('.jpeg') ||
               filePath.toLowerCase().endsWith('.png') ||
