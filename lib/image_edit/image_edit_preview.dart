@@ -572,6 +572,8 @@ class _EditImagePreviewState extends State<EditImagePreview> {
         final imageName =
             DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
         final bytes = await File(path).readAsBytes();
+        // New pages stay as normal scans (no A4 pad). Only the original
+        // ID Card export page keeps its white A4 sheet.
         cameraProvider.addImage(
           ImageModel(
             docType: docType.isNotEmpty ? docType : 'Document',
@@ -1393,61 +1395,94 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                                 renameController
                                                                     .text
                                                                     .trim();
-                                                            // Same doc from Recent → update in place.
-                                                            final overwrite =
-                                                                _openedDocumentPath !=
-                                                                        null &&
-                                                                    name ==
-                                                                        _openedDocumentBaseName
-                                                                    ? _openedDocumentPath
-                                                                    : null;
-                                                            cameProvider
-                                                                .createPDFFromByte(
+                                                            // Recent/Document open
+                                                            // → always update that
+                                                            // PDF (never name(1).pdf).
+                                                            final opened =
+                                                                _openedDocumentPath;
+                                                            final value =
+                                                                await cameProvider
+                                                                    .createPDFFromByte(
                                                               context: context,
                                                               fileName: name,
                                                               overwritePath:
-                                                                  overwrite,
-                                                            )
-                                                                .then((value) {
-                                                              if (value ==
-                                                                  null) {
-                                                                if (context
-                                                                    .mounted) {
-                                                                  setState(() {
-                                                                    isSaving =
-                                                                        false;
-                                                                  });
-                                                                }
-                                                                return;
-                                                              }
-                                                              cameraProvider
-                                                                  .clearImageList();
-                                                              if (!context
+                                                                  opened,
+                                                            );
+                                                            if (value == null) {
+                                                              if (context
                                                                   .mounted) {
-                                                                return;
+                                                                setState(() {
+                                                                  isSaving =
+                                                                      false;
+                                                                });
                                                               }
-                                                              Navigator
-                                                                  .pushAndRemoveUntil(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                  builder:
-                                                                      (context) {
-                                                                    return const BottomBar(
-                                                                      shouldShowReview:
-                                                                          true,
-                                                                    );
-                                                                  },
-                                                                ),
-                                                                (route) =>
-                                                                    false,
-                                                              );
-                                                              showTopSnackbar(
-                                                                context,
-                                                                "PDF save successfully in Document Folder",
-                                                              );
-                                                              showInterstitialAd(
-                                                                  context);
-                                                            });
+                                                              return;
+                                                            }
+                                                            // Optional rename of
+                                                            // the same file after
+                                                            // overwrite.
+                                                            var savedPath =
+                                                                value.path;
+                                                            if (opened != null &&
+                                                                name !=
+                                                                    _openedDocumentBaseName) {
+                                                              final parent =
+                                                                  File(savedPath)
+                                                                      .parent
+                                                                      .path;
+                                                              final renamed =
+                                                                  '$parent${Platform.pathSeparator}$name.pdf';
+                                                              if (renamed !=
+                                                                      savedPath &&
+                                                                  !File(renamed)
+                                                                      .existsSync()) {
+                                                                await File(
+                                                                        savedPath)
+                                                                    .rename(
+                                                                        renamed);
+                                                                final oldRaw =
+                                                                    Directory(
+                                                                  rawSidecarDirForPdf(
+                                                                      savedPath),
+                                                                );
+                                                                if (await oldRaw
+                                                                    .exists()) {
+                                                                  await oldRaw
+                                                                      .rename(
+                                                                    rawSidecarDirForPdf(
+                                                                        renamed),
+                                                                  );
+                                                                }
+                                                                savedPath =
+                                                                    renamed;
+                                                              }
+                                                            }
+                                                            cameraProvider
+                                                                .clearImageList();
+                                                            if (!context
+                                                                .mounted) {
+                                                              return;
+                                                            }
+                                                            Navigator
+                                                                .pushAndRemoveUntil(
+                                                              context,
+                                                              MaterialPageRoute(
+                                                                builder:
+                                                                    (context) {
+                                                                  return const BottomBar(
+                                                                    shouldShowReview:
+                                                                        true,
+                                                                  );
+                                                                },
+                                                              ),
+                                                              (route) => false,
+                                                            );
+                                                            showTopSnackbar(
+                                                              context,
+                                                              "PDF save successfully in Document Folder",
+                                                            );
+                                                            showInterstitialAd(
+                                                                context);
                                                           },
                                                           style:
                                                               const ButtonStyle(
@@ -1468,7 +1503,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                                   .cancel),
                                                         )
                                                       ],
-                                              );
+);
                                             },
                                           );
                                         },

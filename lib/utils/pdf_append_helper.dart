@@ -278,17 +278,21 @@ Future<void> deleteRawSidecarForPdf(String pdfPath) async {
 }
 
 /// CamScanner-like PDF: each page = image aspect, full-bleed, no white pad.
+/// Set [trimLetterbox] false for ID Card PDFs (keep intentional A4 margins).
 Future<File> writePdfFromImages({
   required String outputPath,
   required List<Uint8List> images,
   List<Uint8List?>? rawPages,
+  bool? trimLetterbox,
 }) async {
+  final shouldTrim = trimLetterbox ?? !isIdCardStoragePath(outputPath);
   final output = pw.Document();
   for (final raw in images) {
     // Filter/size screens may store PNG screenshots; PDF needs JPEG.
     final normalized = ensureJpegBytes(raw);
-    // Ensure we never re-embed a previous A4 letterbox frame.
-    final bytes = trimWhiteLetterbox(normalized);
+    // Document scans: drop empty A4 pad. ID Card: keep white canvas.
+    final bytes =
+        shouldTrim ? trimWhiteLetterbox(normalized) : normalized;
     final image = pw.MemoryImage(ensureJpegBytes(bytes));
     final pageFormat = await _pageFormatForImage(bytes);
     output.addPage(

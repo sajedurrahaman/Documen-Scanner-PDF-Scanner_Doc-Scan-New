@@ -163,9 +163,13 @@ class CameraProvider extends ChangeNotifier {
         }
         pdfPath = '$directoryPath/$newFileName.pdf';
       }
+      final isIdCard = isIdCardStoragePath(pdfPath) ||
+          _imageList.any((e) => e.docType == 'ID Card');
       final pdfFile = await writePdfFromImages(
         outputPath: pdfPath,
         images: images,
+        // Keep ID Card A4 white margins (match other PDF apps).
+        trimLetterbox: !isIdCard,
         rawPages: _imageList
             .map((e) => e.rawBytes ?? e.imageByte)
             .toList(growable: false),
@@ -174,7 +178,7 @@ class CameraProvider extends ChangeNotifier {
       if (Platform.isAndroid) {
         await DownloadHelper.trySaveToPublicDocuments(
           pdfFile.path,
-          subfolder: 'Document',
+          subfolder: isIdCard ? 'IDCard' : 'Document',
         );
       }
 
