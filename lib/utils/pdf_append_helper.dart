@@ -110,6 +110,7 @@ Future<Uint8List?> _renderPdfPage(
   pdfx.PdfDocument source,
   int number, {
   double scale = 1.5,
+  bool trimLetterbox = true,
 }) async {
   final page = await source.getPage(number);
   try {
@@ -120,17 +121,30 @@ Future<Uint8List?> _renderPdfPage(
       backgroundColor: '#FFFFFF',
     );
     if (rendered == null) return null;
-    return trimWhiteLetterbox(rendered.bytes);
+    // ID Card PDFs keep intentional A4 white canvas — do not crop.
+    return trimLetterbox
+        ? trimWhiteLetterbox(rendered.bytes)
+        : rendered.bytes;
   } finally {
     await page.close();
   }
 }
 
+/// ID Card exports live under `Doc Scanner/ID Card/` and must keep full page.
+bool isIdCardStoragePath(String path) {
+  final normalized = path.replaceAll('\\', '/').toLowerCase();
+  return normalized.contains('/doc scanner/id card/');
+}
+
 /// Fast page load for preview (CamScanner-style — avoid heavy re-render loops).
-Future<List<Uint8List>> loadDocumentPagesFast(String path) async {
+Future<List<Uint8List>> loadDocumentPagesFast(
+  String path, {
+  bool? trimLetterbox,
+}) async {
   final pages = <Uint8List>[];
   await loadDocumentPagesProgressive(
     path,
+    trimLetterbox: trimLetterbox,
     onPage: (bytes, index, total) => pages.add(bytes),
   );
   return pages;
@@ -142,6 +156,7 @@ Future<void> loadDocumentPagesProgressive(
   String path, {
   required FutureOr<void> Function(Uint8List bytes, int index, int total) onPage,
   bool Function()? isCancelled,
+  bool? trimLetterbox,
 }) async {
   final lower = path.toLowerCase();
   if (lower.endsWith('.jpg') ||
@@ -155,12 +170,17 @@ Future<void> loadDocumentPagesProgressive(
     return;
   }
 
+  final shouldTrim = trimLetterbox ?? !isIdCardStoragePath(path);
   final source = await pdfx.PdfDocument.openFile(path);
   try {
     final total = source.pagesCount;
     for (var number = 1; number <= total; number++) {
       if (isCancelled?.call() == true) return;
-      final bytes = await _renderPdfPage(source, number);
+      final bytes = await _renderPdfPage(
+        source,
+        number,
+        trimLetterbox: shouldTrim,
+      );
       if (bytes == null) continue;
       if (isCancelled?.call() == true) return;
       await onPage(bytes, number - 1, total);
