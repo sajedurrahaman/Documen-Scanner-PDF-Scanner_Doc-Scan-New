@@ -399,80 +399,99 @@ class _HomePageState extends State<HomePage> {
     final formKey = GlobalKey<FormState>();
     var errorMessage = '';
     if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return AlertDialog(
-              title: Text(
-                translation(dialogContext).renameFile,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              content: Form(
-                key: formKey,
-                child: TextFormField(
-                  controller: controller,
-                  autofocus: true,
-                  textInputAction: TextInputAction.done,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return translation(dialogContext).pleaseEnterFileName;
-                    }
-                    return null;
-                  },
-                  decoration: InputDecoration(
-                    hintText: translation(dialogContext).enterFileName,
-                    errorText: errorMessage.isEmpty ? null : errorMessage,
-                    border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (dialogContext, setDialogState) {
+              return AlertDialog(
+                title: Text(
+                  translation(dialogContext).renameFile,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text(translation(dialogContext).cancel),
+                content: Form(
+                  key: formKey,
+                  child: TextFormField(
+                    controller: controller,
+                    autofocus: true,
+                    textInputAction: TextInputAction.done,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return translation(dialogContext).pleaseEnterFileName;
+                      }
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                      hintText: translation(dialogContext).enterFileName,
+                      errorText: errorMessage.isEmpty ? null : errorMessage,
+                      border: const OutlineInputBorder(),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 10),
+                    ),
+                  ),
                 ),
-                TextButton(
-                  onPressed: () async {
-                    if (!formKey.currentState!.validate()) return;
-                    final parent = File(file.path).parent.path;
-                    final extension = path.extension(file.path);
-                    final newPath = path.join(
-                      parent,
-                      '${controller.text.trim()}$extension',
-                    );
-                    if (newPath == file.path) {
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      FocusScope.of(dialogContext).unfocus();
                       Navigator.pop(dialogContext);
-                      return;
-                    }
-                    if (await File(newPath).exists()) {
-                      setDialogState(() {
-                        errorMessage =
-                            translation(dialogContext).fileAlreadyExists;
-                      });
-                      return;
-                    }
-                    await File(file.path).rename(newPath);
-                    if (!dialogContext.mounted) return;
-                    Navigator.pop(dialogContext);
-                    if (!mounted) return;
-                    await _refreshRecentFiles();
-                  },
-                  child: Text(translation(dialogContext).save),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-    controller.dispose();
+                    },
+                    child: Text(translation(dialogContext).cancel),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      if (!formKey.currentState!.validate()) return;
+                      final parent = File(file.path).parent.path;
+                      final extension = path.extension(file.path);
+                      final newPath = path.join(
+                        parent,
+                        '${controller.text.trim()}$extension',
+                      );
+                      if (newPath == file.path) {
+                        FocusScope.of(dialogContext).unfocus();
+                        Navigator.pop(dialogContext);
+                        return;
+                      }
+                      if (await File(newPath).exists()) {
+                        setDialogState(() {
+                          errorMessage =
+                              translation(dialogContext).fileAlreadyExists;
+                        });
+                        return;
+                      }
+                      await File(file.path).rename(newPath);
+                      // Keep crop-source sidecar next to the renamed PDF.
+                      if (file.path.toLowerCase().endsWith('.pdf')) {
+                        final oldRaw =
+                            Directory(rawSidecarDirForPdf(file.path));
+                        if (await oldRaw.exists()) {
+                          await oldRaw.rename(rawSidecarDirForPdf(newPath));
+                        }
+                      }
+                      if (!dialogContext.mounted) return;
+                      FocusScope.of(dialogContext).unfocus();
+                      Navigator.pop(dialogContext);
+                      if (!mounted) return;
+                      await _refreshRecentFiles();
+                    },
+                    child: Text(translation(dialogContext).save),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      // Dispose after dialog + IME teardown so TextFormField is gone.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      controller.dispose();
+    }
   }
 
   Future<void> _downloadRecent(RecentFile file) async {
