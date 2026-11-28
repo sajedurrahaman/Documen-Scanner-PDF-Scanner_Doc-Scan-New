@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:doc_scanner/utils/image_bytes_helper.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:image/image.dart' as img;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -194,22 +194,56 @@ Future<void> loadDocumentPagesProgressive(
 }
 
 /// Page size follows image aspect (no forced A4). Normalized to PDF points.
-Future<PdfPageFormat> _pageFormatForImage(Uint8List bytes) async {
-  final codec = await ui.instantiateImageCodec(bytes);
-  try {
-    final frame = await codec.getNextFrame();
-    final width = frame.image.width.toDouble();
-    final height = frame.image.height.toDouble();
-    frame.image.dispose();
-    if (width <= 0 || height <= 0) return PdfPageFormat.a4;
-
-    // Keep ratio; fit longest side to A4 long side in points (print-friendly).
-    const maxSide = 842.0;
-    final scale = maxSide / math.max(width, height);
-    return PdfPageFormat(width * scale, height * scale, marginAll: 0);
-  } finally {
-    codec.dispose();
+/// Uses `package:image` so it can run inside a background isolate (no dart:ui).
+PdfPageFormat _pageFormatForImageBytes(Uint8List bytes) {
+  final decoded = decodeAnyImage(bytes);
+  if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
+    return PdfPageFormat.a4;
   }
+  final width = decoded.width.toDouble();
+  final height = decoded.height.toDouble();
+  // Keep ratio; fit longest side to A4 long side in points (print-friendly).
+  const maxSide = 842.0;
+  final scale = maxSide / math.max(width, height);
+  return PdfPageFormat(width * scale, height * scale, marginAll: 0);
+}
+
+/// Payload for [buildPdfBytesInBackground] (must be isolate-safe).
+class PdfBuildRequest {
+  const PdfBuildRequest({
+    required this.images,
+    required this.trimLetterbox,
+  });
+
+  final List<Uint8List> images;
+  final bool trimLetterbox;
+}
+
+/// Top-level isolate worker: JPEG-normalize pages + `Document.save`.
+/// Keeps PNG decode / PDF encode off the UI isolate (Play Console ANR).
+Future<Uint8List> buildPdfBytesInBackground(PdfBuildRequest request) async {
+  final output = pw.Document();
+  for (final raw in request.images) {
+    // Always JPEG before MemoryImage — PNG path caused PngDecoder ANR.
+    var bytes = ensureJpegBytes(raw);
+    if (request.trimLetterbox) {
+      bytes = ensureJpegBytes(trimWhiteLetterbox(bytes));
+    }
+    if (!isJpegBytes(bytes)) {
+      bytes = ensureJpegBytes(bytes);
+    }
+    final pageFormat = _pageFormatForImageBytes(bytes);
+    output.addPage(
+      pw.Page(
+        pageFormat: pageFormat,
+        build: (_) => pw.Image(
+          pw.MemoryImage(bytes),
+          fit: pw.BoxFit.fill,
+        ),
+      ),
+    );
+  }
+  return output.save();
 }
 
 /// Directory beside PDF: `foo.pdf` → `foo.raw/` with `page_000.jpg`, …
@@ -281,6 +315,9 @@ Future<void> deleteRawSidecarForPdf(String pdfPath) async {
 /// CamScanner-like PDF: each page = image aspect, full-bleed, no white pad.
 /// Default [trimLetterbox] false so Export matches preview after user crop
 /// (auto-trim was re-cropping white document edges → zoom on reopen).
+///
+/// Heavy JPEG normalize + [pw.Document.save] run in a background isolate
+/// to avoid main-thread ANR (`PngDecoder` / `Document.save`).
 Future<File> writePdfFromImages({
   required String outputPath,
   required List<Uint8List> images,
@@ -288,22 +325,11 @@ Future<File> writePdfFromImages({
   bool? trimLetterbox,
 }) async {
   final shouldTrim = trimLetterbox ?? false;
-  final output = pw.Document();
-  for (final raw in images) {
-    // Filter/size screens may store PNG screenshots; PDF needs JPEG.
-    final normalized = ensureJpegBytes(raw);
-    final bytes =
-        shouldTrim ? trimWhiteLetterbox(normalized) : normalized;
-    final image = pw.MemoryImage(ensureJpegBytes(bytes));
-    final pageFormat = await _pageFormatForImage(bytes);
-    output.addPage(
-      pw.Page(
-        pageFormat: pageFormat,
-        build: (_) => pw.Image(image, fit: pw.BoxFit.fill),
-      ),
-    );
-  }
-  final outBytes = await output.save();
+  final request = PdfBuildRequest(
+    images: images.map(Uint8List.fromList).toList(growable: false),
+    trimLetterbox: shouldTrim,
+  );
+  final outBytes = await compute(buildPdfBytesInBackground, request);
   final file = await File(outputPath).writeAsBytes(outBytes, flush: true);
   if (rawPages != null && rawPages.isNotEmpty) {
     await writeRawSidecars(pdfPath: outputPath, rawPages: rawPages);
