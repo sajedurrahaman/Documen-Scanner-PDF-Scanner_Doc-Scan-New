@@ -559,12 +559,23 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       final previewPages = <Uint8List>[...targetPages, ...selectedBytes];
       if (!mounted) return;
 
+      final outPath = resolvedPdfOutputPath(target.path);
+      final outName = outPath.split(Platform.pathSeparator).last;
+      final outDot = outName.lastIndexOf('.');
+      final targetBaseName =
+          outDot > 0 ? outName.substring(0, outDot) : outName;
+      // Capture source path before we switch preview to the target doc.
+      final openedSourcePath = _openedDocumentPath;
+      final isMove = action == TargetDocumentAction.move;
       final stamp = DateFormat('yyyyMMdd_SSSS').format(DateTime.now());
       cameraProvider.replaceImageList([
         for (var i = 0; i < previewPages.length; i++)
           ImageModel(
             imageByte: previewPages[i],
-            name: 'Doc-$stamp-$i',
+            // Keep AppBar / rename tied to the target document name.
+            name: previewPages.length > 1
+                ? '$targetBaseName-${i + 1}-$stamp'
+                : targetBaseName,
             docType: 'Document',
           ),
       ]);
@@ -575,9 +586,11 @@ class _EditImagePreviewState extends State<EditImagePreview> {
         _draggingIndex = null;
         _isGridView = true;
         _currentIndex = 0;
+        // After paste, preview shows the target document.
+        _openedDocumentPath = outPath;
+        _openedDocumentBaseName = targetBaseName;
       });
 
-      final outPath = resolvedPdfOutputPath(target.path);
       final sourceToSave = List<Uint8List>.from(sourceBytes);
       final pagesToPersist = List<Uint8List>.from(previewPages);
       final recent = context.read<RecentFilesProvider>();
@@ -585,15 +598,6 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       final targetOriginalModified = File(target.path).existsSync()
           ? File(target.path).lastModifiedSync()
           : null;
-      final openedSourcePath = _openedDocumentPath;
-      final isMove = action == TargetDocumentAction.move;
-
-      // After paste, preview shows the target document.
-      _openedDocumentPath = outPath;
-      final outName = outPath.split(Platform.pathSeparator).last;
-      final outDot = outName.lastIndexOf('.');
-      _openedDocumentBaseName =
-          outDot > 0 ? outName.substring(0, outDot) : outName;
 
       unawaited(() async {
         try {
@@ -960,7 +964,9 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                             color: Colors.white),
                       )
                     : Text(
-                        cameraProvider.imageList[safeIndex].name,
+                        // Prefer opened/pasted document name over per-page stamp.
+                        _openedDocumentBaseName ??
+                            cameraProvider.imageList[safeIndex].name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
