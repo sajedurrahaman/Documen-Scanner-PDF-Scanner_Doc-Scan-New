@@ -69,11 +69,16 @@ class _IdCardImagePreviewState extends State<IdCardImagePreview> {
   /// Stack ID card pages vertically (column), not side-by-side.
   void _applyColumnLayout() {
     final screen = MediaQuery.sizeOf(context);
+    final isIpad = AppHelper.isIpad(context);
     final count = imageProperties.isEmpty ? 1 : imageProperties.length;
     const gap = 36.0;
-    // Smaller cards so front/back fit comfortably on the preview sheet.
-    final cardW = screen.width * 0.72;
-    final cardH = (cardW * 0.62).clamp(110.0, 170.0);
+    // Phone: ~72% width. iPad: cap width so left/right soft shadow stays subtle.
+    final cardW = isIpad
+        ? (screen.width * 0.42).clamp(280.0, 400.0)
+        : screen.width * 0.72;
+    final cardH = isIpad
+        ? (cardW * 0.62).clamp(140.0, 230.0)
+        : (cardW * 0.62).clamp(110.0, 170.0);
     final horizontalPad = (screen.width - cardW) / 2;
     final totalH = count * cardH + (count - 1) * gap;
     final canvasH = screen.height * 0.665;
@@ -868,12 +873,20 @@ class _IdCardImagePreviewState extends State<IdCardImagePreview> {
                                 child: DecoratedBox(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(2),
-                                    boxShadow: const [
+                                    boxShadow: [
                                       BoxShadow(
-                                        color: Color(0x1A000000),
-                                        blurRadius: 6,
+                                        // iPad: bottom-only light shadow (almost
+                                        // no left/right soft edge).
+                                        color: AppHelper.isIpad(context)
+                                            ? const Color(0x0D000000)
+                                            : const Color(0x1A000000),
+                                        blurRadius:
+                                            AppHelper.isIpad(context) ? 2 : 6,
                                         spreadRadius: 0,
-                                        offset: Offset(0, 2),
+                                        offset: Offset(
+                                          0,
+                                          AppHelper.isIpad(context) ? 1.5 : 2,
+                                        ),
                                       ),
                                     ],
                                   ),
