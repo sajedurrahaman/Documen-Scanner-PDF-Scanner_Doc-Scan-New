@@ -110,7 +110,7 @@ Future<Uint8List?> _renderPdfPage(
   pdfx.PdfDocument source,
   int number, {
   double scale = 1.5,
-  bool trimLetterbox = true,
+  bool trimLetterbox = false,
 }) async {
   final page = await source.getPage(number);
   try {
@@ -121,7 +121,7 @@ Future<Uint8List?> _renderPdfPage(
       backgroundColor: '#FFFFFF',
     );
     if (rendered == null) return null;
-    // ID Card PDFs keep intentional A4 white canvas — do not crop.
+    // Default: no trim — matches Export/preview (user crop must not re-zoom).
     return trimLetterbox
         ? trimWhiteLetterbox(rendered.bytes)
         : rendered.bytes;
@@ -170,7 +170,8 @@ Future<void> loadDocumentPagesProgressive(
     return;
   }
 
-  final shouldTrim = trimLetterbox ?? !isIdCardStoragePath(path);
+  // Default false: reopen must match what Export saved (no second auto-crop).
+  final shouldTrim = trimLetterbox ?? false;
   final source = await pdfx.PdfDocument.openFile(path);
   try {
     final total = source.pagesCount;
@@ -278,19 +279,19 @@ Future<void> deleteRawSidecarForPdf(String pdfPath) async {
 }
 
 /// CamScanner-like PDF: each page = image aspect, full-bleed, no white pad.
-/// Set [trimLetterbox] false for ID Card PDFs (keep intentional A4 margins).
+/// Default [trimLetterbox] false so Export matches preview after user crop
+/// (auto-trim was re-cropping white document edges → zoom on reopen).
 Future<File> writePdfFromImages({
   required String outputPath,
   required List<Uint8List> images,
   List<Uint8List?>? rawPages,
   bool? trimLetterbox,
 }) async {
-  final shouldTrim = trimLetterbox ?? !isIdCardStoragePath(outputPath);
+  final shouldTrim = trimLetterbox ?? false;
   final output = pw.Document();
   for (final raw in images) {
     // Filter/size screens may store PNG screenshots; PDF needs JPEG.
     final normalized = ensureJpegBytes(raw);
-    // Document scans: drop empty A4 pad. ID Card: keep white canvas.
     final bytes =
         shouldTrim ? trimWhiteLetterbox(normalized) : normalized;
     final image = pw.MemoryImage(ensureJpegBytes(bytes));

@@ -168,8 +168,8 @@ class CameraProvider extends ChangeNotifier {
       final pdfFile = await writePdfFromImages(
         outputPath: pdfPath,
         images: images,
-        // Keep ID Card A4 white margins (match other PDF apps).
-        trimLetterbox: !isIdCard,
+        // WYSIWYG: do not auto-trim — user crop/preview must match PDF.
+        trimLetterbox: false,
         rawPages: _imageList
             .map((e) => e.rawBytes ?? e.imageByte)
             .toList(growable: false),

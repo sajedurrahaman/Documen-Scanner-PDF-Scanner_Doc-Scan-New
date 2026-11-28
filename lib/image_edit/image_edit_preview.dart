@@ -102,8 +102,8 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       final isIdCard = isIdCardStoragePath(filePath);
       await loadDocumentPagesProgressive(
         filePath,
-        // Keep full A4 canvas for ID Card PDFs (match other PDF apps).
-        trimLetterbox: !isIdCard,
+        // WYSIWYG: never re-trim on open (auto-trim caused crop zoom).
+        trimLetterbox: false,
         isCancelled: () => _openLoadCancelled || !mounted,
         onPage: (bytes, index, total) async {
           if (_openLoadCancelled || !mounted) return;
@@ -386,13 +386,10 @@ class _EditImagePreviewState extends State<EditImagePreview> {
           : rawName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
       final tempDir = await getTemporaryDirectory();
       final pdfPath = '${tempDir.path}/$safeName.pdf';
-      final opened = _openedDocumentPath;
-      final isIdCard = (opened != null && isIdCardStoragePath(opened)) ||
-          cameraProvider.imageList.any((e) => e.docType == 'ID Card');
       final file = await writePdfFromImages(
         outputPath: pdfPath,
         images: images,
-        trimLetterbox: !isIdCard,
+        trimLetterbox: false,
       );
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
