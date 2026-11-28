@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:doc_scanner/utils/helper.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 
@@ -40,12 +41,17 @@ class _PageImageViewerState extends State<PageImageViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final isIpad = AppHelper.isIpad(context);
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    // Pull bar up: less than full status padding + short toolbar row.
-    const toolbarH = 28.0;
-    final barTop = (topInset - 8).clamp(0.0, topInset);
+
+    // Phone: compact bar (status pulled slightly up). iPad: full safe area + taller row.
+    final toolbarH = isIpad ? 48.0 : 28.0;
+    final barTop = isIpad ? topInset : (topInset - 8).clamp(0.0, topInset);
     final barH = barTop + toolbarH;
+    final backSize = isIpad ? 22.0 : 18.0;
+    final titleSize = isIpad ? 18.0 : 15.0;
+    final pageFontSize = isIpad ? 16.0 : 14.0;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -60,13 +66,17 @@ class _PageImageViewerState extends State<PageImageViewer> {
             children: [
               IconButton(
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 28),
-                visualDensity: VisualDensity.compact,
+                constraints: BoxConstraints(
+                  minWidth: isIpad ? 48 : 36,
+                  minHeight: isIpad ? 44 : 28,
+                ),
+                visualDensity:
+                    isIpad ? VisualDensity.standard : VisualDensity.compact,
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_back_ios_new,
                   color: Colors.white,
-                  size: 18,
+                  size: backSize,
                 ),
               ),
               Expanded(
@@ -74,14 +84,15 @@ class _PageImageViewerState extends State<PageImageViewer> {
                   widget.title ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 15,
+                    fontSize: titleSize,
                     fontWeight: FontWeight.w500,
                     height: 1.0,
                   ),
                 ),
               ),
+              if (isIpad) const SizedBox(width: 12),
             ],
           ),
         ),
@@ -124,21 +135,23 @@ class _PageImageViewerState extends State<PageImageViewer> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: bottomInset + 24,
+            bottom: bottomInset + (isIpad ? 36 : 24),
             child: IgnorePointer(
               child: Center(
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isIpad ? 18 : 14,
+                    vertical: isIpad ? 8 : 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.55),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '${_index + 1}/${widget.pages.length}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      fontSize: pageFontSize,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
