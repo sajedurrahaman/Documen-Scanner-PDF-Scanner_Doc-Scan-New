@@ -11,6 +11,7 @@ import 'package:doc_scanner/image_edit/select_target_document_screen.dart';
 import 'package:doc_scanner/image_edit/text_recognition_screen.dart';
 import 'package:doc_scanner/image_edit/widget/image_edit_button.dart';
 import 'package:doc_scanner/utils/app_color.dart';
+import 'package:doc_scanner/utils/image_bytes_helper.dart';
 import 'package:doc_scanner/utils/pdf_append_helper.dart';
 import 'package:doc_scanner/utils/utils.dart';
 import 'package:flutter/material.dart';
@@ -296,6 +297,70 @@ class _EditImagePreviewState extends State<EditImagePreview> {
     }
     if (files.isEmpty || !mounted) return;
     await Share.shareXFiles(files);
+  }
+
+  /// Convert (OCR) for the focused page. Hardens against ML Kit failures on
+  /// weak 32-bit devices (Play: SIGILL in libmlkit_google_ocr_pipeline.so).
+  Future<void> _runOcrOnCurrentPage(CameraProvider cameraProvider) async {
+    if (cameraProvider.imageList.isEmpty) return;
+    final index =
+        _currentIndex.clamp(0, cameraProvider.imageList.length - 1);
+    final labels = translation(context);
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColor.primaryColor),
+      ),
+    );
+
+    TextRecognizer? recognizer;
+    var loaderOpen = true;
+    void dismissLoader() {
+      if (!loaderOpen || !mounted) return;
+      loaderOpen = false;
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+
+    try {
+      final jpeg = ensureJpegBytes(
+        cameraProvider.imageList[index].imageByte,
+      );
+      final file = await AppHelper().convertUint8ListToFile(
+        data: jpeg,
+        extension: 'jpg',
+      );
+      final inputImage = InputImage.fromFile(file);
+      recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+      final recognizedText = await recognizer.processImage(inputImage);
+      dismissLoader();
+      if (!mounted) return;
+
+      final text = recognizedText.text;
+      if (text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(labels.thisLanguageNotSupported)),
+        );
+        return;
+      }
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              TextRecognitionScreen(recognisedText: text),
+        ),
+      );
+    } catch (_) {
+      dismissLoader();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(labels.somethingWentWrong)),
+      );
+    } finally {
+      dismissLoader();
+      await recognizer?.close();
+    }
   }
 
   /// CamScanner-style: Share as PDF | Share as Images (all pages).
@@ -1883,40 +1948,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                   ),
                   ImageEditButton(
                     title: translation(context).convert,
-                    onTap: () async {
-                      final Uint8List textRecognitionImage =
-                          cameraProvider.imageList[_currentIndex].imageByte;
-                      await AppHelper()
-                          .convertUint8ListToFile(data: textRecognitionImage)
-                          .then((value) async {
-                        final inputImage = InputImage.fromFile(value);
-                        final textRecognizer = TextRecognizer(
-                            script: TextRecognitionScript.latin);
-                        await textRecognizer
-                            .processImage(inputImage)
-                            .then((recognizedText) {
-                          String text = recognizedText.text;
-                          if (text.trim().isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  translation(context)
-                                      .thisLanguageNotSupported,
-                                ),
-                              ),
-                            );
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => TextRecognitionScreen(
-                                    recognisedText: text),
-                              ),
-                            );
-                          }
-                        });
-                      });
-                    },
+                    onTap: () => _runOcrOnCurrentPage(cameraProvider),
                     iconPath: AppAssets.ocr,
                   ),
                   ImageEditButton(
