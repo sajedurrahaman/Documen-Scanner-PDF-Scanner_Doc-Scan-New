@@ -80,6 +80,6 @@ class AdHelper {
   // bottom_bar
   static String get interstitialAdUnitId1 {
     if (kDebugMode) return _iosTestInterstitial;
-    return 'ca-app-pub-9877635475483541/3626209183';
+    return 'ca-app-pub-9877635475483541/1794062731';
   }
 }
