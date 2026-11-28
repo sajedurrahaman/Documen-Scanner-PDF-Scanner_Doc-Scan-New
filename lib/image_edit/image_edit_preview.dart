@@ -283,6 +283,20 @@ class _EditImagePreviewState extends State<EditImagePreview> {
     return indexes;
   }
 
+  /// iPad requires a non-zero popover origin for share sheets.
+  Rect _sharePositionOrigin() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize && box.size != Size.zero) {
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+    final size = MediaQuery.sizeOf(context);
+    return Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: 2,
+      height: 2,
+    );
+  }
+
   Future<void> _shareSelectedPages(CameraProvider cameraProvider) async {
     if (_selectedIndexes.isEmpty) return;
     final files = <XFile>[];
@@ -295,7 +309,10 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       files.add(XFile(file.path));
     }
     if (files.isEmpty || !mounted) return;
-    await Share.shareXFiles(files);
+    await Share.shareXFiles(
+      files,
+      sharePositionOrigin: _sharePositionOrigin(),
+    );
   }
 
   /// CamScanner-style: Share as PDF | Share as Images (all pages).
@@ -393,7 +410,10 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       );
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
-      await Share.shareXFiles([XFile(file.path)]);
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        sharePositionOrigin: _sharePositionOrigin(),
+      );
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
@@ -414,7 +434,10 @@ class _EditImagePreviewState extends State<EditImagePreview> {
       files.add(XFile(file.path));
     }
     if (files.isEmpty || !mounted) return;
-    await Share.shareXFiles(files);
+    await Share.shareXFiles(
+      files,
+      sharePositionOrigin: _sharePositionOrigin(),
+    );
   }
 
   Future<void> _deleteSelectedPages(CameraProvider cameraProvider) async {
