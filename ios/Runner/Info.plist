@@ -22,10 +22,32 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb969488689485352</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FacebookAppID</key>
+	<string>969488689485352</string>
+	<key>FacebookClientToken</key>
+	<string>713e981696d52fc2945779bca5f12823</string>
+	<key>FacebookDisplayName</key>
+	<string>Doc Scanner</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-9877635475483541~5230100748</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fbapi</string>
+		<string>fb-messenger-share-api</string>
+		<string>fbauth2</string>
+		<string>fbshareextension</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
@@ -39,34 +61,12 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Doc Scanner needs camera access to scan documents, ID cards, QR codes, and barcodes. For example, you can point your camera at a paper document to capture pages and create a PDF.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Doc Scanner needs photo library access so you can import existing photos of documents to edit, crop, and convert them into PDFs. For example, you can select a receipt photo from your gallery and save it as a scanned PDF.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Doc Scanner needs permission to save scanned documents and images to your photo library. For example, after you scan a document, you can save the final image to Photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Doc Scanner needs photo library access so you can import existing photos of documents to edit, crop, and convert them into PDFs. For example, you can select a receipt photo from your gallery and save it as a scanned PDF.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Doc Scanner uses this identifier to deliver relevant ads and measure ad performance so we can keep the app free. For example, it helps us understand which ads are effective without tracking you across unrelated apps beyond your permission.</string>
-	<key>FacebookAppID</key>
-	<string>969488689485352</string>
-	<key>FacebookClientToken</key>
-	<string>713e981696d52fc2945779bca5f12823</string>
-	<key>FacebookDisplayName</key>
-	<string>Doc Scanner</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>fb969488689485352</string>
-			</array>
-		</dict>
-	</array>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>fbapi</string>
-		<string>fb-messenger-share-api</string>
-		<string>fbauth2</string>
-		<string>fbshareextension</string>
-	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

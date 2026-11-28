@@ -81,7 +81,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   nb_utils: ^6.1.0
   scan: ^1.6.0
-  google_mobile_ads: ^5.1.0
+  google_mobile_ads: ^9.2.0
   package_info_plus: ^8.3.0
   firebase_messaging: ^15.2.10
   internet_connection_checker: ^1.0.0+1
