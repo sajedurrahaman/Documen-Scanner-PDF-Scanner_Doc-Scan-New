@@ -40,15 +40,50 @@ class _PageImageViewerState extends State<PageImageViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    // Pull bar up: less than full status padding + short toolbar row.
+    const toolbarH = 28.0;
+    final barTop = (topInset - 8).clamp(0.0, topInset);
+    final barH = barTop + toolbarH;
+
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: Text(
-          widget.title ?? '',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      extendBodyBehindAppBar: true,
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(barH),
+        child: Container(
+          color: Colors.black,
+          padding: EdgeInsets.only(top: barTop),
+          height: barH,
+          child: Row(
+            children: [
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 28),
+                visualDensity: VisualDensity.compact,
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  widget.title ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       body: Stack(

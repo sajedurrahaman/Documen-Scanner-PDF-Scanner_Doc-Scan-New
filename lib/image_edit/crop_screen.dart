@@ -6,7 +6,6 @@ import 'package:doc_scanner/camera_screen/model/image_model.dart';
 import 'package:doc_scanner/camera_screen/provider/camera_provider.dart';
 import 'package:doc_scanner/utils/banner_ad_widget.dart';
 import 'package:doc_scanner/utils/addHelper.dart';
-import 'package:doc_scanner/image_edit/provider/image_edit_provider.dart';
 import 'package:doc_scanner/image_edit/widget/full_screen_saving_overlay.dart';
 import 'package:doc_scanner/image_edit/widget/image_edit_unavailable.dart';
 import 'package:doc_scanner/utils/app_color.dart';

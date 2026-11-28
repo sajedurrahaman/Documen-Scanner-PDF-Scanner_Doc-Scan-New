@@ -1323,6 +1323,7 @@ class _EditImagePreviewState extends State<EditImagePreview> {
                                                               context);
                                                         }
                                                       }
+                                                      }
                                                     },
                                                     child: Text(
                                                         translation(context)

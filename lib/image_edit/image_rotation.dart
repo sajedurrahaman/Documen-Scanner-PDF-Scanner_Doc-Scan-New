@@ -68,8 +68,9 @@ class _ImageRotationState extends State<ImageRotation> {
                     image: img,
                     imageEditorOption: option,
                   );
+                  if (result == null) return;
                   if (widget.cameFromEdit == true) {
-                    imageEditProvider.addState(result!);
+                    imageEditProvider.addState(result);
                   } else {
                     cameraProvider.updateImage(
                       index: widget.index,
@@ -94,7 +95,7 @@ class _ImageRotationState extends State<ImageRotation> {
           cacheRawData: true,
           extendedImageEditorKey: editorKey,
           widget.cameFromEdit == true
-              ? imageEditProvider.currentState
+              ? (imageEditProvider.currentState ?? widget.imageModel.imageByte)
               : widget.imageModel.imageByte,
           mode: ExtendedImageMode.editor,
           fit: BoxFit.contain,
